@@ -179,7 +179,7 @@ class Device(object):
                     raise LabJackException("Could only write " + str(writeBytes) + \
                                            " of " + str(len(writeBuffer)) + " bytes")
             elif os.name == 'nt':
-                if modbus is True and self.devType is 3:
+                if modbus is True:
                     writeBuffer = [ 0, 0 ] + writeBuffer
                 eGetRaw(handle, LJ_ioRAW_OUT, 0, len(writeBuffer), writeBuffer)
         
