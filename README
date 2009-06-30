@@ -1,0 +1,30 @@
+Welcome to the next iteration of LabJack Python!
+
+Installation is easy:
+    # python setup.py install
+    
+From there, interacting with your devices is easy.
+
+For U3:
+>>> import u3
+>>> d = u3.U3()
+>>> d.open()
+>>> d.configU3()
+{'BootloaderVersion': '0.27',
+ 'CIODirection': 0,
+ ...,
+}
+>>> d.close()
+
+For U6:
+>>> import u6
+>>> d = u6.U6()
+>>> d.open()
+>>> d.configU6()
+{'BootloaderVersion': '6.15',
+ 'FirmwareVersion': '0.88',
+ ..., 
+}
+>>> d.close()
+
+Full UE9 support coming soon.
