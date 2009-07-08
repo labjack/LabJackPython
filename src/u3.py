@@ -139,9 +139,9 @@ class U3(Device):
         
         return { 'FirmwareVersion' : self.firmwareVersion, 'BootloaderVersion' : self.bootloaderVersion, 'HardwareVersion' : self.hardwareVersion, 'SerialNumber' : self.serialNumber, 'ProductID' : self.productId, 'LocalID' : self.localId, 'TimerCounterMask' : self.timerCounterMask, 'FIOAnalog' : self.fioAnalog, 'FIODirection' : self.fioDirection, 'FIOState' : self.fioState, 'EIOAnalog' : self.eioAnalog, 'EIODirection' : self.eioDirection, 'EIOState' : self.eioState, 'CIODirection' : self.cioDirection, 'CIOState' : self.cioState, 'DAC1Enable' : self.dac1Enable, 'DAC0' : self.dac0, 'DAC1' : self.dac1, 'TimerClockConfig' : self.timerClockConfig, 'TimerClockDivisor' : self.timerClockDivisor, 'CompatibilityOptions' : self.compatibilityOptions, 'VersionInfo' : self.versionInfo }
 
-    def configIO(self, TimerCounterPinOffset = None, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, DAC1Enable = None, FIOAnalog = None, EIOAnalog = None):
+    def configIO(self, TimerCounterPinOffset = None, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None):
         """
-        Name: U3.configIO(TimerCounterPinOffset = None, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, DAC1Enable = None, FIOAnalog = None, EIOAnalog = None)
+        Name: U3.configIO(TimerCounterPinOffset = None, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None)
         Args: See section 5.2.3 of the user's guide.
         Desc: The configIO command.
         """
@@ -149,13 +149,16 @@ class U3(Device):
         writeMask = 0
         
         if EIOAnalog is not None:
+            writeMask |= 1
             writeMask |= 8
         
         if FIOAnalog is not None:
+            writeMask |= 1
             writeMask |= 4
             
-        if DAC1Enable is not None:
-            writeMask |= 2
+        if EnableUART is not None:
+            writeMask |= 1
+            writeMask |= (1 << 5)
             
         if TimerCounterPinOffset is not None or EnableCounter1 is not None or EnableCounter0 is not None or NumberOfTimersEnabled is not None :
             writeMask |= 1
@@ -172,6 +175,12 @@ class U3(Device):
         #command[7] = Reserved
         command[8] = 0
         
+        if EnableUART is not None:
+            command[9] = int(EnableUART) << 2
+            if TimerCounterPinOffset is None:
+                TimerCounterPinOffset = 4
+            
+        
         if TimerCounterPinOffset is not None:
             command[8] |= ( TimerCounterPinOffset & 15 ) << 4
         if EnableCounter1 is not None:
@@ -180,9 +189,6 @@ class U3(Device):
             command[8] |= 1 << 2
         if NumberOfTimersEnabled is not None:
             command[8] |= ( NumberOfTimersEnabled & 3 )
-        
-        if DAC1Enable is not None:
-            command[9] = 2
             
         if FIOAnalog is not None:
             command[10] = FIOAnalog
@@ -737,13 +743,14 @@ class U3(Device):
                 
         return result[8:]
         
-    def asynchConfig(self, Update = True, UARTEnable = True, DesiredBaud  = 9600, olderHardware = False ):
+    def asynchConfig(self, Update = True, UARTEnable = True, DesiredBaud  = 9600, olderHardware = False, configurePins = True ):
         """
         Name: U3.asynchConfig(Update = True, UARTEnable = True, 
-                              DesiredBaud = 9600, olderHardware = False)
+                              DesiredBaud = 9600, olderHardware = False, configurePins = True)
         Args: See section 5.3.16 of the User's Guide.
               olderHardware, If using hardware 1.21, please set olderHardware 
                              to True and read the timer configuration first.
+              configurePins, Will call the configIO to set up pins for you.
         
         Desc: Configures the U3 UART for asynchronous communication. 
         
@@ -755,11 +762,11 @@ class U3(Device):
         }
         
         Note: Requires U3 hardware version 1.21+.
-        """    
-        command = [ 0 ] * 10
+        """
+        if configurePins:
+            self.configIO(EnableUART=True)
         
-        if not olderHardware:
-            command.append(0)
+        command = [ 0 ] * 10
             
         #command[0] = Checksum8
         command[1] = 0xF8
@@ -780,11 +787,11 @@ class U3(Device):
         else:
             BaudFactor = (2**16) - 48000000/(2 * DesiredBaud)
             t = struct.pack("<H", BaudFactor)
-            command[9] = ord(t[0])
-            command[10] = ord(t[1])
+            command[8] = ord(t[0])
+            command[9] = ord(t[1])
         
         if olderHardware:
-            result = self._writeRead(command, 9, [0xF8, 0x02, 0x14])
+            result = self._writeRead(command, 10, [0xF8, 0x02, 0x14])
         else:
             result = self._writeRead(command, 10, [0xF8, 0x02, 0x14])
         
@@ -803,7 +810,7 @@ class U3(Device):
         if olderHardware:
             returnDict['BaudFactor'] = result[9]
         else:
-            returnDict['BaudFactor'] = struct.unpack("<H", struct.pack("BB", *result[9:]))
+            returnDict['BaudFactor'] = struct.unpack("<H", struct.pack("BB", *result[8:]))[0]
 
         return returnDict
         
@@ -834,7 +841,7 @@ class U3(Device):
             numBytes = numBytes+1
             oddPacket = True
         
-        command = [ 0 ] * ( 7 + numBytes)
+        command = [ 0 ] * ( 8 + numBytes)
         
         #command[0] = Checksum8
         command[1] = 0xF8

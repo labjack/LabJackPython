@@ -242,8 +242,6 @@ class Device(object):
         
         Modbus is not supported for UE9s over USB. If you try it, a LabJackException is raised.
         """
-        if self.devType is 9 and not isinstance(self.handle, UE9TCPHandle):
-            raise LabJackException(0, "Modbus is not supported over USB on a UE9. Sorry.")
         
         if numReg == None:
             numReg = Modbus.calcNumberOfRegisters(addr)
@@ -257,6 +255,7 @@ class Device(object):
         numBytes = 9 + (2 * int(numReg))
         
         response = self._modbusWriteRead(pkt, numBytes)
+        
         if self.debug: print "Response is: ", response
         
         packFormat = ">" + "B" * numBytes
@@ -282,8 +281,6 @@ class Device(object):
         if you cannot write to that register, a LabJackException is raised.
         Modbus is not supported for UE9's over USB. If you try it, a LabJackException is raised.
         """
-        #if self.devType is 9 and not isinstance(self.handle, UE9TCPHandle):
-        #    raise LabJackException(0, "Modbus is not supported over USB on a UE9. Sorry.")
         
         if type(value) is list:
             return self.writeMultipleRegisters(addr, value)
@@ -1035,8 +1032,8 @@ def eGet(Handle, IOType, Channel, pValue, x1):
         pv = ctypes.c_double(pValue)
         #ppv = ctypes.pointer(pv)
         ec = staticLib.eGet(Handle, IOType, Channel, ctypes.byref(pv), x1)
-        #ctypes.eGet.argtypes = [ctypes.c_long, ctypes.c_long, ctypes.c_long, ctypes.c_double, ctypes.c_long]
-        #ec = staticLib.eGet(Handle, IOType, Channel, ppv, x1)
+        #staticLib.eGet.argtypes = [ctypes.c_long, ctypes.c_long, ctypes.c_long, ctypes.c_double, ctypes.c_long]
+        #ec = staticLib.eGet(Handle, IOType, Channel, pValue, x1)
         
         if ec != 0: raise LabJackException(ec)
         #print "EGet:" + str(ppv)
@@ -1114,8 +1111,8 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
                     newA[i] = ctypes.c_double(x1[i])
 
             ec = staticLib.eGet(Handle, IOType, Channel, ctypes.byref(pv), ctypes.byref(newA))
-            x1 = [[]] * len(x1)
-            for i in range(0, len(x1), 1):
+            x1 = [0] * len(x1)
+            for i in range(len(x1)):
                 x1[i] = newA[i]
                 if(x1Type == "int"):
                     x1[i] = x1[i] & 0xff
@@ -2186,6 +2183,9 @@ LJ_ioSHT_CLOCK_CHANNEL = 502 # UE9 + U3. Default is FIO1
 # and x1 is the address of the buffer.    The data from the buffer will be sent, then overwritten
 # with the data read.  The channel parameter is ignored. 
 LJ_ioSPI_COMMUNICATION = 503 # UE9
+LJ_ioI2C_COMMUNICATION = 504 # UE9 + U3
+LJ_ioASYNCH_COMMUNICATION = 505 # UE9 + U3
+LJ_ioTDAC_COMMUNICATION = 506 # UE9 + U3
 
 # Set's the U3 to it's original configuration.    This means sending the following
 # to the ConfigIO and TimerClockConfig low level functions
@@ -2355,6 +2355,30 @@ LJ_chSPI_MOSI_PINNUM = 5104 # UE9
 LJ_chSPI_MISO_PINNUM = 5105 # UE9
 LJ_chSPI_CLK_PINNUM = 5106 # UE9
 LJ_chSPI_CS_PINNUM = 5107 # UE9
+
+# I2C related :
+# used with LJ_ioPUT_CONFIG
+LJ_chI2C_ADDRESS_BYTE = 5108 # UE9 + U3
+LJ_chI2C_SCL_PIN_NUM = 5109 # UE9 + U3
+LJ_chI2C_SDA_PIN_NUM = 5110 # UE9 + U3
+LJ_chI2C_OPTIONS = 5111 # UE9 + U3
+LJ_chI2C_SPEED_ADJUST = 5112 # UE9 + U3
+
+# used with LJ_ioI2C_COMMUNICATION :
+LJ_chI2C_READ = 5113 # UE9 + U3
+LJ_chI2C_WRITE = 5114 # UE9 + U3
+LJ_chI2C_GET_ACKS = 5115 # UE9 + U3
+LJ_chI2C_WRITE_READ = 5130 # UE9 + U3
+
+# ASYNCH related :
+# Used with LJ_ioASYNCH_COMMUNICATION
+LJ_chASYNCH_RX = 5117 # UE9 + U3
+LJ_chASYNCH_TX = 5118 # UE9 + U3
+LJ_chASYNCH_FLUSH = 5128 # UE9 + U3
+LJ_chASYNCH_ENABLE = 5129 # UE9 + U3
+
+# Used with LJ_ioPUT_CONFIG and LJ_ioGET_CONFIG
+LJ_chASYNCH_BAUDFACTOR = 5127 # UE9 + U3
 
 # stream related.  Note, Putting to any of these values will stop any running streams.
 LJ_chSTREAM_SCAN_FREQUENCY = 4000
