@@ -343,7 +343,11 @@ class UE9(Device):
         self.controlBLVersion = "%s.%s" % (result[12], result[11])
         self.hiRes = bool(result[13] & 1)
         
-        return { 'PowerLevel' : self.powerLevel, 'ResetSource' : result[8], 'ControlFWVersion' : self.controlFWVersion, 'ControlBLVersion' : self.controlBLVersion, 'HiRes Flag' : self.hiRes, 'FIODir' : result[14], 'FIOState' : result[15], 'EIODir' : result[16], 'EIOState' : result[17], 'CIODirection' : (result[18] >> 4) & 0xf, 'CIOState' : result[18] & 0xf, 'MIODirection' : (result[19] >> 4) & 7, 'MIOState' : result[19] & 7, 'DAC0 Enabled' : bool(result[21] >> 7 & 1), 'DAC0' : (result[21] & 0xf) + result[20], 'DAC1 Enabled' : bool(result[23] >> 7 & 1), 'DAC1' : (result[23] & 0xf) + result[22] }
+        self.deviceName = 'UE9'
+        if self.hiRes:
+            self.deviceName = 'UE9-Pro'
+        
+        return { 'PowerLevel' : self.powerLevel, 'ResetSource' : result[8], 'ControlFWVersion' : self.controlFWVersion, 'ControlBLVersion' : self.controlBLVersion, 'HiRes Flag' : self.hiRes, 'FIODir' : result[14], 'FIOState' : result[15], 'EIODir' : result[16], 'EIOState' : result[17], 'CIODirection' : (result[18] >> 4) & 0xf, 'CIOState' : result[18] & 0xf, 'MIODirection' : (result[19] >> 4) & 7, 'MIOState' : result[19] & 7, 'DAC0 Enabled' : bool(result[21] >> 7 & 1), 'DAC0' : (result[21] & 0xf) + result[20], 'DAC1 Enabled' : bool(result[23] >> 7 & 1), 'DAC1' : (result[23] & 0xf) + result[22], 'DeviceName' : self.deviceName }
         
     def feedback(self, FIOMask = 0, FIODir = 0, FIOState = 0, EIOMask = 0, EIODir = 0, EIOState = 0, CIOMask = 0, CIODirection = 0, CIOState = 0, MIOMask = 0, MIODirection = 0, MIOState = 0, DAC0Update = False, DAC0Enabled = False, DAC0 = 0, DAC1Update = False, DAC1Enabled = False, DAC1 = 0, AINMask = 0, AIN14ChannelNumber = 0, AIN15ChannelNumber = 0, Resolution = 0, SettlingTime = 0, AIN1_0_BipGain = 0, AIN3_2_BipGain = 0, AIN5_4_BipGain  = 0, AIN7_6_BipGain = 0, AIN9_8_BipGain = 0, AIN11_10_BipGain = 0, AIN13_12_BipGain = 0, AIN15_14_BipGain = 0):
         """

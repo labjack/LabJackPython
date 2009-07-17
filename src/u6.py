@@ -213,6 +213,9 @@ class U6(Device):
         self.productId = struct.unpack("<H", struct.pack(">BB", *result[19:21]))[0]
         self.localId = result[21]
         self.versionInfo = result[37]
+        self.deviceName = 'U6'
+        if self.versionInfo == 12:
+            self.deviceName = 'U6-Pro'
         
         return { 'FirmwareVersion' : self.firmwareVersion, 'BootloaderVersion' : self.bootloaderVersion, 'HardwareVersion' : self.hardwareVersion, 'SerialNumber' : self.serialNumber, 'ProductID' : self.productId, 'LocalID' : self.localId, 'VersionInfo' : self.versionInfo }
         

@@ -75,28 +75,6 @@ LJ_ctUSB = 1
 SOCKET_TIMEOUT = 10
 BROADCAST_SOCKET_TIMEOUT = 1
 
-def _loadLibrary():
-    """_loadLibrary()
-    Returns a ctypes dll pointer to the library.
-    """
-    if(os.name == 'posix'):
-            try:
-                return ctypes.cdll.LoadLibrary("liblabjackusb.so")
-            except:
-                try:
-                    return ctypes.cdll.LoadLibrary("liblabjackusb.dylib")
-                except:
-                    raise LabJackException("Could not load labjackusb driver.  " + \
-                                           "Ethernet connectivity availability only.")
-    if(os.name == 'nt'):
-        try:
-            return ctypes.windll.LoadLibrary("labjackud")
-        except:
-            raise LabjackException("Could not load labjackud driver.")
-
-staticLib = _loadLibrary()
-
-
 class LabJackException(Exception):
     """Custom Exception meant for dealing specifically with LabJack Exceptions.
 
@@ -122,7 +100,27 @@ class LabJackException(Exception):
     
     def __str__(self):
           return self.errorString
-          
+
+def _loadLibrary():
+    """_loadLibrary()
+    Returns a ctypes dll pointer to the library.
+    """
+    if(os.name == 'posix'):
+            try:
+                return ctypes.cdll.LoadLibrary("liblabjackusb.so")
+            except:
+                try:
+                    return ctypes.cdll.LoadLibrary("liblabjackusb.dylib")
+                except:
+                    raise LabJackException("Could not load labjackusb driver.  " + \
+                                           "Ethernet connectivity availability only.")
+    if(os.name == 'nt'):
+        try:
+            return ctypes.windll.LoadLibrary("labjackud")
+        except:
+            raise LabJackException("Could not load labjackud driver.")
+
+staticLib = _loadLibrary()
 
 class Device(object):
     """Device(handle, localID = None, serialNumber = None, ipAddress = "", type = None)
@@ -572,6 +570,43 @@ def listAll(deviceType, connectionType = LJ_ctUSB):
     
     WORKS on WINDOWS, MAC, UNIX
     """
+    if deviceType == 12:
+        if U12DriverPresent():
+            u12Driver = ctypes.windll.LoadLibrary("ljackuw")
+            
+            # Setup all the ctype arrays
+            pSerialNumbers = (ctypes.c_long * 127)(0)
+            pIDs = (ctypes.c_long * 127)(0)
+            pProdID = (ctypes.c_long * 127)(0)
+            pPowerList = (ctypes.c_long * 127)(0)
+            pCalMatrix = (ctypes.c_long * 2540)(0)
+            pNumFound = ctypes.c_long()
+            pFcdd = ctypes.c_long(0)
+            pHvc = ctypes.c_long(0)
+            
+            #Output dictionary
+            deviceList = {}
+            
+            ec = u12Driver.ListAll(ctypes.cast(pProdID, ctypes.POINTER(ctypes.c_long)),
+                               ctypes.cast(pSerialNumbers, ctypes.POINTER(ctypes.c_long)),
+                               ctypes.cast(pIDs, ctypes.POINTER(ctypes.c_long)),
+                               ctypes.cast(pPowerList, ctypes.POINTER(ctypes.c_long)),
+                               ctypes.cast(pCalMatrix, ctypes.POINTER(ctypes.c_long)),
+                               ctypes.byref(pNumFound),
+                               ctypes.byref(pFcdd),
+                               ctypes.byref(pHvc))
+
+            if ec != 0: raise LabJackException(ec)
+            for i in range(pNumFound.value):
+                deviceList[pSerialNumbers[i]] = { 'SerialNumber' : pSerialNumbers[i], 'Id' : pIDs[i], 'ProdId' : pProdID[i], 'powerList' : pPowerList[i] }
+                
+            return deviceList
+    
+            
+        else:
+            return {}
+        
+    
     if(os.name == 'nt'):
         pNumFound = ctypes.c_long()
         pSerialNumbers = (ctypes.c_long * 128)()
@@ -607,6 +642,9 @@ def listAll(deviceType, connectionType = LJ_ctUSB):
     
         if deviceType == LJ_dtU3:
             return __listAllU3Unix()
+        
+        if deviceType == 6:
+            return __listAllU6Unix()
 
 def deviceCount(devType = None):
     """Returns the number of devices connected. """
@@ -1776,6 +1814,13 @@ def DriverPresent():
                 return False
             return False
         return False
+        
+def U12DriverPresent():
+    try:
+        ctypes.windll.LoadLibrary("ljackuw")
+        return True
+    except:
+        return False
 
 
 #Windows only
@@ -1962,6 +2007,43 @@ def __listAllU3Unix():
 
     return deviceList
 
+
+def __listAllU6Unix():
+    """ List all for U6's """
+    deviceList = {}
+    numDevices = staticLib.LJUSB_GetDevCount(6)
+
+    for i in range(numDevices):
+        handle = staticLib.LJUSB_OpenDevice(i + 1, 0, 6)
+        
+        if handle == 0:
+            continue
+        
+        device = Device(handle, devType = 6)
+        sndDataBuff = [0] * 26
+        sndDataBuff[1] = 0xf8
+        sndDataBuff[2] = 0x0a
+        sndDataBuff[3] = 0x08
+
+        try:
+            device.write(sndDataBuff)
+            rcvDataBuff = device.read(38)
+        except LabJackException, e:
+            device.close()
+            raise LabJackException("Error in listAllU6")
+
+        serialNumber = struct.pack("<BBBB", *rcvDataBuff[15:19])
+        serialNumber = struct.unpack('<I', serialNumber)[0]
+        localID = rcvDataBuff[21] & 0xff
+        pro = False
+        if rcvDataBuff[37] == 12:
+            pro = True
+        
+        deviceList[serialNumber] = dict(devType = 6, localID = localID, \
+                                        serialNumber = serialNumber, ipAddress = None, Pro=pro)
+        device.close()
+
+    return deviceList
 
 def setChecksum16(buffer):
     total = 0;
