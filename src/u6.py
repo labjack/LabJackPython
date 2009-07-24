@@ -157,6 +157,8 @@ class U6(Device):
         self.calInfo = CalibrationInfo()
         self.productName = "U6"
         self.debug = debug
+        self.streamConfiged = False
+        self.streamStarted = False
 
     def open(self, localId = None, firstFound = True, devNumber = None):
         """
@@ -321,7 +323,7 @@ class U6(Device):
                 sendBuffer += cmd.cmdBytes
                 readLen += cmd.readLen
             elif isinstance(cmd, list):
-                self._buildBuffer(sendBuffer, readLen, cmd)
+                sendBuffer, readLen = self._buildBuffer(sendBuffer, readLen, cmd)
         return (sendBuffer, readLen)
                 
     def _buildFeedbackResults(self, rcvBuffer, commandlist, results, i):
@@ -586,11 +588,16 @@ class U6(Device):
         command[12] = ord(t[0])
         command[13] = ord(t[1])
         for i in range(NumChannels):
-            command[14+i] = ChannelNumbers[i]
-            command[15+i] = ChannelOptions[i]
-            
+            command[14+(i*2)] = ChannelNumbers[i]
+            command[15+(i*2)] = ChannelOptions[i]
+        
+        
         self._writeRead(command, 8, [0xF8, 0x01, 0x11])
         
+        self.streamSamplesPerPacket = SamplesPerPacket
+        self.streamChannelNumbers = ChannelNumbers
+        self.streamChannelOptions = ChannelOptions
+        self.streamConfiged = True
 
     def streamStart(self):
         """
@@ -607,10 +614,18 @@ class U6(Device):
         Args: None
         Desc: Starts streaming on the U6.
         """
+        if not self.streamConfiged:
+            raise LabJackException("Stream must be configured before it can be started.")
+        
+        if self.streamStarted: 
+            raise LabJackException("Stream already started.")
+        
         command = [ 0xA8, 0xA8 ]
-        self._writeRead(command, 4, [], False)
+        self._writeRead(command, 4, [], False, False)
+        
+        self.streamStarted = True
     
-    def streamData(self, numBytesToRead):
+    def streamData(self):
         """
         Dear Friends,
           We at LabJack have tried to improve your life, and ours, by
@@ -621,7 +636,7 @@ class U6(Device):
         Heart,
           LabJack
         
-        Name: U6.streamData(numBytesToRead)
+        Name: U6.streamData()
         Args: See 5.2.14 of the User's Guide.
         Desc: Reads stream data from the U6. This function has to be called
         exceedingly fast to prevent the U6 from overflowing. Read section
@@ -629,7 +644,43 @@ class U6(Device):
         function will do the read, and return it. You are on your own for
         parsing it and checking for errors.
         """
-        return self.read(numBytesToRead, stream = True)
+        while True:
+            if not self.streamStarted:
+                raise LabJackException("Please start streaming before reading.")
+            
+            numBytes = 14 + (self.streamSamplesPerPacket * len(self.streamChannelNumbers))
+        
+            result = self.read(numBytes, stream = True)
+            
+            if len(result) == 0:
+                yield None
+                continue
+            
+            perCentFull = result[-2] * 0.39
+            timestamp = struct.unpack('<I', struct.pack('BBBB', *result[6:10]) )[0]
+            returnDict = { 'TimeStamp' : timestamp, 'PacketCounter' : result[10], 'Samples' : result[12:-2], 'Backlog' : result[-2], 'PerCentFIFOBufferFull' : perCentFull, 'error' : result[11] }
+            
+            for c in self.streamChannelNumbers:
+                returnDict["AIN%s" % c] = []
+            
+            j = 0
+            for i in range(0, len(result[12:-2]), 2):
+                if j >= len(self.streamChannelNumbers):
+                    j = 0
+                
+                if (self.streamChannelOptions[j] >> 7) != 1:
+                    # do signed
+                    value = struct.unpack('<h', struct.pack('BB', *result[(12+i):(i+2+12)]))
+                else:
+                    # do unsigned
+                    value = struct.unpack('<H', struct.pack('BB', *result[(12+i):(i+2+12)]))
+                    
+                returnDict["AIN%s" % self.streamChannelNumbers[j]].append(value[0])
+                
+                j += 1
+                
+            yield returnDict
+
         
     def streamStop(self):
         """
@@ -647,7 +698,7 @@ class U6(Device):
         Desc: Stops streaming on the U6.
         """
         command = [ 0xB0, 0xB0 ]
-        self._writeRead(command, 4, [], False)
+        self._writeRead(command, 4, [], False, False)
         
     def watchdog(self, Write = False, ResetOnTimeout = False, SetDIOStateOnTimeout = False, TimeoutPeriod = 60, DIOState = 0, DIONumber = 0):
         """

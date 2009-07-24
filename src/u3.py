@@ -18,6 +18,8 @@ class U3(Device):
         self.serialNumber = serialNumber
         self.devType = 3
         self.debug = False
+        self.streamConfiged = False
+        self.streamStarted = False
         
     def open(self, firstFound = True, localId = None, devNumber = None):
         """
@@ -288,7 +290,7 @@ class U3(Device):
                 sendBuffer += cmd.cmdBytes
                 readLen += cmd.readLen
             elif isinstance(cmd, list):
-                self._buildBuffer(sendBuffer, readLen, cmd)
+                sendBuffer, readLen = self._buildBuffer(sendBuffer, readLen, cmd)
         return (sendBuffer, readLen)
                 
     def _buildFeedbackResults(self, rcvBuffer, commandlist, results, i):
@@ -549,12 +551,18 @@ class U3(Device):
         command[11] = ord(t[1])
         
         for i in range(NumChannels):
-            command[12+i] = PChannels[i]
-            command[13+i] = NChannels[i]
+            command[12+(i*2)] = PChannels[i]
+            command[13+(i*2)] = NChannels[i]
+        
+        # Have to remember which channels we are sampling from
+        self.streamPosChannels = PChannels
+        self.streamNegChannels = NChannels
         
         self._writeRead(command, 8, [0xF8, 0x01, 0x11])
         
-    def streamStart():
+        self.streamConfiged = True
+        
+    def streamStart(self):
         """
         Dear Friends,
           We at LabJack have tried to improve your life, and ours, by
@@ -571,11 +579,19 @@ class U3(Device):
               to start the stream. See Section 5.2.11 of User's Guide
         Note: Requires U3 hardware version 1.21 or greater.
         """
+        if not self.streamConfiged:
+            raise LabJackException("Stream must be configured before it can be started.")
+        
+        if self.streamStarted: 
+            raise LabJackException("Stream already started.")
+        
         command = [ 0xA8, 0xA8 ]
         
-        self._writeRead(command, 4, [], False)
+        self._writeRead(command, 4, [], False, False)
+        
+        self.streamStarted = True
 
-    def readStreamData(numBytesToRead):
+    def readStreamData(self):
         """
         Dear Friends,
           We at LabJack have tried to improve your life, and ours, by
@@ -586,7 +602,7 @@ class U3(Device):
         Heart,
           LabJack
         
-        Name: U3.readStreamData(numBytesToRead)
+        Name: U3.readStreamData()
         Args: numBytesToRead, Number of bytes to read from the LabJack
         Desc: This will read the stream data from the U3. It has to be called
               exceedingly fast to prevent the U3 from overflowing. Read section
@@ -594,10 +610,43 @@ class U3(Device):
               function will do the read, and return it. You are on your own for
               parsing it and checking for errors.
         """
-        return self.read(numBytesToRead, stream = True)
+        while True:
+            if not self.streamStarted:
+                raise LabJackException("Please start streaming before reading.")
+            
+            numBytes = 14 + (self.samplesPerPacket * len(self.streamPosChannels))
+            
+            result = self.read(numBytes, stream = True)
+            
+            #if result[11] != 0:
+            #    raise LabJackException("StreamData returned error number %s" % result[11])
+            
+            perCentFull = result[-2] * 0.39
+            timestamp = struct.unpack('<I', struct.pack('BBBB', *result[6:10]) )[0]
+            returnDict = { 'TimeStamp' : timestamp, 'PacketCounter' : result[10], 'Samples' : result[12:-2], 'Backlog' : result[-2], 'PerCentFIFOBufferFull' : perCentFull, 'error' : result[11] }
+            
+            for c in self.streamPosChannels:
+                returnDict["AIN%s" % c] = []
+            
+            j = 0
+            for i in range(0, len(result[12:-2]), 2):
+                if j >= len(self.streamPosChannels):
+                    j = 0
+                
+                if self.streamNegChannels[j] != 31:
+                    # do signed
+                    value = struct.unpack('<h', struct.pack('BB', *result[(12+i):(i+2+12)]))
+                else:
+                    # do unsigned
+                    value = struct.unpack('<H', struct.pack('BB', *result[(12+i):(i+2+12)]))
+                    
+                returnDict["AIN%s" % self.streamPosChannels[j]].append(value[0])
+                
+                j += 1
+                
+            yield returnDict
     
-    
-    def streamStop():
+    def streamStop(self):
         """
         Dear Friends,
           We at LabJack have tried to improve your life, and ours, by
@@ -615,7 +664,7 @@ class U3(Device):
         """
         command = [ 0xB0, 0xB0 ]
         
-        self._writeRead(command, 4, [], False)
+        self._writeRead(command, 4, [], False, False)
     
     def watchdog(self, ResetOnTimeout = False, SetDIOStateOnTimeout = False, TimeoutPeriod = 60, DIOState = 0, DIONumber = 0, onlyRead=False):
         """

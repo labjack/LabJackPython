@@ -363,8 +363,8 @@ class Device(object):
         elif results[6] != 0:
             raise LabJackException("Command returned with error number %s" % results[6])
             
-    def _writeRead(self, command, readLen, commandBytes, checkBytes = True):
-        self.write(command)
+    def _writeRead(self, command, readLen, commandBytes, checkBytes = True, checksum = True):
+        self.write(command, checksum = checksum)
         result = self.read(readLen)
         if self.debug: print "Result: ", result
         if checkBytes:
