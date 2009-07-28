@@ -765,7 +765,7 @@ class U6(Device):
         return watchdogStatus
 
     SPIModes = { 'A' : 0, 'B' : 1, 'C' : 2, 'D' : 3 }
-    def spi(SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 0, CLKPinNum = 1, MISOPinNum = 2, MOSIPinNum = 3):
+    def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 0, CLKPinNum = 1, MISOPinNum = 2, MOSIPinNum = 3):
         """
         Name: U6.spi(SPIBytes, AutoCS=True, DisableDirConfig = False, 
                  SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 0, 
@@ -824,7 +824,7 @@ class U6(Device):
         
         command[14:] = SPIBytes
         
-        result = self._writeRead(command, 7+numSPIBytes, [ 0xF8, 1+(numSPIBytes/2), 0x3A ])
+        result = self._writeRead(command, 8+numSPIBytes, [ 0xF8, 1+(numSPIBytes/2), 0x3A ])
         
         return { 'NumSPIBytesTransferred' : result[7], 'SPIBytes' : result[8:] }
     

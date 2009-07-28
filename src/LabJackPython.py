@@ -227,6 +227,8 @@ class Device(object):
                 return [(newA[i] & 0xff) for i in range(readBytes)]
             elif os.name == 'nt':
                 tempBuff = [0] * numBytes
+                if stream:
+                    return eGetRaw(handle, LJ_ioRAW_IN, 1, numBytes, tempBuff)[1]
                 return eGetRaw(handle, LJ_ioRAW_IN, 0, numBytes, tempBuff)[1]
     
     def readRegister(self, addr, numReg = None, format = None):
@@ -363,9 +365,9 @@ class Device(object):
         elif results[6] != 0:
             raise LabJackException("Command returned with error number %s" % results[6])
             
-    def _writeRead(self, command, readLen, commandBytes, checkBytes = True, checksum = True):
+    def _writeRead(self, command, readLen, commandBytes, checkBytes = True, stream=False, checksum = True):
         self.write(command, checksum = checksum)
-        result = self.read(readLen)
+        result = self.read(readLen, stream=False)
         if self.debug: print "Result: ", result
         if checkBytes:
             self._checkCommandBytes(result, commandBytes)
@@ -2114,6 +2116,9 @@ LJ_dtUE9 = 9
 
 LJ_dtU3 = 3
 """Device type for the U3"""
+
+LJ_dtU6 = 6
+"""Device type for the U6"""
 
 # connection types:
 LJ_ctUSB = 1 # UE9 + U3

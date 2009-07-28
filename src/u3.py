@@ -744,7 +744,7 @@ class U3(Device):
         return watchdogStatus
 
     SPIModes = { 'A' : 0, 'B' : 1, 'C' : 2, 'D' : 3 }
-    def spi(SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 4, CLKPinNum = 5, MISOPinNum = 6, MOSIPinNum = 7):
+    def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 4, CLKPinNum = 5, MISOPinNum = 6, MOSIPinNum = 7):
         """
         Name: U3.spi(SPIBytes, AutoCS=True, DisableDirConfig = False,
                      SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 4,
@@ -795,7 +795,7 @@ class U3(Device):
         
         command[14:] = SPIBytes
         
-        result = self._writeRead(command, 7+numSPIBytes, [ 0xF8, 1+(numSPIBytes/2), 0x3A ])
+        result = self._writeRead(command, 8+numSPIBytes, [ 0xF8, 1+(numSPIBytes/2), 0x3A ])
                 
         return result[8:]
         

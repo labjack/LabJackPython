@@ -27,7 +27,7 @@ class UE9(Device):
         """
         self.devType = 9
         self.ipAdress = None
-        self.localId = None
+        self.localID = None
         self.handle = None
         self.debug = False
     
@@ -504,10 +504,485 @@ class UE9(Device):
             dac = (result[6] << 16) + (result[5] << 8) + result[4]
             return { "DAC%s" % result[3] : dac }
     
-    def timerCounter(self):
-        pass
+    def timerCounter(self, TimerClockDivisor=0, UpdateConfig=False, NumTimersEnabled=0, Counter0Enabled=False, Counter1Enabled=False, TimerClockBase=LJ_tcSYS, ResetTimer0=False, ResetTimer1=False, ResetTimer2=False, ResetTimer3=False, ResetTimer4=False, ResetTimer5=False, ResetCounter0=False, ResetCounter1=False, Timer0Mode=None, Timer0Value=None, Timer1Mode=None, Timer1Value=None, Timer2Mode=None, Timer2Value=None, Timer3Mode=None, Timer3Value=None, Timer4Mode=None, Timer4Value=None, Timer5Mode=None, Timer5Value=None):
+        """
+        Name: UE9.timerCounter(TimerClockDivisor=0, UpdateConfig=False, NumTimersEnabled=0, Counter0Enabled=False, Counter1Enabled=True, TimerClockBase=LJ_tcSYS, ResetTimer0=False, ResetTimer1=False, ResetTimer2=False, ResetTimer3=False, ResetTimer4=False, ResetTimer5=False, ResetCounter0=False, ResetCounter1=False, Timer0Mode=None, Timer0Value=None, Timer1Mode=None, Timer1Value=None, Timer2Mode=None, Timer2Value=None, Timer3Mode=None, Timer3Value=None, Timer4Mode=None, Timer4Value=None, Timer5Mode=None, Timer5Value=None)
+        Args: TimerClockDivisor, The timer clock is divided by this value, or divided by 256 if this value is 0. The UpdateConfig bit must be set to change this parameter.
+              UpdateConfig, If true, counters and timers are re-configured by this call. If false, the timer/counter configuration will remain the same
+              NumTimersEnabled, The number of timers enabled
+              TimerClockBase, The determines the timer base clock which is used by all output mode timers. The choices are a fixed 750 kHz clock source, or the system clock. The UE9 is by default in high power mode which means the system clock is fixed at 48 MHz. The UpdateConfig bit must be set to change this parameter.
+              ResetTimer#, Resets the specified timer
+              ResetCounter#, Resets the specified counter
+              Timer#Mode, These values are only updated if the UpdateConfig parameter is True. See section 5.3.5 in the User's Guide for values to pass to configure how a timer operates
+              Timer#Value, Only updates if UpdateReset is True. The meaning of this parameter varies with the timer mode. See Section 2.10 for further information.
+        Desc: Enables, configures, and reads the counters and timers. See section 5.3.5 of the User's Guide for more information
+        >>> dev = UE9()
+        >>> dev.open()
+        >>> dev.timerCounter()
+        {'Counter0Enabled': False, 'Timer5Enabled': False, 'Timer0Enabled': False, 'Timer1': 0, 'Timer4': 0, 'Timer3Enabled': False, 'Timer4Enabled': False, 'Timer5': 0, 'Counter1Enabled': False, 'Timer3': 0, 'Timer2': 0, 'Timer1Enabled': False, 'Timer0': 0, 'Timer2Enabled': False}
+        """
+        command = [ 0 ] * 30
+
+        #command[0] = Checksum8
+        command[1] = 0xF8
+        command[2] = 0x0C
+        command[3] = 0x18
+        #command[4] = Checksum16 (LSB)
+        #command[5] = Checksum16 (MSB)
+        command[6] = TimerClockDivisor
+
+        # Create EnableMask
+        if UpdateConfig:
+            command[7] = 128 | NumTimersEnabled
+            if Counter0Enabled: command[7] = command[7] | 8
+            if Counter1Enabled: command[7] = command[7] | 16
+        else: UpdateConfig = 0
+
+        # Configure clock base
+        command[8] = TimerClockBase
+
+        # Configure UpdateReset
+        if ResetTimer0: command[9] = 1
+        if ResetTimer1: command[9] = command[9] | 2
+        if ResetTimer2: command[9] = command[9] | 4
+        if ResetTimer3: command[9] = command[9] | 8
+        if ResetTimer4: command[9] = command[9] | 16
+        if ResetTimer5: command[9] = command[9] | 32
+        if ResetCounter0: command[9] = command[9] | 64
+        if ResetCounter1: command[9] = command[9] | 128
+
+        # Configure timers and counters if we are updating the configuration
+        if UpdateConfig:
+            if NumTimersEnabled >= 1:
+                if Timer0Mode == None: raise LabJackException("Need to specify a mode for Timer0")
+                if Timer0Value == None: raise LabJackException("Need to specify a value for Timer0")
+                command[10] = Timer0Mode
+                command[11] = Timer0Value & 0xff
+                command[12] = (Timer0Value >> 8) & 0xff
+            if NumTimersEnabled >= 2:
+                if Timer1Mode == None: raise LabJackException("Need to specify a mode for Timer1")
+                if Timer1Value == None: raise LabJackException("Need to specify a value for Timer1")
+                command[13] = Timer1Mode
+                command[14] = Timer1Value & 0xff
+                command[15] = (Timer1Value >> 8) & 0xff
+            if NumTimersEnabled >= 3:
+                if Timer2Mode == None: raise LabJackException("Need to specify a mode for Timer2")
+                if Timer2Value == None: raise LabJackException("Need to specify a value for Timer2")
+                command[16] = Timer2Mode
+                command[17] = Timer2Value & 0xff
+                command[18] = (Timer2Value >> 8) & 0xff
+            if NumTimersEnabled >= 4:
+                if Timer3Mode == None: raise LabJackException("Need to specify a mode for Timer3")
+                if Timer3Value == None: raise LabJackException("Need to specify a value for Timer3")
+                command[19] = Timer3Mode
+                command[20] = Timer3Value & 0xff
+                command[21] = (Timer3Value >> 8) & 0xff
+            if NumTimersEnabled >= 5:
+                if Timer4Mode == None: raise LabJackException("Need to specify a mode for Timer4")
+                if Timer4Value == None: raise LabJackException("Need to specify a value for Timer4")
+                command[22] = Timer4Mode
+                command[23] = Timer4Value & 0xff
+                command[24] = (Timer4Value >> 8) & 0xff
+            if NumTimersEnabled == 6:
+                if Timer5Mode == None: raise LabJackException("Need to specify a mode for Timer5")
+                if Timer5Value == None: raise LabJackException("Need to specify a value for Timer5")
+                command[25] = Timer5Mode
+                command[26] = Timer5Value & 0xff
+                command[27] = (Timer5Value >> 8) & 0xff
+            if NumTimersEnabled > 7: raise LabJackException("Only a maximum of 5 timers can be enabled")
+            command[28] = 0#command[28] = Counter0Mode
+            command[29] = 0#command[29] = Counter1Mode
+
+        result = self._writeRead(command, 40, [ 0xF8, 0x11, 0x18 ])
+
+        # Parse the results
+        returnValue = {}
+        for i in range(0,6):
+            returnValue["Timer" + str(i) + "Enabled"] = result[7] >> i & 1 == 1
+        for i in range(0,2):
+            returnValue["Counter" + str(i) + "Enabled"] = result[7] >> i + 6 & 1 == 1
+        for i in range(0, 6):
+            returnValue["Timer" + str(i)] = unpackInt(result[8+i*4:12+i*4])
+        for i in range(0,2):
+            counterValue = [0]
+            counterValue.extend(result[32+i*4:35+i*4])
+            returnValue["Counter" + str(i)] = unpackInt(counterValue)
+
+        return returnValue
+
+    def readMem(self, BlockNum, ReadCal=False):
+        """
+        Name: UE9.readMem(BlockNum, ReadCal=False)
+        Args: BlockNum, which block to read
+              ReadCal, set to True to read the calibration data
+        Desc: Reads 1 block (128 bytes) from the non-volatile user or 
+              calibration memory. Please read section 5.2.10 of the user's
+              guide before you do something you may regret.
+        
+        >>> myUE9 = UE9()
+        >>> myUE9.open()
+        >>> myUE9.readMem(0)
+        [ < userdata stored in block 0 > ]
+        
+        NOTE: Do not call this function while streaming.
+        """
+        command = [ 0 ] * 8
+        
+        #command[0] = Checksum8
+        command[1] = 0xF8
+        command[2] = 0x01
+        command[3] = 0x2A
+        #command[4] = Checksum16 (LSB)
+        #command[5] = Checksum16 (MSB)
+        command[6] = 0x00
+        command[7] = BlockNum
+        
+        result = self._writeRead(command, 136, [ 0xF8, 0x41, 0x2A ])
+        
+        return result[8:]
+
+    def writeMem(self, BlockNum, Data):
+        """
+        Name: UE9.writeMem(BlockNum, Data, WriteCal=False)
+        Args: BlockNum, which block to write
+              Data, a list of bytes to write
+        Desc: Writes 1 block (128 bytes) from the non-volatile user or 
+              calibration memory. Please read section 5.3.11 of the user's
+              guide before you do something you may regret.
+        
+        >>> myUE9 = UE9()
+        >>> myUE9.open()
+        >>> myUE9.writeMem(0, [ < userdata to be stored in block 0 > ])
+        
+        NOTE: Do not call this function while streaming.
+        """
+        if not isinstance(Data, list):
+            raise LabJackException("Data must be a list of bytes")
+        
+        command = [ 0 ] * 136
+        
+        #command[0] = Checksum8
+        command[1] = 0xF8
+        command[2] = 0x41
+        command[3] = 0x28
+        #command[4] = Checksum16 (LSB)
+        #command[5] = Checksum16 (MSB)
+        command[6] = 0x00
+        command[7] = BlockNum
+        command[8:] = Data
+
+        self._writeRead(command, 8, [0xF8, 0x01, command[3]])
+
+    def eraseMem(self, EraseCal=False):
+        """
+        Name: UE9.eraseMem(EraseCal=False)
+        Args: EraseCal, set to True to erase the calibration memory.
+        Desc: The UE9 uses flash memory that must be erased before writing.
+              Please read section 5.2.12 of the user's guide before you do
+              something you may regret.
+        
+        >>> myUE9 = UE9()
+        >>> myUE9.open()
+        >>> myUE9.eraseMem()
+        
+        NOTE: Do not call this function while streaming.
+        """
+        command = [ 0 ] * 8
+            
+        #command[0] = Checksum8
+        command[1] = 0xF8
+        command[2] = 0x01
+        command[3] = 0x29
+        #command[4] = Checksum16 (LSB)
+        #command[5] = Checksum16 (MSB)
+
+        if EraseCal:
+            command[6] = 0x4C
+            command[7] = 0x4A
+        else:
+            command[6] = 0x00
+            command[7] = 0x00
+        
+        self._writeRead(command, 8, [0xF8, 0x01, command[3]])
+
+    SPIModes = { 'A' : 0, 'B' : 1, 'C' : 2, 'D' : 3 }
+    def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 1, CLKPinNum = 0, MISOPinNum = 3, MOSIPinNum = 2):
+        """
+        Name: UE9.spi(SPIBytes, AutoCS=True, DisableDirConfig = False,
+                     SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 1,
+                     CLKPinNum = 0, MISOPinNum = 3, MOSIPinNum = 2)
+        Args: SPIBytes, a list of bytes to be transferred.
+              See Section 5.3.16 of the user's guide.
+        Desc: Sends and receives serial data using SPI synchronous
+              communication.
+        """
+        print SPIBytes
+        if not isinstance(SPIBytes, list):
+            raise LabJackException("SPIBytes MUST be a list of bytes")
+        
+        numSPIBytes = len(SPIBytes)
+        
+        oddPacket = False
+        if numSPIBytes%2 != 0:
+            SPIBytes.append(0)
+            numSPIBytes = numSPIBytes + 1
+            oddPacket = True
+        
+        command = [ 0 ] * (13 + numSPIBytes)
+        
+        #command[0] = Checksum8
+        command[1] = 0xF8
+        command[2] = 4 + (numSPIBytes/2)
+        command[3] = 0x3A
+        #command[4] = Checksum16 (LSB)
+        #command[5] = Checksum16 (MSB)
+        
+        if AutoCS:
+            command[6] |= (1 << 7)
+        if DisableDirConfig:
+            command[6] |= (1 << 6)
+        
+        command[6] |= ( self.SPIModes[SPIMode] & 3 )
+        
+        command[7] = SPIClockFactor
+        #command[8] = Reserved
+        command[9] = CSPINNum
+        command[10] = CLKPinNum
+        command[11] = MISOPinNum
+        command[12] = MOSIPinNum
+        command[13] = numSPIBytes
+        if oddPacket:
+            command[13] = numSPIBytes - 1
+        
+        command[14:] = SPIBytes
+        
+        result = self._writeRead(command, 8+numSPIBytes, [ 0xF8, 1+(numSPIBytes/2), 0x3A ])
+                
+        return result[8:]
+
+    def asynchConfig(self, Update = True, UARTEnable = True, DesiredBaud  = 9600):
+        """
+        Name: UE9.asynchConfig(Update = True, UARTEnable = True, 
+                              DesiredBaud = 9600)
+        Args: See section 5.3.17 of the User's Guide.
+
+        Desc: Configures the U3 UART for asynchronous communication. 
+        
+        returns a dictionary:
+        {
+            'Update' : True means new parameters were written
+            'UARTEnable' : True means the UART is enabled
+            'BaudFactor' : The baud factor being used
+        }
+        """
+        
+        command = [ 0 ] * 10
+            
+        #command[0] = Checksum8
+        command[1] = 0xF8
+        command[2] = 0x02
+        command[3] = 0x14
+        #command[4] = Checksum16 (LSB)
+        #command[5] = Checksum16 (MSB)
+        #command[6] = 0x00
+        
+        if Update:
+            command[7] |= ( 1 << 7 )
+        if UARTEnable:
+            command[7] |= ( 1 << 6 )
+        
+        BaudFactor = (2**16) - 48000000/(2 * DesiredBaud)
+        t = struct.pack("<H", BaudFactor)
+        command[8] = ord(t[0])
+        command[9] = ord(t[1])
+        
+        result = self._writeRead(command, 10, [0xF8, 0x02, 0x14])
+        
+        returnDict = {}
+        
+        if ( ( result[7] >> 7 ) & 1 ):
+            returnDict['Update'] = True
+        else:
+            returnDict['Update'] = False
+        if ( ( result[7] >> 6 ) & 1):
+            returnDict['UARTEnable'] = True
+        else:
+            returnDict['UARTEnable'] = False
+            
+        returnDict['BaudFactor'] = struct.unpack("<H", struct.pack("BB", *result[8:]))[0]
+
+        return returnDict
+
+    def asynchTX(self, AsynchBytes):
+        """
+        Name: UE9.asynchTX(AsynchBytes)
+        Args: AsynchBytes, must be a list of bytes to transfer.
+        Desc: Sends bytes to the U3 UART which will be sent asynchronously on
+              the transmit line. See section 5.3.18 of the user's guide.
+        
+        returns a dictionary:
+        {
+            'NumAsynchBytesSent' : Number of Asynch Bytes Sent
+            'NumAsynchBytesInRXBuffer' : How many bytes are currently in the
+                                         RX buffer.
+        }
+        """
+        if not isinstance(AsynchBytes, list):
+            raise LabJackException("AsynchBytes must be a list")
+        
+        numBytes = len(AsynchBytes)
+        
+        oddPacket = False
+        if numBytes%2 != 0:
+            AsynchBytes.append(0)
+            numBytes = numBytes+1
+            oddPacket = True
+        
+        command = [ 0 ] * ( 8 + numBytes)
+        
+        #command[0] = Checksum8
+        command[1] = 0xF8
+        command[2] = 1 + ( numBytes/2 )
+        command[3] = 0x15
+        #command[4] = Checksum16 (LSB)
+        #command[5] = Checksum16 (MSB)
+        #command[6] = 0x00
+        command[7] = numBytes
+        if oddPacket:
+            command[7] = numBytes - 1
+        
+        command[8:] = AsynchBytes
+        
+        result = self._writeRead(command, 10, [0xF8, 0x02, 0x15])
+        
+        return { 'NumAsynchBytesSent' : result[7], 'NumAsynchBytesInRXBuffer' : result[8] }
+
+    def asynchRX(self, Flush = False):
+        """
+        Name: UE9.asynchRX(Flush = False)
+        Args: Flush, Set to True to flush
+        Desc: Reads the oldest 32 bytes from the U3 UART RX buffer
+              (received on receive terminal). The buffer holds 256 bytes. See
+              section 5.3.19 of the User's Guide.
+
+        returns a dictonary:
+        {
+            'AsynchBytes' : List of received bytes
+            'NumAsynchBytesInRXBuffer' : Number of AsynchBytes are in the RX
+                                         Buffer.
+        }
+        """
+        command = [ 0 ] * 8
+        
+        #command[0] = Checksum8
+        command[1] = 0xF8
+        command[2] = 0x01
+        command[3] = 0x16
+        #command[4] = Checksum16 (LSB)
+        #command[5] = Checksum16 (MSB)
+        #command[6] = 0x00
+        if Flush:
+            command[7] = 1
+        
+        
+        result = self._writeRead(command, 40, [0xF8, 0x11, 0x16])
+        
+        return { 'AsynchBytes' : result[8:], 'NumAsynchBytesInRXBuffer' : result[7] }
+
+    def i2c(self, Address, I2CBytes, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 1, SCLPinNum = 0, NumI2CBytesToReceive = 0):
+        """
+        Name: UE9.i2c(Address, I2CBytes, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 0, SCLPinNum = 1, NumI2CBytesToReceive = 0, AddressByte = None)
+        Args: Address, the address (not shifted over)
+              I2CBytes, must be a list of bytes to send.
+              See section 5.3.20 of the user's guide.
+              AddressByte, use this if you don't want a shift applied.
+        Desc: Sends and receives serial data using I2C synchronous
+              communication.
+        """
+        if not isinstance(I2CBytes, list):
+            raise LabJackException("I2CBytes must be a list")
+        
+        numBytes = len(I2CBytes)
+        
+        oddPacket = False
+        if numBytes%2 != 0:
+            I2CBytes.append(0)
+            numBytes = numBytes + 1
+            oddPacket = True
+        
+        command = [ 0 ] * (14 + numBytes)
+        
+        #command[0] = Checksum8
+        command[1] = 0xF8
+        command[2] = 4 + (numBytes/2)
+        command[3] = 0x3B
+        #command[4] = Checksum16 (LSB)
+        #command[5] = Checksum16 (MSB)
+        if ResetAtStart:
+            command[6] = (1 << 1)
+        
+        command[7] = SpeedAdjust
+        command[8] = SDAPinNum
+        command[9] = SCLPinNum
+        command[10] = Address << 1
+        command[12] = numBytes
+        if oddPacket:
+            command[12] = numBytes-1
+        command[13] = NumI2CBytesToReceive
+        command[14:] = I2CBytes
+        
+        oddResponse = False
+        if NumI2CBytesToReceive%2 != 0:
+            NumI2CBytesToReceive = NumI2CBytesToReceive+1
+            oddResponse = True
+        
+        result = self._writeRead(command, 12+NumI2CBytesToReceive, [0xF8, (3+(NumI2CBytesToReceive/2)), 0x3B])
+                
+        if len(result) > 12:
+            if oddResponse:
+                return { 'AckArray' : result[8:12], 'I2CBytesRecieved' : result[12:-1] }
+            else:
+                return { 'AckArray' : result[8:12], 'I2CBytesRecieved' : result[12:] }
+        else:
+            return { 'AckArray' : result[8:], 'I2CBytesRecieved' : [] }
     
-    
+    def sht1x(self, DataPinNum = 0, ClockPinNum = 1, SHTOptions = 0xc0):
+        """
+        Name: UE9.sht1x(DataPinNum = 0, ClockPinNum = 1, SHTOptions = 0xc0)
+        Args: DataPinNum, Which pin is the Data line
+              ClockPinNum, Which line is the Clock line
+        SHTOptions (and proof people read documentation):
+            bit 7 = Read Temperature
+            bit 6 = Read Realtive Humidity
+            bit 2 = Heater. 1 = on, 0 = off
+            bit 1 = Reserved at 0
+            bit 0 = Resolution. 1 = 8 bit RH, 12 bit T; 0 = 12 RH, 14 bit T
+        Desc: Reads temperature and humidity from a Sensirion SHT1X sensor.
+              Section 5.3.21 of the User's Guide.
+        """
+        command = [ 0 ] * 10
+        
+        #command[0] = Checksum8
+        command[1] = 0xF8
+        command[2] = 0x02
+        command[3] = 0x39
+        #command[4] = Checksum16 (LSB)
+        #command[5] = Checksum16 (MSB)
+        command[6] = DataPinNum
+        command[7] = ClockPinNum
+        #command[8] = Reserved
+        command[9] = SHTOptions
+        
+        result = self._writeRead(command, 16, [ 0xF8, 0x05, 0x39])
+        
+        val = (result[11]*256) + result[10]
+        temp = -39.60 + 0.01*val
+        
+        val = (result[14]*256) + result[13]
+        humid = -4 + 0.0405*val + -.0000028*(val*val)
+        humid = (temp - 25)*(0.01 + 0.00008*val) + humid
+         
+        return { 'StatusReg' : result[8], 'StatusCRC' : result[9], 'Temperature' : temp, 'TemperatureCRC' : result[12], 'Humidity' : humid, 'HumidityCRC' : result[15] }
     
         
         
