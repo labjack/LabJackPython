@@ -2,7 +2,8 @@
 Name: u3.py
 Desc: Defines a much better U3 class.
 """
-from LabJackPython import * 
+from LabJackPython import *
+import struct
 
 class U3(Device):
     """
@@ -116,8 +117,8 @@ class U3(Device):
         self.firmwareVersion = "%d.%d" % (result[10], result[9])
         self.bootloaderVersion = "%d.%d" % (result[12], result[11])
         self.hardwareVersion = "%d.%d" % (result[14], result[13])
-        self.serialNumber = unpack("<I", pack(">BBBB", *result[15:19]))[0]
-        self.productId = unpack("<H", pack(">BB", *result[19:21]))[0]
+        self.serialNumber = struct.unpack("<I", struct.pack(">BBBB", *result[15:19]))[0]
+        self.productId = struct.unpack("<H", struct.pack(">BB", *result[19:21]))[0]
         self.localId = result[21]
         self.timerCounterMask = result[22]
         self.fioAnalog = result[23]
@@ -148,9 +149,9 @@ class U3(Device):
         
         return { 'FirmwareVersion' : self.firmwareVersion, 'BootloaderVersion' : self.bootloaderVersion, 'HardwareVersion' : self.hardwareVersion, 'SerialNumber' : self.serialNumber, 'ProductID' : self.productId, 'LocalID' : self.localId, 'TimerCounterMask' : self.timerCounterMask, 'FIOAnalog' : self.fioAnalog, 'FIODirection' : self.fioDirection, 'FIOState' : self.fioState, 'EIOAnalog' : self.eioAnalog, 'EIODirection' : self.eioDirection, 'EIOState' : self.eioState, 'CIODirection' : self.cioDirection, 'CIOState' : self.cioState, 'DAC1Enable' : self.dac1Enable, 'DAC0' : self.dac0, 'DAC1' : self.dac1, 'TimerClockConfig' : self.timerClockConfig, 'TimerClockDivisor' : self.timerClockDivisor, 'CompatibilityOptions' : self.compatibilityOptions, 'VersionInfo' : self.versionInfo, 'DeviceName' : self.deviceName }
 
-    def configIO(self, TimerCounterPinOffset = None, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None):
+    def configIO(self, TimerCounterPinOffset = 4, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None):
         """
-        Name: U3.configIO(TimerCounterPinOffset = None, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None)
+        Name: U3.configIO(TimerCounterPinOffset = 4, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None)
         Args: See section 5.2.3 of the user's guide.
         Desc: The configIO command.
         """
@@ -497,23 +498,28 @@ class U3(Device):
         self.write(command)
         result = self.read(4)
 
-    def streamConfig(self, NumChannels = 1, SamplesPerPacket = 25, InternalStreamClockFrequency = 0, DivideClockBy256 = False, Resolution = 0, ScanInterval = 1, PChannels = [30], NChannels = [31]):
-        """
-        Dear Friends,
-          We at LabJack have tried to improve your life, and ours, by
-          implimenting the low-level functions for you. That said, 
-          streaming is a very complex beast with many pitfalls. Please
-          be absolutely sure you know what you're doing before you call
-          any of these low-level streaming functions.
-        Heart,
-          LabJack
-        
-        Name: U3.streamConfig(NumChannels = 1, SamplesPerPacket = 1,
+    def streamConfig(self, NumChannels = 1, SamplesPerPacket = 25, InternalStreamClockFrequency = 0, DivideClockBy256 = False, Resolution = 3, ScanInterval = 1, PChannels = [30], NChannels = [31], SampleFrequency = None):
+        """        
+        Name: U3.streamConfig(NumChannels = 1, SamplesPerPacket = 25,
                               InternalStreamClockFrequency = 0,
-                              DivideClockBy256 = False, Resolution = 0,
+                              DivideClockBy256 = False, Resolution = 3,
                               ScanInterval = 1, PChannels = [30], 
-                              NChannels = [31])
-        Args: See section 5.2.10 of the User's Guide
+                              NChannels = [31], SampleFrequency = None)
+        Args: NumChannels, the number of channels to stream
+              Resolution, the resolution of the samples (0 - 3)
+              PChannels, a list of channel numbers to stream
+              NChannels, a list of channel options bytes
+              
+              Set Either:
+              
+              SampleFrequency, the frequency in Hz to sample
+              
+              -- OR --
+              
+              SamplesPerPacket, how many samples make one packet
+              InternalStreamClockFrequency, 0 = 4 MHz, 1 = 48 MHz
+              DivideClockBy256, True = divide the clock by 256
+              ScanInterval, clock/ScanInterval = frequency.
         Desc: Stream mode operates on a table of channels that are scanned
               at the specified scan rate. Before starting a stream, you need 
               to call this function to configure the table and scan clock.
@@ -526,6 +532,26 @@ class U3(Device):
             raise LabJackException("Length of NChannels didn't match NumChannels")
         if len(PChannels) != len(NChannels):
             raise LabJackException("Length of PChannels didn't match the length of NChannels")
+            
+        if SampleFrequency != None:
+            if SampleFrequency < 1000:
+                if SampleFrequency < 25:
+                    SamplesPerPacket = SampleFrequency
+                DivideClockBy256 = True
+                ScanInterval = 15625/SampleFrequency
+            else:
+                DivideClockBy256 = False
+                ScanInterval = 4000000/SampleFrequency
+        
+        # Force Scan Interval into correct range
+        ScanInterval = min( ScanInterval, 65535 )
+        ScanInterval = int( ScanInterval )
+        ScanInterval = max( ScanInterval, 1 )
+        
+        # Same with Samples per packet
+        SamplesPerPacket = max( SamplesPerPacket, 1)
+        SamplesPerPacket = int( SamplesPerPacket )
+        SamplesPerPacket = min ( SamplesPerPacket, 25)
         
         command = [ 0 ] * ( 12 + (NumChannels * 2) )
         
@@ -539,8 +565,6 @@ class U3(Device):
         command[7] = SamplesPerPacket
         #command[8] = Reserved
         
-        self.samplesPerPacket = SamplesPerPacket
-        
         command[9] |= ( InternalStreamClockFrequency & 0x01 ) << 3
         if DivideClockBy256:
             command[9] |= 1 << 2
@@ -553,118 +577,69 @@ class U3(Device):
         for i in range(NumChannels):
             command[12+(i*2)] = PChannels[i]
             command[13+(i*2)] = NChannels[i]
-        
-        # Have to remember which channels we are sampling from
-        self.streamPosChannels = PChannels
-        self.streamNegChannels = NChannels
-        
+             
         self._writeRead(command, 8, [0xF8, 0x01, 0x11])
         
+        self.streamSamplesPerPacket = SamplesPerPacket
+        self.streamChannelNumbers = PChannels
+        self.streamNegChannels = NChannels
+        
         self.streamConfiged = True
+        if InternalStreamClockFrequency == 1:
+            freq = float(48000000)
+        else:
+            freq = float(4000000)
         
-    def streamStart(self):
+        if DivideClockBy256:
+            freq /= 256
+        
+        freq = freq/ScanInterval
+        
+        self.packetsPerRequest = max(1, int(freq/SamplesPerPacket))
+        self.packetsPerRequest = min(self.packetsPerRequest, 48)
+    
+    def processStreamData(self, result):
         """
-        Dear Friends,
-          We at LabJack have tried to improve your life, and ours, by
-          implimenting the low-level functions for you. That said, 
-          streaming is a very complex beast with many pitfalls. Please
-          be absolutely sure you know what you're doing before you call
-          any of these low-level streaming functions.
-        Heart,
-          LabJack
-        
-        Name: U3.streamStart()
-        Args: None
-        Desc: Once the stream settings are configured, this function is called
-              to start the stream. See Section 5.2.11 of User's Guide
-        Note: Requires U3 hardware version 1.21 or greater.
+        Name: U3.processStreamData(result)
+        Args: result, the string returned from streamData()
+        Desc: Breaks stream data into individual channels and applies
+              calibrations.
+              
+        >>> reading = d.streamData(convert = False)
+        >>> print proccessStreamData(reading['result'])
+        defaultDict(list, {'AIN0' : [3.123, 3.231, 3.232, ...]})
         """
-        if not self.streamConfiged:
-            raise LabJackException("Stream must be configured before it can be started.")
+        numBytes = 14 + (self.streamSamplesPerPacket * len(self.streamChannelNumbers) * 2)
+        numPackets = len(result) // numBytes
         
-        if self.streamStarted: 
-            raise LabJackException("Stream already started.")
-        
-        command = [ 0xA8, 0xA8 ]
-        
-        self._writeRead(command, 4, [], False, False)
-        
-        self.streamStarted = True
-
-    def readStreamData(self):
-        """
-        Dear Friends,
-          We at LabJack have tried to improve your life, and ours, by
-          implimenting the low-level functions for you. That said, 
-          streaming is a very complex beast with many pitfalls. Please
-          be absolutely sure you know what you're doing before you call
-          any of these low-level streaming functions.
-        Heart,
-          LabJack
-        
-        Name: U3.readStreamData()
-        Args: numBytesToRead, Number of bytes to read from the LabJack
-        Desc: This will read the stream data from the U3. It has to be called
-              exceedingly fast to prevent the U3 from overflowing. Read section
-              5.2.12 of the User's Guide, and make sure you understand it. This
-              function will do the read, and return it. You are on your own for
-              parsing it and checking for errors.
-        """
-        while True:
-            if not self.streamStarted:
-                raise LabJackException("Please start streaming before reading.")
-            
-            numBytes = 14 + (self.samplesPerPacket * len(self.streamPosChannels))
-            
-            result = self.read(numBytes, stream = True)
-            
-            #if result[11] != 0:
-            #    raise LabJackException("StreamData returned error number %s" % result[11])
-            
-            perCentFull = result[-2] * 0.39
-            timestamp = struct.unpack('<I', struct.pack('BBBB', *result[6:10]) )[0]
-            returnDict = { 'TimeStamp' : timestamp, 'PacketCounter' : result[10], 'Samples' : result[12:-2], 'Backlog' : result[-2], 'PerCentFIFOBufferFull' : perCentFull, 'error' : result[11] }
-            
-            for c in self.streamPosChannels:
-                returnDict["AIN%s" % c] = []
-            
-            j = 0
-            for i in range(0, len(result[12:-2]), 2):
-                if j >= len(self.streamPosChannels):
+        returnDict = collections.defaultdict(list)
+                
+        j = 0
+        for packet in self.breakupPackets(result, numBytes):
+            for sample in self.samplesFromPacket(packet):
+                if j >= len(self.streamChannelNumbers):
                     j = 0
                 
                 if self.streamNegChannels[j] != 31:
                     # do signed
-                    value = struct.unpack('<h', struct.pack('BB', *result[(12+i):(i+2+12)]))
+                    value = struct.unpack('<h', sample )[0]
+                    singleEnded = False
                 else:
                     # do unsigned
-                    value = struct.unpack('<H', struct.pack('BB', *result[(12+i):(i+2+12)]))
-                    
-                returnDict["AIN%s" % self.streamPosChannels[j]].append(value[0])
+                    value = struct.unpack('<H', sample )[0]
+                    singleEnded = True
                 
+                lvChannel = True
+                if self.deviceName.lower().endswith('hv') and self.streamChannelNumbers[j] < 4:
+                    lvChannel = False
+               
+                value = self.binaryToCalibratedAnalogVoltage(value, isLowVoltage = lvChannel, isSingleEnded = singleEnded)
+                
+                returnDict["AIN%s" % self.streamChannelNumbers[j]].append(value)
+            
                 j += 1
-                
-            yield returnDict
-    
-    def streamStop(self):
-        """
-        Dear Friends,
-          We at LabJack have tried to improve your life, and ours, by
-          implimenting the low-level functions for you. That said, 
-          streaming is a very complex beast with many pitfalls. Please
-          be absolutely sure you know what you're doing before you call
-          any of these low-level streaming functions.
-        Heart,
-          LabJack
-        
-        Name: U3.streamStop()
-        Args: None
-        Desc: Stops the stream. See section 5.2.13 of the User's Guide.
-        Note: Requires U3 hardware version 1.21 or greater.
-        """
-        command = [ 0xB0, 0xB0 ]
-        
-        self._writeRead(command, 4, [], False, False)
+
+        return returnDict
     
     def watchdog(self, ResetOnTimeout = False, SetDIOStateOnTimeout = False, TimeoutPeriod = 60, DIOState = 0, DIONumber = 0, onlyRead=False):
         """
@@ -1059,6 +1034,26 @@ class U3(Device):
         humid = (temp - 25)*(0.01 + 0.00008*val) + humid
         
         return { 'StatusReg' : result[8], 'StatusRegCRC' : result[9], 'Temperature' : temp, 'TemperatureCRC' : result[12] , 'Humidity' : humid, 'HumidityCRC' : result[15] }
+        
+    def binaryToCalibratedAnalogVoltage(self, bits, isLowVoltage = True, isSingleEnded = False, isSpecialSetting = False):
+        """
+        TODO: Apply real calibration constants, not just nominal.
+        """
+        if isLowVoltage:
+            if isSingleEnded and not isSpecialSetting:
+                return ( bits * 0.000037231 ) + 0
+            elif isSingleEnded and isSpecialSetting:
+                return (float(bits)/65536)*3.6
+            else:
+                return (float(bits)/65536)*4.88 - 2.44
+        else:
+            if isSingleEnded and not isSpecialSetting:
+                return ( bits * 0.000314 ) + -10.3
+            elif isSingleEnded and isSpecialSetting:
+                return (float(bits)/65536)*30.4
+            else:
+                raise Exception, "Can't do differential on high voltage channels"
+        
 
 class FeedbackCommand(object):
     readLen = 0

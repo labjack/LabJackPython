@@ -56,14 +56,13 @@ Version History
         - Performed many other minor revisions.
 """
 
+import collections
 import ctypes
 import os
 import struct
 from decimal import Decimal
 import socket
 import Modbus
-
-from struct import pack, unpack
 
 __version = "0.7.0"
 
@@ -141,6 +140,8 @@ class Device(object):
         self.ipAddress = ipAddress
         self.devType = devType
         self.debug = False
+        self.streamConfiged = False
+        self.streamStarted = False
 
     def write(self, writeBuffer, modbus = False, checksum = True):
         """write([writeBuffer], modbus = False)
@@ -222,9 +223,12 @@ class Device(object):
                 
                 if(stream):
                     readBytes = staticLib.LJUSB_BulkRead(handle, 4, ctypes.byref(newA), numBytes)
+                    if readBytes == 0:
+                        return ''
+                    return struct.pack('b' * readBytes, *newA) # return the byte string in stream mode
                 else:
                     readBytes = staticLib.LJUSB_BulkRead(handle, 2, ctypes.byref(newA), numBytes)
-                return [(newA[i] & 0xff) for i in range(readBytes)]
+                    return [(newA[i] & 0xff) for i in range(readBytes)] # return a list of integers in command/response mode
             elif os.name == 'nt':
                 tempBuff = [0] * numBytes
                 if stream:
@@ -259,8 +263,7 @@ class Device(object):
         if self.debug: print "Response is: ", response
         
         packFormat = ">" + "B" * numBytes
-        from struct import pack
-        response = pack(packFormat, *response)
+        response = struct.pack(packFormat, *response)
         
         if format == None and numReg == 2:
             format = '>f'
@@ -309,8 +312,8 @@ class Device(object):
     def writeFloatToRegister(self, addr, value):
         numReg = 2
         # Function, Address, Num Regs, Byte count, Data
-        payload = pack('>BHHBf', 0x10, addr, 0x02, 0x04, value)
-        request = pack('>HHHB', 0, 0, len(payload)+1, 0xff) + payload
+        payload = struct.pack('>BHHBf', 0x10, addr, 0x02, 0x04, value)
+        request = struct.pack('>HHHB', 0, 0, len(payload)+1, 0xff) + payload
         request = [ ord(c) for c in request ]
         if self.debug: print "Request is: ", request
         numBytes = 14
@@ -494,6 +497,120 @@ class Device(object):
                     raise LabJackException(0, "Unable to reset labJack 2")
             except Exception, e:
                 raise LabJackException(0, "Unable to reset labjack: %s" % str(e))
+
+    def breakupPackets(self, packets, numBytesPerPacket):
+        """
+        Name: Device.breakupPackets
+        Args: packets, a string or list of packets
+              numBytesPerPacket, how big each packe is
+        Desc: This function will break up a list into smaller chunks and return
+              each chunk one at a time.
+        
+        >>> l = range(15)
+        >>> for packet in d.breakupPackets(l, 5):
+        ...     print packet
+        [ 0, 1, 2, 3, 4 ]
+        [ 5, 6, 7, 8, 9 ]
+        [ 10, 11, 12, 13, 14]
+        
+        """
+        start, end = 0, numBytesPerPacket
+        while end <= len(packets):
+            yield packets[start:end]
+            start, end = end, end + numBytesPerPacket
+
+    def samplesFromPacket(self, packet):
+        """
+        Name: Device.samplesFromPacket
+        Args: packet, a packet of stream data
+        Desc: This function breaks a packet into all the two byte samples it
+              contains and returns them one at a time.
+        
+        >>> packet = range(16) # fake packet with 1 sample in it
+        >>> for sample in d.samplesFromPacket(packet):
+        ...     print sample
+        [ 12, 13 ]
+        """
+        HEADER_SIZE = 12
+        FOOTER_SIZE = 2
+        BYTES_PER_PACKET = 2
+        l = str(packet)
+        l = l[HEADER_SIZE:]
+        l = l[:-FOOTER_SIZE]
+        while len(l) > 0:
+            yield l[:BYTES_PER_PACKET]
+            l = l[BYTES_PER_PACKET:]
+            
+    def streamStart(self):
+        """
+        Name: Device.streamStart()
+        Args: None
+        Desc: Starts streaming on the device.
+        Note: You must call streamConfig() before calling this function.
+        """
+        if not self.streamConfiged:
+            raise LabJackException("Stream must be configured before it can be started.")
+        
+        if self.streamStarted: 
+            raise LabJackException("Stream already started.")
+        
+        command = [ 0xA8, 0xA8 ]
+        self._writeRead(command, 4, [], False, False, False)
+        
+        self.streamStarted = True
+    
+    def streamData(self, convert=True):
+        """       
+        Name: Device.streamData()
+        Args: convert, should the packets be converted as they are read.
+                       set to False to get much faster speeds, but you will 
+                       have to process the results later.
+        Desc: Reads stream data from a LabJack device. See our stream example
+              to get an idea of how this function should be called.
+        Note: You must start the stream by calling streamStart() before calling
+              this function.
+        """
+        if not self.streamStarted:
+            raise LabJackException("Please start streaming before reading.")
+
+        numBytes = 14 + (self.streamSamplesPerPacket * len(self.streamChannelNumbers) * 2)
+
+        while True:
+        
+            result = self.read(numBytes * self.packetsPerRequest, stream = True)
+            
+            if len(result) == 0:
+                yield None
+                continue
+
+            numPackets = len(result) // numBytes
+
+            errors = 0
+            missed = 0
+            for i in range(numPackets):
+                e = ord(result[11+(i*numBytes)])
+                if e != 0:
+                    errors += 1
+                    if self.debug and e != 60 and e != 59: print e
+                    if e == 60:
+                        missed += struct.unpack('<I', result[6+(i*numBytes):10+(i*numBytes)] )[0]
+            
+            returnDict = dict(numPackets = numPackets, result = result, errors = errors, missed = missed )
+            
+            if convert:
+                returnDict.update(self.processStreamData(result))
+            
+            yield returnDict
+    
+    def streamStop(self):
+        """
+        Name: Device.streamStop()
+        Args: None
+        Desc: Stops streaming on the device.
+        """
+        command = [ 0xB0, 0xB0 ]
+        self._writeRead(command, 4, [], False, False, False)
+        self.streamStarted = False
 
 
 

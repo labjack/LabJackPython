@@ -16,7 +16,7 @@ def toDouble(buffer):
         bufferStr = buffer[:8]
     else:
         bufferStr = ''.join(chr(x) for x in buffer[:8])
-    dec, wh = struct.unpack('Ii', bufferStr)
+    dec, wh = struct.unpack('<Ii', bufferStr)
     return float(wh) + float(dec)/2**32
 
 def dumpPacket(buffer):
@@ -128,9 +128,12 @@ class CalibrationInfo(object):
         self.proAin100mvCenter = 33523.0
         self.proAin10mvNegSlope = -3.15805800 * (10 ** -7)
         self.proAin10mvCenter = 33523.0
+    
+    def __str__(self):
+        return str(self.__dict__)
 
 class U6(Device):
-    """ A python class that represents a U6 """
+    """ A Python class that represents a U6 """
     def __init__(self, debug = False):
         """
         Name: U6.__init__(self, debug = False)
@@ -157,8 +160,6 @@ class U6(Device):
         self.calInfo = CalibrationInfo()
         self.productName = "U6"
         self.debug = debug
-        self.streamConfiged = False
-        self.streamStarted = False
 
     def open(self, localId = None, firstFound = True, devNumber = None):
         """
@@ -544,30 +545,60 @@ class U6(Device):
         
         return result[8:]
     
-    def streamConfig(self, NumChannels = 1, ResolutionIndex = 0, SamplesPerPacket = 25, SettlingFactor = 0, InternalStreamClockFrequency = 0, DivideClockBy256 = False, ScanInterval = 1, ChannelNumbers = [0], ChannelOptions = [0]):
+    def streamConfig(self, NumChannels = 1, ResolutionIndex = 0, SamplesPerPacket = 25, SettlingFactor = 0, InternalStreamClockFrequency = 0, DivideClockBy256 = False, ScanInterval = 1, ChannelNumbers = [0], ChannelOptions = [0], SampleFrequency = None):
         """
-        Dear Friends,
-          We at LabJack have tried to improve your life, and ours, by
-          implimenting the low-level functions for you. That said, 
-          streaming is a very complex beast with many pitfalls. Please
-          be absolutely sure you know what you're doing before you call
-          any of these low-level streaming functions.
-        Heart,
-          LabJack
-        
         Name: U6.streamConfig(
                  NumChannels = 1, ResolutionIndex = 0,
                  SamplesPerPacket = 25, SettlingFactor = 0,
                  InternalStreamClockFrequency = 0, DivideClockBy256 = False,
                  ScanInterval = 1, ChannelNumbers = [0],
-                 ChannelOptions = [0] )
-        Args: See 5.2.12 of the User's Guide.
-        Desc: Configures streaming on the U6.
+                 ChannelOptions = [0], SampleFrequency = None )
+        Args: NumChannels, the number of channels to stream
+              ResolutionIndex, the resolution of the samples
+              SettlingFactor, the settling factor to be used
+              ChannelNumbers, a list of channel numbers to stream
+              ChannelOptions, a list of channel options bytes
+              
+              Set Either:
+              
+              SampleFrequency, the frequency in Hz to sample
+              
+              -- OR --
+              
+              SamplesPerPacket, how many samples make one packet
+              InternalStreamClockFrequency, 0 = 4 MHz, 1 = 48 MHz
+              DivideClockBy256, True = divide the clock by 256
+              ScanInterval, clock/ScanInterval = frequency.
+        Desc: Configures streaming on the U6. On a decent machine, you can
+              expect to stream a range of 0.238 Hz to 15 Hz. Without the
+              conversion, you can get up to 55 Hz.
+        
         """
         if NumChannels != len(ChannelNumbers) or NumChannels != len(ChannelOptions):
             raise LabJackException("NumChannels must match length of ChannelNumbers and ChannelOptions")
         if len(ChannelNumbers) != len(ChannelOptions):
             raise LabJackException("len(ChannelNumbers) doesn't match len(ChannelOptions)")
+            
+            
+        if SampleFrequency != None:
+            if SampleFrequency < 1000:
+                if SampleFrequency < 25:
+                    SamplesPerPacket = SampleFrequency
+                DivideClockBy256 = True
+                ScanInterval = 15625/SampleFrequency
+            else:
+                DivideClockBy256 = False
+                ScanInterval = 4000000/SampleFrequency
+        
+        # Force Scan Interval into correct range
+        ScanInterval = min( ScanInterval, 65535 )
+        ScanInterval = int( ScanInterval )
+        ScanInterval = max( ScanInterval, 1 )
+        
+        # Same with Samples per packet
+        SamplesPerPacket = max( SamplesPerPacket, 1)
+        SamplesPerPacket = int( SamplesPerPacket )
+        SamplesPerPacket = min ( SamplesPerPacket, 25)
         
         command = [ 0 ] * (14 + NumChannels*2)
         #command[0] = Checksum8
@@ -594,111 +625,62 @@ class U6(Device):
         
         self._writeRead(command, 8, [0xF8, 0x01, 0x11])
         
+        # Set up the variables for future use.
         self.streamSamplesPerPacket = SamplesPerPacket
         self.streamChannelNumbers = ChannelNumbers
         self.streamChannelOptions = ChannelOptions
         self.streamConfiged = True
-
-    def streamStart(self):
-        """
-        Dear Friends,
-          We at LabJack have tried to improve your life, and ours, by
-          implimenting the low-level functions for you. That said, 
-          streaming is a very complex beast with many pitfalls. Please
-          be absolutely sure you know what you're doing before you call
-          any of these low-level streaming functions.
-        Heart,
-          LabJack
         
-        Name: U6.streamStart()
-        Args: None
-        Desc: Starts streaming on the U6.
-        """
-        if not self.streamConfiged:
-            raise LabJackException("Stream must be configured before it can be started.")
+        if InternalStreamClockFrequency == 1:
+            freq = float(48000000)
+        else:
+            freq = float(4000000)
         
-        if self.streamStarted: 
-            raise LabJackException("Stream already started.")
+        if DivideClockBy256:
+            freq /= 256
         
-        command = [ 0xA8, 0xA8 ]
-        self._writeRead(command, 4, [], False, False)
+        freq = freq/ScanInterval
         
-        self.streamStarted = True
+        self.packetsPerRequest = max(1, int(freq/SamplesPerPacket))
+        self.packetsPerRequest = min(self.packetsPerRequest, 48)
     
-    def streamData(self):
+    def processStreamData(self, result):
         """
-        Dear Friends,
-          We at LabJack have tried to improve your life, and ours, by
-          implimenting the low-level functions for you. That said, 
-          streaming is a very complex beast with many pitfalls. Please
-          be absolutely sure you know what you're doing before you call
-          any of these low-level streaming functions.
-        Heart,
-          LabJack
-        
-        Name: U6.streamData()
-        Args: See 5.2.14 of the User's Guide.
-        Desc: Reads stream data from the U6. This function has to be called
-        exceedingly fast to prevent the U6 from overflowing. Read section
-        5.2.12 of the user's guide, and make sure you understand it. This
-        function will do the read, and return it. You are on your own for
-        parsing it and checking for errors.
+        Name: U6.processStreamData(result)
+        Args: result, the string returned from streamData()
+        Desc: Breaks stream data into individual channels and applies
+              calibrations.
+              
+        >>> reading = d.streamData(convert = False)
+        >>> print proccessStreamData(reading['result'])
+        defaultDict(list, {'AIN0' : [3.123, 3.231, 3.232, ...]})
         """
-        while True:
-            if not self.streamStarted:
-                raise LabJackException("Please start streaming before reading.")
-            
-            numBytes = 14 + (self.streamSamplesPerPacket * len(self.streamChannelNumbers))
+        numBytes = 14 + (self.streamSamplesPerPacket * len(self.streamChannelNumbers) * 2)
+        numPackets = len(result) // numBytes
         
-            result = self.read(numBytes, stream = True)
-            
-            if len(result) == 0:
-                yield None
-                continue
-            
-            perCentFull = result[-2] * 0.39
-            timestamp = struct.unpack('<I', struct.pack('BBBB', *result[6:10]) )[0]
-            returnDict = { 'TimeStamp' : timestamp, 'PacketCounter' : result[10], 'Samples' : result[12:-2], 'Backlog' : result[-2], 'PerCentFIFOBufferFull' : perCentFull, 'error' : result[11] }
-            
-            for c in self.streamChannelNumbers:
-                returnDict["AIN%s" % c] = []
-            
-            j = 0
-            for i in range(0, len(result[12:-2]), 2):
+        returnDict = collections.defaultdict(list)
+                
+        j = 0
+        for packet in self.breakupPackets(result, numBytes):
+            for sample in self.samplesFromPacket(packet):
                 if j >= len(self.streamChannelNumbers):
                     j = 0
                 
-                if (self.streamChannelOptions[j] >> 7) != 1:
+                if (self.streamChannelOptions[j] >> 7) == 1:
                     # do signed
-                    value = struct.unpack('<h', struct.pack('BB', *result[(12+i):(i+2+12)]))
+                    value = struct.unpack('<h', sample )[0]
                 else:
                     # do unsigned
-                    value = struct.unpack('<H', struct.pack('BB', *result[(12+i):(i+2+12)]))
-                    
-                returnDict["AIN%s" % self.streamChannelNumbers[j]].append(value[0])
+                    value = struct.unpack('<H', sample )[0]
                 
+                gainIndex = (self.streamChannelOptions[j] >> 4) & 0x3
+                value = self.binaryToCalibratedAnalogVoltage(gainIndex, value, is16Bits=True)
+                
+                returnDict["AIN%s" % self.streamChannelNumbers[j]].append(value)
+            
                 j += 1
-                
-            yield returnDict
 
-        
-    def streamStop(self):
-        """
-        Dear Friends,
-          We at LabJack have tried to improve your life, and ours, by
-          implimenting the low-level functions for you. That said, 
-          streaming is a very complex beast with many pitfalls. Please
-          be absolutely sure you know what you're doing before you call
-          any of these low-level streaming functions.
-        Heart,
-          LabJack
-        
-        Name: U6.streamStop()
-        Args: None
-        Desc: Stops streaming on the U6.
-        """
-        command = [ 0xB0, 0xB0 ]
-        self._writeRead(command, 4, [], False, False)
+        return returnDict
         
     def watchdog(self, Write = False, ResetOnTimeout = False, SetDIOStateOnTimeout = False, TimeoutPeriod = 60, DIOState = 0, DIONumber = 0):
         """
@@ -1025,8 +1007,8 @@ class U6(Device):
         sendBuffer[3] = 0x2D  #  extended command number
         sendBuffer[6] = 0x00
         sendBuffer[7] = n     # Blocknum = 0
-        self.Write(sendBuffer)
-        buff = self.Read(40)
+        self.write(sendBuffer)
+        buff = self.read(40)
         return buff[8:]
 
     def getCalibrationData(self):
@@ -1146,15 +1128,19 @@ class U6(Device):
             self.calInfo.proAinNegSlope = [ self.calInfo.proAin10vNegSlope, self.calInfo.proAin1vNegSlope, self.calInfo.proAin100mvNegSlope, self.calInfo.proAin10mvNegSlope ]
             self.calInfo.proAinCenter = [ self.calInfo.proAin10vCenter, self.calInfo.proAin1vCenter, self.calInfo.proAin100mvCenter, self.calInfo.proAin10mvCenter ]
 
-    def binaryToCalibratedAnalogVoltage(self, gainIndex, bytesVoltage):
+    def binaryToCalibratedAnalogVoltage(self, gainIndex, bytesVoltage, is16Bits=False):
         """
-        Name: binaryToCalibratedAnalogVoltage(gainIndex, bytesVoltage)
+        Name: binaryToCalibratedAnalogVoltage(gainIndex, bytesVoltage, is16Bits = False)
         Args: gainIndex, which gain did you use?
               bytesVoltage, bytes returned from the U6
+              is16bits, set to True if bytesVolotage is 16 bits (not 24)
         Desc: Converts binary voltage to an analog value.
         
         """
-        bits = float(bytesVoltage)/256
+        if not is16Bits:
+            bits = float(bytesVoltage)/256
+        else:
+            bits = float(bytesVoltage)
         
         center = self.calInfo.ainCenter[gainIndex]
         negSlope = self.calInfo.ainNegSlope[gainIndex]
@@ -1225,7 +1211,7 @@ class U6(Device):
         299.87723471224308
         """
         result = self.getFeedback(AIN24AR(14))
-        return self.binaryToCalibratedAnalogTemperature(result[0]['value'])
+        return self.binaryToCalibratedAnalogTemperature(result[0]['AIN'])
         
     def getAIN(self, positiveChannel, resolutionIndex = 0, gainIndex = 15, settlingFactor = 0, differential = False):
         """
@@ -1238,7 +1224,7 @@ class U6(Device):
         """
         result = self.getFeedback(AIN24AR(positiveChannel, resolutionIndex, gainIndex, settlingFactor, differential))
         
-        return self.binaryToCalibratedAnalogVoltage(result[0]['gainIndex'], result[0]['value'])
+        return self.binaryToCalibratedAnalogVoltage(result[0]['GainIndex'], result[0]['AIN'])
 
 
 class FeedbackCommand(object):
