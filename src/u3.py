@@ -281,10 +281,14 @@ class U3(Device):
               quickSample, set to True for quickSample
         Desc: A convenience function to read an AIN. 
         
-        TODO: Apply conversions.
         """
-        return self.getFeedback(AIN(posChannel, negChannel, longSettle, quickSample))[0]
-
+        if negChannel == 32:
+            value = self.getFeedback(AIN(posChannel, 30, longSettle, quickSample))[0]
+        else:
+            value = self.getFeedback(AIN(posChannel, negChannel, longSettle, quickSample))[0]
+        return self.binaryToCalibratedAnalogVoltage(value,
+                                                    isLowVoltage = (self.deviceName.lower().endswith('lv') or posChannel > 3),
+                                                    isSingleEnded = (negChannel==31 or negChannel==32), isSpecialSetting = (negChannel==32))
     def _buildBuffer(self, sendBuffer, readLen, commandlist):
         for cmd in commandlist:
             if isinstance(cmd, FeedbackCommand):
@@ -1043,7 +1047,7 @@ class U3(Device):
             if isSingleEnded and not isSpecialSetting:
                 return ( bits * 0.000037231 ) + 0
             elif isSingleEnded and isSpecialSetting:
-                return (float(bits)/65536)*3.6
+                return ( bits * 0.000074463 ) + 0
             else:
                 return (float(bits)/65536)*4.88 - 2.44
         else:
@@ -1072,7 +1076,7 @@ class AIN(FeedbackCommand):
     '''
     def __init__(self, PositiveChannel, NegativeChannel, 
             longSettle=False, quickSample=False):
-        validChannels = range(16) + [30, 31]
+        validChannels = range(16) + [30, 31, 32]
         if PositiveChannel not in validChannels:
             raise Exception("Invalid Positive Channel specified")
         if NegativeChannel not in validChannels:
@@ -1085,12 +1089,7 @@ class AIN(FeedbackCommand):
     readLen =  2
 
     def handle(self, input):
-        if input[1] & 0x80:
-            # sign bit is set
-            result = - (((input[1] & 0x7F) << 8) + input[0])
-        else:
-            result = (input[1] << 8) + input[0]
-        return result
+        return (input[1] << 8) + input[0]
 
 class WaitShort(FeedbackCommand):
     '''
