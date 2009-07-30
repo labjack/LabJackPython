@@ -283,7 +283,7 @@ class U3(Device):
         
         TODO: Apply conversions.
         """
-        return self.getFeedback(AIN(posChannel, negChannel, logSettle, quickSample))[0]
+        return self.getFeedback(AIN(posChannel, negChannel, longSettle, quickSample))[0]
 
     def _buildBuffer(self, sendBuffer, readLen, commandlist):
         for cmd in commandlist:
