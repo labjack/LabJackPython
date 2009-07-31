@@ -24,6 +24,7 @@ class MainWindow:
     """
 
     FONT_SIZE = 10
+    FIO_PIN_STATE = 0 # for u3
     FONT = "Arial"
 
     def __init__(self):
@@ -92,6 +93,9 @@ class MainWindow:
             self.serialDisplay.config(text=self.device.serialNumber)
             #if self.deviceSelection.get() == "U6" or self.deviceSelection.get() == "U3": self.device.setToFactoryDefaults()
 
+            #if len(LabJackPython.listAll(3)) > 0:
+            #    print MainWindow.FIO_PIN_STATE
+            #    self.device.configU3(FIOAnalog = MainWindow.FIO_PIN_STATE)
             # Create and start the thread
             self.thread = EI1050Reader(self.device, self.targetQueue)
 

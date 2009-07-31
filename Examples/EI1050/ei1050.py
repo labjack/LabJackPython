@@ -29,6 +29,7 @@ class EI1050:
     UE9_DEFAULT_DATA_PIN_NUM = 0
     UE9_DEFAULT_CLOCK_PIN_NUM = 1
     UE9_DEFAULT_ENABLE_PIN_NUM = 3
+    FIO_PIN_STATE = 0
     
     def __init__(self, device, autoUpdate=True, enablePinNum=-1, dataPinNum = -1, clockPinNum = -1, shtOptions = 0xc0):
         self.device = device
@@ -70,6 +71,10 @@ class EI1050:
             else:
                 raise TypeError('Invalid device passed. Can not get default values.')
 
+        # Set U3 pins
+        if self.deviceType == EI1050.U3:
+            self.device.configIO(FIOAnalog = EI1050.FIO_PIN_STATE)
+        
         # Set to write out
         if self.deviceType == EI1050.U3: self.device.getFeedback(u3.BitDirWrite(self.enablePinNum,1))
         elif self.deviceType == EI1050.U6: self.device.getFeedback(u6.BitDirWrite(self.enablePinNum,1))
@@ -151,7 +156,7 @@ class EI1050:
         """
         self.writeBitState(self.enablePinNum,1) # Enable the probe
         self.curState = self.device.sht1x(self.dataPinNum, self.clockPinNum, self.shtOptions)
-        self.writeBitState(self.enablePinNum,0) # Enable the probe
+        self.writeBitState(self.enablePinNum,0) # Disable the probe
          
     def writeBitState(self, pinNum, state):
         """
