@@ -161,7 +161,7 @@ class U6(Device):
         self.productName = "U6"
         self.debug = debug
 
-    def open(self, localId = None, firstFound = True, devNumber = None):
+    def open(self, localId = None, firstFound = True, devNumber = None, handleOnly = False):
         """
         Name: U6.open(localId = None, firstFound = True)
         Args: firstFound, use the first found U6?
@@ -171,7 +171,7 @@ class U6(Device):
         >>> myU6 = U6()
         >>> myU6.openU6()
         """
-        Device.open(self, 6, firstFound = firstFound, localId = localId, devNumber = devNumber )
+        Device.open(self, 6, firstFound = firstFound, localId = localId, devNumber = devNumber, handleOnly = handleOnly )
     
     def configU6(self, LocalID = None):
         """

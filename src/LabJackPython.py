@@ -402,9 +402,9 @@ class Device(object):
             return False
         
 
-    def open(self, devType, Ethernet=False, firstFound = True, localId = None, devNumber = None, ipAddress = None):
+    def open(self, devType, Ethernet=False, firstFound = True, localId = None, devNumber = None, ipAddress = None, handleOnly = False):
         """
-        Device.open(devType, Ethernet=False, firstFound = True, localId = None, devNumber = None, ipAddress = None)
+        Device.open(devType, Ethernet=False, firstFound = True, localId = None, devNumber = None, ipAddress = None, handleOnly = False)
         
         Open a device of type devType. 
         """
@@ -414,22 +414,24 @@ class Device(object):
         
         d = None
         if firstFound:
-            d = openLabJack(devType, ct, firstFound = True)
+            d = openLabJack(devType, ct, firstFound = True, handleOnly = handleOnly)
         elif devNumber != None:
-            d = openLabJack(devType, ct, firstFound = False, devNumber = devNumber)
+            d = openLabJack(devType, ct, firstFound = False, devNumber = devNumber, handleOnly = handleOnly)
         elif localId != None:
-            d = openLabJack(devType, ct, firstFound = False, pAddress = localId)
+            d = openLabJack(devType, ct, firstFound = False, pAddress = localId, handleOnly = handleOnly)
         elif ipAddress != None:
-            d = openLabJack(devType, ct, firstFound = False, pAddress = ipAddress)
+            d = openLabJack(devType, ct, firstFound = False, pAddress = ipAddress, handleOnly = handleOnly)
         else:
             raise LabJackException("You must use first found, or give a localId, devNumber, or IP Address")
         
         self.handle = d.handle
-        self.localId = d.localID
-        self.serialNumber  = d.serialNumber
         
-        if devType is 9:
-            self.ipAddress = d.ipAddress
+        if not handleOnly:
+            self.localId = d.localID
+            self.serialNumber  = d.serialNumber
+            
+            if devType is 9:
+                self.ipAddress = d.ipAddress
 
     def close(self):
         """close()
@@ -650,7 +652,6 @@ def setChecksum(command):
         
         #Check if the command is an extended command
         if a == 15:
-            
             command = setChecksum16(command)
             command = setChecksum8(command, 6)
             return command
@@ -775,7 +776,7 @@ def deviceCount(devType = None):
         return staticLib.LJUSB_GetDevCount(devType)
 
 #Windows, Linux, and Mac
-def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, devNumber = None):
+def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, devNumber = None, handleOnly = False):
     """openLabJack(deviceType, connectionType, firstFound = True, pAddress = 1)
     
         Note: On Windows, Ue9 over Ethernet, pAddress MUST be the IP address. 
@@ -792,15 +793,17 @@ def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, 
         if ec != 0: raise LabJackException(ec)
         devHandle = handle.value
         
-        
-        serial = int(eGet(devHandle, LJ_ioGET_CONFIG, LJ_chSERIAL_NUMBER, 0, 0))
-        localId = int(eGet(devHandle, LJ_ioGET_CONFIG, LJ_chLOCALID, 0, 0))
-        
-        ipAddress = ""
-        if(deviceType == LJ_dtUE9):
-            ipAddress = DoubleToStringAddress(eGet(devHandle, LJ_ioGET_CONFIG, LJ_chIP_ADDRESS, 0, 0))
-        
-        return Device(devHandle, localID = localId, ipAddress = ipAddress, serialNumber = serial, devType = deviceType)
+        if not handleOnly:
+            serial = int(eGet(devHandle, LJ_ioGET_CONFIG, LJ_chSERIAL_NUMBER, 0, 0))
+            localId = int(eGet(devHandle, LJ_ioGET_CONFIG, LJ_chLOCALID, 0, 0))
+            
+            ipAddress = ""
+            if(deviceType == LJ_dtUE9):
+                ipAddress = DoubleToStringAddress(eGet(devHandle, LJ_ioGET_CONFIG, LJ_chIP_ADDRESS, 0, 0))
+            
+            return Device(devHandle, localID = localId, ipAddress = ipAddress, serialNumber = serial, devType = deviceType)
+        else:
+            return Device(devHandle, devType = deviceType)
 
     # Linux/Mac need to work in the low level driver.
     if(os.name == 'posix'):
@@ -814,7 +817,10 @@ def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, 
                     handle = openDev(devNumber, 0, devType)
                     if handle <= 0:
                         raise Exception
-                    return _makeDeviceFromHandle(handle, deviceType)
+                    if not handleOnly:
+                        return _makeDeviceFromHandle(handle, deviceType)
+                    else:
+                        return Device(handle, deviceType)
                 except Exception, e:
                     print type(e), e
                     raise LabJackException(LJE_LABJACK_NOT_FOUND)
@@ -823,10 +829,15 @@ def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, 
                     handle = openDev(1, 0, devType)
                     if handle <= 0:
                         raise Exception
-                    return _makeDeviceFromHandle(handle, deviceType)
+                    if not handleOnly:
+                        return _makeDeviceFromHandle(handle, deviceType)
+                    else:
+                        return Device(handle, deviceType)
                 except:
                     raise LabJackException(LJE_LABJACK_NOT_FOUND)
-            else:            
+            else:
+                if handleOnly:
+                    raise LabjackException("Can't use handleOnly with an id.")         
                 numDevices = staticLib.LJUSB_GetDevCount(deviceType)
                 
                 for i in range(numDevices):

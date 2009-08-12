@@ -22,16 +22,19 @@ class U3(Device):
         self.streamConfiged = False
         self.streamStarted = False
         
-    def open(self, firstFound = True, localId = None, devNumber = None):
+    def open(self, firstFound = True, localId = None, devNumber = None, handleOnly = False):
         """
-        Name: U3.open(firstFound = True, localId = None, devNumber = None)
+        Name: U3.open(firstFound = True, localId = None, devNumber = None,
+                      handleOnly = False)
         Args: firstFound, will open the first U3 found.
               localId, the localID of the U3 you wish to open
               devNumber, firstFound is devNumber = 1, devNumber = 2 is second
                          found.
+              handleOnly, if True, it won't read anything about the U3 just 
+                          get the device handle.
         Desc: Use to open a U3.
         """
-        Device.open(self, 3, firstFound = firstFound, localId = localId, devNumber = devNumber )
+        Device.open(self, 3, firstFound = firstFound, localId = localId, devNumber = devNumber, handleOnly = handleOnly )
     
     def configU3(self, LocalID = None, TimerCounterConfig = None, FIOAnalog = None, FIODirection = None, FIOState = None, EIOAnalog = None, EIODirection = None, EIOState = None, CIODirection = None, CIOState = None, DAC1Enable = None, DAC0 = None, DAC1 = None, TimerClockConfig = None, TimerClockDivisor = None, CompatibilityOptions = None ):
         """
