@@ -220,7 +220,7 @@ class U6(Device):
         if self.versionInfo == 12:
             self.deviceName = 'U6-Pro'
         
-        return { 'FirmwareVersion' : self.firmwareVersion, 'BootloaderVersion' : self.bootloaderVersion, 'HardwareVersion' : self.hardwareVersion, 'SerialNumber' : self.serialNumber, 'ProductID' : self.productId, 'LocalID' : self.localId, 'VersionInfo' : self.versionInfo }
+        return { 'FirmwareVersion' : self.firmwareVersion, 'BootloaderVersion' : self.bootloaderVersion, 'HardwareVersion' : self.hardwareVersion, 'SerialNumber' : self.serialNumber, 'ProductID' : self.productId, 'LocalID' : self.localId, 'VersionInfo' : self.versionInfo, 'DeviceName' : self.deviceName }
         
     def configIO(self, NumberTimersEnabled = None, EnableCounter1 = None, EnableCounter0 = None, TimerCounterPinOffset = None):
         """
@@ -1569,7 +1569,7 @@ class TimerConfig(FeedbackCommand):
         if mode > 13 or mode < 0:
             raise LabJackException("Invalid Timer Mode.")
         
-        self.cmdBytes = [43 + (timer % 2), mode, value % 256, value >> 8]
+        self.cmdBytes = [43 + (timer * 2), mode, value % 256, value >> 8]
 
 class Timer0Config(TimerConfig):
     def __init__(self, TimerMode, Value = 0):
