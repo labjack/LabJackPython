@@ -1314,7 +1314,7 @@ class TimerConfig(FeedbackCommand):
         if mode > 13 or mode < 0:
             raise LabJackException("Invalid Timer Mode.")
         
-        self.cmdBytes = [43 + (timer % 2), mode, value % 256, value >> 8]
+        self.cmdBytes = [43 + (timer * 2), mode, value % 256, value >> 8]
 
 class Timer0Config(TimerConfig):
     def __init__(self, TimerMode, Value = 0):
