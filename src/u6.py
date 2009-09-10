@@ -1251,6 +1251,9 @@ class AIN(FeedbackCommand):
           the new AIN24 and AIN24AR.
     
     returns 16-bit unsigned int sample
+    
+    >>> d.getFeedback( u6.AIN( PositiveChannel ) )
+    [ 19238 ]
     '''
     def __init__(self, PositiveChannel):
         if PositiveChannel not in validChannels:
@@ -1285,6 +1288,11 @@ class AIN24(FeedbackCommand):
     
 
     returns 24-bit unsigned int sample
+    
+    >>> d.getFeedback( u6.AIN24(PositiveChannel, ResolutionIndex = 0, 
+                                GainIndex = 0, SettlingFactor = 0, 
+                                Differential = False ) )
+    [ 193847 ]
     '''
     def __init__(self, PositiveChannel, ResolutionIndex = 0, GainIndex = 0, SettlingFactor = 0, Differential = False):
         if PositiveChannel not in validChannels:
@@ -1321,11 +1329,16 @@ class AIN24AR(FeedbackCommand):
 
     returns a dictionary:
         { 
-        'value' : < 24-bit binary reading >, 
-        'resolutionIndex' : < actual resolution setting used for the reading >,
-        'gainIndex' : < actual gain used for the reading >,
-        'status' : < reserved for future use >
+        'AIN' : < 24-bit binary reading >, 
+        'ResolutionIndex' : < actual resolution setting used for the reading >,
+        'GainIndex' : < actual gain used for the reading >,
+        'Status' : < reserved for future use >
         }
+        
+    >>> d.getFeedback( u6.AIN24AR( PositiveChannel, ResolutionIndex = 0,
+                                   GainIndex = 15, SettlingFactor = 0,
+                                   Differential = False ) )
+    { 'AIN' : 193847, 'ResolutionIndex' : 0, 'GainIndex' : 15, 'Status' : 0 }
     '''
     def __init__(self, PositiveChannel, ResolutionIndex = 0, GainIndex = 15, SettlingFactor = 0, Differential = False):
         if PositiveChannel not in validChannels:
@@ -1353,6 +1366,9 @@ class WaitShort(FeedbackCommand):
     WaitShort Feedback command
 
     specify the number of 128us time increments to wait
+    
+    >>> d.getFeedback( u6.WaitShort( Time ) )
+    [ None ]
     '''
     def __init__(self, Time):
         self.cmdBytes = [ 5, Time % 256 ]
@@ -1362,6 +1378,9 @@ class WaitLong(FeedbackCommand):
     WaitLong Feedback command
     
     specify the number of 32ms time increments to wait
+    
+    >>> d.getFeedback( u6.WaitLog( Time ) )
+    [ None ]
     '''
     def __init__(self, Time):
         self.cmdBytes = [ 6, Time % 256 ]
@@ -1371,6 +1390,11 @@ class LED(FeedbackCommand):
     LED Toggle
 
     specify whether the LED should be on or off by truth value
+    
+    1 or True = On, 0 or False = Off
+    
+    >>> d.getFeedback( u6.LED( State ) )
+    [ None ]
     '''
     def __init__(self, State):
         self.cmdBytes = [ 9, int(bool(State)) ]
@@ -1384,6 +1408,9 @@ class BitStateRead(FeedbackCommand):
 
     IONumber: 0-7=FIO, 8-15=EIO, 16-19=CIO
     return 0 or 1
+    
+    >>> d.getFeedback( u6.BitStateRead( IONumber ) )
+    [ 1 ]
     '''
     def __init__(self, IONumber):
         self.cmdBytes = [ 10, IONumber % 20 ]
@@ -1402,6 +1429,9 @@ class BitStateWrite(FeedbackCommand):
 
     IONumber: 0-7=FIO, 8-15=EIO, 16-19=CIO
     State: 0 or 1
+    
+    >>> d.getFeedback( u6.BitStateWrite( IONumber, State ) )
+    [ None ]
     '''
     def __init__(self, IONumber, State):
         self.cmdBytes = [ 11, (IONumber % 20) + (int(bool(State)) << 7) ]
@@ -1412,6 +1442,9 @@ class BitDirRead(FeedbackCommand):
 
     IONumber: 0-7=FIO, 8-15=EIO, 16-19=CIO
     returns 1 = Output, 0 = Input
+    
+    >>> d.getFeedback( u6.BitDirRead( IONumber ) )
+    [ 1 ]
     '''
     def __init__(self, IONumber):
         self.cmdBytes = [ 12, IONumber % 20 ]
@@ -1425,10 +1458,13 @@ class BitDirWrite(FeedbackCommand):
     '''
     BitDirWrite Feedback command
 
-    Set the digital directino of one I/O
+    Set the digital direction of one I/O
 
     IONumber: 0-7=FIO, 8-15=EIO, 16-19=CIO
     Direction: 1 = Output, 0 = Input
+    
+    >>> d.getFeedback( u6.BitDirWrite( IONumber, Direction ) )
+    [ None ] 
     '''
     def __init__(self, IONumber, Direction):
         self.cmdBytes = [ 13, (IONumber % 20) + (int(bool(Direction)) << 7) ]
@@ -1437,6 +1473,9 @@ class PortStateRead(FeedbackCommand):
     """
     PortStateRead Feedback command
     Reads the state of all digital I/O.
+    
+    >>> d.getFeedback( u6.PortStateRead() )
+    [ { 'FIO' : 10, 'EIO' : 0, 'CIO' : 0 } ]
     """
     def __init__(self):
         self.cmdBytes = [ 26 ]
@@ -1450,8 +1489,13 @@ class PortStateWrite(FeedbackCommand):
     """
     PortStateWrite Feedback command
     
-    state: A list of 3 bytes representing FIO, EIO, CIO
-    WriteMask: A list of 3 bytes, representing which to update. Default is all ones.
+    State: A list of 3 bytes representing FIO, EIO, CIO
+    WriteMask: A list of 3 bytes, representing which to update.
+               The Default is all ones.
+    
+    >>> d.getFeedback( u6.PortStateWrite( State, 
+                                          WriteMask = [ 0xff, 0xff, 0xff] ) )
+    [ None ]
     """
     def __init__(self, State, WriteMask = [ 0xff, 0xff, 0xff]):
         self.cmdBytes = [ 27 ] + WriteMask + State
@@ -1460,6 +1504,9 @@ class PortDirRead(FeedbackCommand):
     """
     PortDirRead Feedback command
     Reads the direction of all digital I/O.
+    
+    >>> d.getFeedback( u6.PortDirRead() )
+    [ { 'FIO' : 10, 'EIO' : 0, 'CIO' : 0 } ]
     """
     def __init__(self):
         self.cmdBytes = [ 28 ]
@@ -1475,6 +1522,10 @@ class PortDirWrite(FeedbackCommand):
     
     Direction: A list of 3 bytes representing FIO, EIO, CIO
     WriteMask: A list of 3 bytes, representing which to update. Default is all ones.
+    
+    >>> d.getFeedback( u6.PortDirWrite( Direction, 
+                                        WriteMask = [ 0xff, 0xff, 0xff] ) )
+    [ None ]
     """
     def __init__(self, Direction, WriteMask = [ 0xff, 0xff, 0xff]):
         self.cmdBytes = [ 29 ] + WriteMask + Direction
@@ -1485,17 +1536,40 @@ class DAC8(FeedbackCommand):
     
     Controls a single analog output
 
-    dac: 0 or 1
-    value: 0-255
+    Dac: 0 or 1
+    Value: 0-255
+    
+    >>> d.getFeedback( u6.DAC8( Dac, Value ) )
+    [ None ]
     '''
-    def __init__(self, dac, value):
-        self.cmdBytes = [ 34 + (dac % 2), value % 256 ]
+    def __init__(self, Dac, Value):
+        self.cmdBytes = [ 34 + (Dac % 2), Value % 256 ]
         
 class DAC0_8(DAC8):
+    """
+    8-bit DAC Feedback command for DAC0
+    
+    Controls DAC0 in 8-bit mode.
+
+    Value: 0-255
+    
+    >>> d.getFeedback( u6.DAC0_8( Value ) )
+    [ None ]
+    """
     def __init__(self, Value):
         DAC8.__init__(self, 0, Value)
 
 class DAC1_8(DAC8):
+    """
+    8-bit DAC Feedback command for DAC1
+    
+    Controls DAC1 in 8-bit mode.
+
+    Value: 0-255
+    
+    >>> d.getFeedback( u6.DAC1_8( Value ) )
+    [ None ]
+    """
     def __init__(self, Value):
         DAC8.__init__(self, 1, Value)
 
@@ -1505,42 +1579,67 @@ class DAC16(FeedbackCommand):
 
     Controls a single analog output
 
-    dac: 0 or 1
-    value: 0-65535
+    Dac: 0 or 1
+    Value: 0-65535
+    
+    >>> d.getFeedback( u6.DAC16( Dac, Value ) )
+    [ None ]
     '''
-    def __init__(self, dac, value):
-        self.cmdBytes = [ 38 + (dac % 2), value % 256, value >> 8 ]
+    def __init__(self, Dac, Value):
+        self.cmdBytes = [ 38 + (Dac % 2), Value % 256, Value >> 8 ]
 
 class DAC0_16(DAC16):
+    """
+    16-bit DAC Feedback command for DAC0
+    
+    Controls DAC0 in 16-bit mode.
+
+    Value: 0-65535
+    
+    >>> d.getFeedback( u6.DAC0_8( Value ) )
+    [ None ]
+    """
     def __init__(self, Value):
         DAC16.__init__(self, 0, Value)
 
 class DAC1_16(DAC16):
+    """
+    16-bit DAC Feedback command for DAC1
+    
+    Controls DAC1 in 16-bit mode.
+
+    Value: 0-65535
+    
+    >>> d.getFeedback( u6.DAC1_8( Value ) )
+    [ None ]
+    """
     def __init__(self, Value):
         DAC16.__init__(self, 1, Value)
         
 class Timer(FeedbackCommand):
     """
-    For reading the value of the Time. It provides the ability to update/reset a given timer, and read the timer value. ( p. 104 of the User's Guide)
-    
-    >>> timerRead = Timer(timer, updateReset, value)
+    For reading the value of the Timer. It provides the ability to update/reset
+    a given timer, and read the timer value.
+    ( Section 5.2.5.17 of the User's Guide)
     
     timer: Either 0 or 1 for counter0 or counter1
      
-    updateReset: Set True if you want to update the value
+    UpdateReset: Set True if you want to update the value
     
-    value: Only updated if the UpdateReset bit is 1.  The meaning of this 
-parameter varies with the timer mode.
-    
+    Value: Only updated if the UpdateReset bit is 1.  The meaning of this
+           parameter varies with the timer mode.
+
+    >>> d.getFeedback( u6.Timer( timer, UpdateReset = False, Value = 0 ) )
+    [ 12314 ]
     """
-    def __init__(self, timer, updateReset = False, value=0):
+    def __init__(self, timer, UpdateReset = False, Value=0):
         if timer != 0 and timer != 1:
             raise LabJackException("Timer should be either 0 or 1.")
-        if updateReset and value == None:
+        if UpdateReset and Value == None:
             raise LabJackException("UpdateReset set but no value.")
             
         
-        self.cmdBytes = [ (42 + (2*timer)), updateReset, value % 256, value >> 8 ]
+        self.cmdBytes = [ (42 + (2*timer)), UpdateReset, Value % 256, Value >> 8 ]
     
     readLen = 4
     
@@ -1549,33 +1648,88 @@ parameter varies with the timer mode.
         return struct.unpack('<I', inStr )
 
 class Timer0(Timer):
+    """
+    For reading the value of the Timer0. It provides the ability to
+    update/reset Timer0, and read the timer value.
+    ( Section 5.2.5.17 of the User's Guide)
+     
+    UpdateReset: Set True if you want to update the value
+    
+    Value: Only updated if the UpdateReset bit is 1.  The meaning of this
+           parameter varies with the timer mode.
+
+    >>> d.getFeedback( u6.Timer0( UpdateReset = False, Value = 0 ) )
+    [ 12314 ]
+    """
     def __init__(self, UpdateReset = False, Value = 0):
         Timer.__init__(self, 0, UpdateReset, Value)
 
 class Timer1(Timer):
+    """
+    For reading the value of the Timer1. It provides the ability to
+    update/reset Timer1, and read the timer value.
+    ( Section 5.2.5.17 of the User's Guide)
+     
+    UpdateReset: Set True if you want to update the value
+    
+    Value: Only updated if the UpdateReset bit is 1.  The meaning of this
+           parameter varies with the timer mode.
+
+    >>> d.getFeedback( u6.Timer1( UpdateReset = False, Value = 0 ) )
+    [ 12314 ]
+    """
     def __init__(self, UpdateReset = False, Value = 0):
         Timer.__init__(self, 1, UpdateReset, Value)
 
 class TimerConfig(FeedbackCommand):
-    def __init__(self, timer, mode, value=0):
+    """
+    This IOType configures a particular timer.
+    
+    timer = # of the timer to configure
+    
+    TimerMode = See Section 2.9 for more information about the available modes.
+    
+    Value = The meaning of this parameter varies with the timer mode.
+    
+    >>> d.getFeedback( u6.TimerConfig( timer, TimerMode, Value = 0 ) )
+    [ None ]
+    """
+    def __init__(self, timer, TimerMode, Value=0):
         '''Creates command bytes for configureing a Timer'''
         #Conditions come from pages 33-34 of user's guide
         if timer != 0 and timer != 1:
             raise LabJackException("Timer should be either 0 or 1.")
-            
-        if value < 4:
-            raise LabJackException("Value should be greater than 3.")
         
-        if mode > 13 or mode < 0:
+        if TimerMode > 13 or TimerMode < 0:
             raise LabJackException("Invalid Timer Mode.")
         
-        self.cmdBytes = [43 + (timer * 2), mode, value % 256, value >> 8]
+        self.cmdBytes = [43 + (timer * 2), TimerMode, Value % 256, Value >> 8]
 
 class Timer0Config(TimerConfig):
+    """
+    This IOType configures Timer0.
+    
+    TimerMode = See Section 2.9 for more information about the available modes.
+    
+    Value = The meaning of this parameter varies with the timer mode.
+    
+    >>> d.getFeedback( u6.Timer0Config( TimerMode, Value = 0 ) )
+    [ None ]
+    """
     def __init__(self, TimerMode, Value = 0):
         TimerConfig.__init__(self, 0, TimerMode, Value)
 
 class Timer1Config(TimerConfig):
+    """
+    This IOType configures Timer1.
+    
+    TimerMode = See Section 2.9 for more information about the available modes.
+    
+    Value = The meaning of this parameter varies with the timer mode.
+    
+    >>> d.getFeedback( u6.Timer1Config( TimerMode, Value = 0 ) )
+    [ None ]
+    """
     def __init__(self, TimerMode, Value = 0):
         TimerConfig.__init__(self, 1, TimerMode, Value)
 
@@ -1586,13 +1740,16 @@ class Counter(FeedbackCommand):
     Reads a hardware counter, optionally resetting it
 
     counter: 0 or 1
-    reset: truth value
+    Reset: True ( or 1 ) = Reset, False ( or 0 ) = Don't Reset
 
     Returns the current count from the counter if enabled.  If reset,
     this is the value before the reset.
+    
+    >>> d.getFeedback( u6.Counter( counter, Reset = False ) )
+    [ 2183 ]
     '''
-    def __init__(self, counter, reset):
-        self.cmdBytes = [ 54 + (counter % 2), int(bool(reset))]
+    def __init__(self, counter, Reset):
+        self.cmdBytes = [ 54 + (counter % 2), int(bool(Reset))]
 
     readLen = 4
 
@@ -1601,9 +1758,35 @@ class Counter(FeedbackCommand):
         return struct.unpack('<I', inStr )
 
 class Counter0(Counter):
+    '''
+    Counter0 Feedback command
+
+    Reads hardware counter0, optionally resetting it
+
+    Reset: True ( or 1 ) = Reset, False ( or 0 ) = Don't Reset
+
+    Returns the current count from the counter if enabled.  If reset,
+    this is the value before the reset.
+    
+    >>> d.getFeedback( u6.Counter0( Reset = False ) )
+    [ 2183 ]
+    '''
     def __init__(self, Reset = False):
         Counter.__init__(self, 0, Reset)
 
 class Counter1(Counter):
+    '''
+    Counter1 Feedback command
+
+    Reads hardware counter1, optionally resetting it
+
+    Reset: True ( or 1 ) = Reset, False ( or 0 ) = Don't Reset
+
+    Returns the current count from the counter if enabled.  If reset,
+    this is the value before the reset.
+    
+    >>> d.getFeedback( u3.Counter1( Reset = False ) )
+    [ 2183 ]
+    '''
     def __init__(self, Reset = False):
         Counter.__init__(self, 1, Reset)
