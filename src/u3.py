@@ -343,6 +343,8 @@ class U3(Device):
             readLen += 1
         rcvBuffer = self.read(readLen)
         
+        if self.debug: print "Result: ", rcvBuffer
+        
         # Check the response for errors
         if rcvBuffer[1] != 0xF8 or rcvBuffer[3] != 0x00:
             raise LabJackException("Got incorrect command bytes")
@@ -1383,7 +1385,7 @@ class Timer(FeedbackCommand):
     
     def handle(self, input):
         inStr = ''.join([chr(x) for x in input])
-        return struct.unpack('<I', inStr )
+        return struct.unpack('<I', inStr )[0]
 
 class Timer0(Timer):
     """
@@ -1493,7 +1495,7 @@ class Counter(FeedbackCommand):
 
     def handle(self, input):
         inStr = ''.join([chr(x) for x in input])
-        return struct.unpack('<I', inStr )
+        return struct.unpack('<I', inStr )[0]
     
 class Counter0(Counter):
     '''
