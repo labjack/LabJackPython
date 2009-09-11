@@ -240,7 +240,7 @@ class U3(Device):
         #command[6] = Reserved
         #command[7] = Reserved
         if TimerClockBase is not None:
-            command[8] = ( 1 << 7 ) + ( timerClockBase & 7 )
+            command[8] = ( 1 << 7 ) + ( TimerClockBase & 7 )
             if TimerClockDivisor is not None:
                 command[9] =  TimerClockDivisor
         if TimerClockDivisor is not None:
