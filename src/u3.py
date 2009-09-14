@@ -1093,11 +1093,7 @@ class AIN(FeedbackCommand):
     readLen =  2
 
     def handle(self, input):
-        if input[1] & 0x80:
-            # sign bit is set
-            result = - (((input[1] & 0x7F) << 8) + input[0])
-        else:
-            result = (input[1] << 8) + input[0]
+        result = (input[1] << 8) + input[0]
         return result
 
 class WaitShort(FeedbackCommand):
