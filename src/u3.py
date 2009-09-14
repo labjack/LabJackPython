@@ -1076,18 +1076,18 @@ class AIN(FeedbackCommand):
     returns 16-bit signed int sample
     
     >>> d.getFeedback( u3.AIN(PositiveChannel, NegativeChannel,
-                              longSettle=False, quickSample=False) )
+                              LongSettling=False, QuickSample=False) )
     '''
     def __init__(self, PositiveChannel, NegativeChannel, 
-            longSettle=False, quickSample=False):
+            LongSettling=False, QuickSample=False):
         validChannels = range(16) + [30, 31]
         if PositiveChannel not in validChannels:
             raise Exception("Invalid Positive Channel specified")
         if NegativeChannel not in validChannels:
             raise Exception("Invalid Negative Channel specified")
         b = PositiveChannel 
-        b |= (int(bool(longSettle)) << 6)
-        b |= (int(bool(quickSample)) << 7)
+        b |= (int(bool(LongSettling)) << 6)
+        b |= (int(bool(QuickSample)) << 7)
         self.cmdBytes = [ 0x01, b, NegativeChannel ]
 
     readLen =  2
