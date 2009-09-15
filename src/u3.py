@@ -243,7 +243,7 @@ class U3(Device):
             command[8] = ( 1 << 7 ) + ( TimerClockBase & 7 )
             if TimerClockDivisor is not None:
                 command[9] =  TimerClockDivisor
-        if TimerClockDivisor is not None:
+        elif TimerClockDivisor is not None:
             raise LabJackException("You can't set just the divisor, must set both.")
         
         result = self._writeRead(command, 10, [0xf8, 0x02, 0x0A])
@@ -494,14 +494,15 @@ class U3(Device):
         command = [ 0 ] * 4
         
         #command[0] = Checksum8
-        command[1] = 0x9
+        command[1] = 0x99
         command[2] = 1
         if hardReset:
             command[2] = 2
         command[3] = 0x00
         
-        self.write(command)
-        result = self.read(4)
+        command = setChecksum8(command, 4)
+        
+        self._writeRead(command, 4, [], False, False, False)
 
     def streamConfig(self, NumChannels = 1, SamplesPerPacket = 25, InternalStreamClockFrequency = 0, DivideClockBy256 = False, Resolution = 3, ScanInterval = 1, PChannels = [30], NChannels = [31], SampleFrequency = None):
         """        
