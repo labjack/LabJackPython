@@ -49,7 +49,7 @@ Version History
     - 0.7.0 November 18, 2008
         - Modified listAll to display device information in a different, more intuitive way.
         - Added a Device class for simplier usage
-        - openLabJack can now search for devices to open via ipAddress, localID, or serialNumber
+        - openLabJack can now search for devices to open via ipAddress, localId, or serialNumber
         - Put most functions into proper camelcase notation
         - Removed large static function encapsulating all functions.  Works as one module now.
         - Changed Read and Write to increase speed
@@ -100,6 +100,9 @@ class LabJackException(Exception):
     def __str__(self):
           return self.errorString
 
+# Raised when the return value of OpenDevice is null.
+class NullHandleException(Exception): pass
+
 def _loadLibrary():
     """_loadLibrary()
     Returns a ctypes dll pointer to the library.
@@ -122,7 +125,7 @@ def _loadLibrary():
 staticLib = _loadLibrary()
 
 class Device(object):
-    """Device(handle, localID = None, serialNumber = None, ipAddress = "", type = None)
+    """Device(handle, localId = None, serialNumber = None, ipAddress = "", type = None)
             
     Creates a simple 0 with the following functions:
     write(writeBuffer) -- Writes a buffer.
@@ -133,9 +136,10 @@ class Device(object):
     close() -- Closes the device.
     reset() -- Resets the device.
     """
-    def __init__(self, handle, localID = None, serialNumber = None, ipAddress = "", devType = None):
-        self.handle = handle
-        self.localID = localID
+    def __init__(self, handle, localId = None, serialNumber = None, ipAddress = "", devType = None):
+        # Not saving the handle as a void* causes many problems on 64-bit machines.
+        self.handle = ctypes.c_void_p(handle)
+        self.localId = localId
         self.serialNumber = serialNumber
         self.ipAddress = ipAddress
         self.devType = devType
@@ -427,7 +431,7 @@ class Device(object):
         self.handle = d.handle
         
         if not handleOnly:
-            self.localId = d.localID
+            self.localId = d.localId
             self.serialNumber  = d.serialNumber
             
             if devType is 9:
@@ -453,12 +457,6 @@ class Device(object):
                 staticLib.LJUSB_CloseDevice(self.handle);
             
         self.handle = None
-
-    def __repr__(self):
-        return str(self.asDict())
-
-    def asDict(self):
-        return dict(devType = self.devType, localID = self.localID, serialNumber = self.serialNumber, ipAddress = self.ipAddress)
 
     def reset(self):
         """Reset the LabJack device.
@@ -749,7 +747,7 @@ def listAll(deviceType, connectionType = LJ_ctUSB):
         deviceList = dict()
     
         for i in range(pNumFound.value):
-            deviceValue = dict(localID = pIDs[i], serialNumber = pSerialNumbers[i], ipAddress = DoubleToStringAddress(pAddresses[i]), devType = deviceType)
+            deviceValue = dict(localId = pIDs[i], serialNumber = pSerialNumbers[i], ipAddress = DoubleToStringAddress(pAddresses[i]), devType = deviceType)
             deviceList[pSerialNumbers[i]] = deviceValue
     
         return deviceList
@@ -801,7 +799,7 @@ def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, 
             if(deviceType == LJ_dtUE9):
                 ipAddress = DoubleToStringAddress(eGet(devHandle, LJ_ioGET_CONFIG, LJ_chIP_ADDRESS, 0, 0))
             
-            return Device(devHandle, localID = localId, ipAddress = ipAddress, serialNumber = serial, devType = deviceType)
+            return Device(devHandle, localId = localId, ipAddress = ipAddress, serialNumber = serial, devType = deviceType)
         else:
             return Device(devHandle, devType = deviceType)
 
@@ -816,24 +814,24 @@ def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, 
                 try:
                     handle = openDev(devNumber, 0, devType)
                     if handle <= 0:
-                        raise Exception
+                        raise NullHandleException
+                    if not handleOnly:
+                        return _makeDeviceFromHandle(handle, deviceType)
+                    else:
+                        return Device(handle, deviceType)
+                except Exception, e:
+                    raise LabJackException(LJE_LABJACK_NOT_FOUND)
+            elif(firstFound):
+                try:
+                    handle = openDev(1, 0, devType)
+                    if handle <= 0:
+                        raise NullHandleException
                     if not handleOnly:
                         return _makeDeviceFromHandle(handle, deviceType)
                     else:
                         return Device(handle, deviceType)
                 except Exception, e:
                     print type(e), e
-                    raise LabJackException(LJE_LABJACK_NOT_FOUND)
-            elif(firstFound):
-                try:
-                    handle = openDev(1, 0, devType)
-                    if handle <= 0:
-                        raise Exception
-                    if not handleOnly:
-                        return _makeDeviceFromHandle(handle, deviceType)
-                    else:
-                        return Device(handle, deviceType)
-                except:
                     raise LabJackException(LJE_LABJACK_NOT_FOUND)
             else:
                 if handleOnly:
@@ -842,17 +840,17 @@ def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, 
                 
                 for i in range(numDevices):
               
-                    handle = staticLib.LJUSB_OpenDevice(i + 1, 0, deviceType)
+                    handle = openDev(i + 1, 0, deviceType)
                     
                     try:
                         if handle <= 0:
-                            raise Exception
+                            raise NullHandleException
                         device = _makeDeviceFromHandle(handle, deviceType)
                     except:
                         continue
                     
                     try:
-                        if(device.localID == pAddress or device.serialNumber == pAddress or \
+                        if(device.localId == pAddress or device.serialNumber == pAddress or \
                                                                     device.ipAddress == pAddress):
                             return device
                     except:
@@ -903,13 +901,13 @@ def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, 
                             ipAddress = ipAddress[0:-1]
 
                             #Local ID
-                            localID = rcvDataBuff[8] & 0xff
+                            localId = rcvDataBuff[8] & 0xff
 
                             try:
-                                if(localID == pAddress or serialNumber == pAddress or \
+                                if(localId == pAddress or serialNumber == pAddress or \
                                                                         ipAddress == pAddress):
                                     handle = UE9TCPHandle(ipAddress)
-                                    return Device(handle, localID, serialNumber, \
+                                    return Device(handle, localId, serialNumber, \
                                                   ipAddress, deviceType)
                             except Exception, e:
                                 print e
@@ -934,7 +932,7 @@ def _makeDeviceFromHandle(handle, deviceType):
             rcvDataBuff = device.read(38)
         
             
-            device.localID = rcvDataBuff[8] & 0xff
+            device.localId = rcvDataBuff[8] & 0xff
         
             macAddress = rcvDataBuff[28:34]
             macAddress.reverse()
@@ -970,7 +968,7 @@ def _makeDeviceFromHandle(handle, deviceType):
             device.close()
             raise e
         
-        device.localID = rcvDataBuff[21] & 0xff
+        device.localId = rcvDataBuff[21] & 0xff
         serialNumber = struct.pack("<BBBB", *rcvDataBuff[15:19])
         device.serialNumber = struct.unpack('<I', serialNumber)[0]
         device.ipAddress = ""
@@ -988,7 +986,7 @@ def _makeDeviceFromHandle(handle, deviceType):
             device.close()
             raise e
         
-        device.localID = rcvDataBuff[21] & 0xff
+        device.localId = rcvDataBuff[21] & 0xff
         serialNumber = struct.pack("<BBBB", *rcvDataBuff[15:19])
         device.serialNumber = struct.unpack('<I', serialNumber)[0]
         device.ipAddress = ""
@@ -2038,8 +2036,8 @@ def __listAllUE9Unix(connectionType):
                 ipAddress = ipAddress[0:-1]
 
                 #Local ID
-                localID = rcvDataBuff[8] & 0xff
-                deviceList[serial] = dict(devType = LJ_dtUE9, localID = localID, \
+                localId = rcvDataBuff[8] & 0xff
+                deviceList[serial] = dict(devType = LJ_dtUE9, localId = localId, \
                                                 serialNumber = serial, ipAddress = ipAddress)
                 device.close()
             except Exception, e:
@@ -2088,9 +2086,9 @@ def __listAllUE9Unix(connectionType):
                         ipAddress = ipAddress[0:-1]
 
                         #Local ID
-                        localID = rcvDataBuff[8] & 0xff
+                        localId = rcvDataBuff[8] & 0xff
 
-                        deviceList[serial] = dict(devType = LJ_dtUE9, localID = localID, \
+                        deviceList[serial] = dict(devType = LJ_dtUE9, localId = localId, \
                                                     serialNumber = serial, ipAddress = ipAddress)
                 except Exception, e:
                     pass
@@ -2130,8 +2128,8 @@ def __listAllU3Unix():
 
         serialNumber = struct.pack("<BBBB", *rcvDataBuff[15:19])
         serialNumber = struct.unpack('<I', serialNumber)[0]
-        localID = rcvDataBuff[21] & 0xff
-        deviceList[serialNumber] = dict(devType = LJ_dtU3, localID = localID, \
+        localId = rcvDataBuff[21] & 0xff
+        deviceList[serialNumber] = dict(devType = LJ_dtU3, localId = localId, \
                                         serialNumber = serialNumber, ipAddress = None)
         device.close()
 
@@ -2164,12 +2162,12 @@ def __listAllU6Unix():
 
         serialNumber = struct.pack("<BBBB", *rcvDataBuff[15:19])
         serialNumber = struct.unpack('<I', serialNumber)[0]
-        localID = rcvDataBuff[21] & 0xff
+        localId = rcvDataBuff[21] & 0xff
         pro = False
         if rcvDataBuff[37] == 12:
             pro = True
         
-        deviceList[serialNumber] = dict(devType = 6, localID = localID, \
+        deviceList[serialNumber] = dict(devType = 6, localId = localId, \
                                         serialNumber = serialNumber, ipAddress = None, Pro=pro)
         device.close()
 
