@@ -138,7 +138,10 @@ class Device(object):
     """
     def __init__(self, handle, localId = None, serialNumber = None, ipAddress = "", devType = None):
         # Not saving the handle as a void* causes many problems on 64-bit machines.
-        self.handle = ctypes.c_void_p(handle)
+        if isinstance(handle, int):
+            self.handle = ctypes.c_void_p(handle)
+        else:
+            self.handle = handle
         self.localId = localId
         self.serialNumber = serialNumber
         self.ipAddress = ipAddress
