@@ -117,9 +117,9 @@ class U3(Device):
         result = self._writeRead(command, 38, [0xF8, 0x10, 0x08])
         
         # Error-free, time to parse the response
-        self.firmwareVersion = "%d.%d" % (result[10], result[9])
-        self.bootloaderVersion = "%d.%d" % (result[12], result[11])
-        self.hardwareVersion = "%d.%d" % (result[14], result[13])
+        self.firmwareVersion = "%d.%02d" % (result[10], result[9])
+        self.bootloaderVersion = "%d.%02d" % (result[12], result[11])
+        self.hardwareVersion = "%d.%02d" % (result[14], result[13])
         self.serialNumber = struct.unpack("<I", struct.pack(">BBBB", *result[15:19]))[0]
         self.productId = struct.unpack("<H", struct.pack(">BB", *result[19:21]))[0]
         self.localId = result[21]

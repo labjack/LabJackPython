@@ -209,9 +209,9 @@ class U6(Device):
         
         result = self._writeRead(command, 38, [0xF8, 0x10, 0x08])
         
-        self.firmwareVersion = "%s.%s" % (result[10], result[9])
-        self.bootloaderVersion = "%s.%s" % (result[12], result[11]) 
-        self.hardwareVersion = "%s.%s" % (result[14], result[13])
+        self.firmwareVersion = "%s.%02d" % (result[10], result[9])
+        self.bootloaderVersion = "%s.%02d" % (result[12], result[11]) 
+        self.hardwareVersion = "%s.%02d" % (result[14], result[13])
         self.serialNumber = struct.unpack("<I", struct.pack(">BBBB", *result[15:19]))[0]
         self.productId = struct.unpack("<H", struct.pack(">BB", *result[19:21]))[0]
         self.localId = result[21]

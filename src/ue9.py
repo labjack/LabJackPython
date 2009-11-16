@@ -144,8 +144,8 @@ class UE9(Device):
         
         self.serialNumber = struct.unpack("<I", struct.pack("BBBB", result[28], result[29], result[30], 0x10))[0]
         
-        self.hwVersion = "%s.%s" % (result[35], result[34])
-        self.commFWVersion = "%s.%s" % (result[37], result[36])
+        self.hwVersion = "%s.%02d" % (result[35], result[34])
+        self.commFWVersion = "%s.%02d" % (result[37], result[36])
         
         return { 'LocalID' : self.localId, 'PowerLevel' : self.powerLevel, 'IPAddress' : self.ipAddress, 'Gateway' : self.gateway, 'Subnet' : self.subnet, 'PortA' : self.portA, 'PortB' : self.portB, 'DHCPEnabled' : self.DHCPEnabled, 'ProductID' : self.productId, 'MACAddress' : self.macAddress, 'HWVersion' : self.hwVersion, 'CommFWVersion' : self.commFWVersion, 'SerialNumber' : self.serialNumber}
     
@@ -213,7 +213,7 @@ class UE9(Device):
         
         for ip, data in ue9s.items():
             data = list(struct.unpack("B"*38, data))
-            ue9 = { 'LocalID' : data[8], 'PowerLevel' : data[9] , 'IPAddress' : parseIpAddress(data[10:14]), 'Gateway' : parseIpAddress(data[14:18]), 'Subnet' : parseIpAddress(data[18:23]), 'PortA' : struct.unpack("<H", struct.pack("BB", *data[22:24]))[0], 'PortB' : struct.unpack("<H", struct.pack("BB", *data[24:26]))[0], 'DHCPEnabled' : bool(data[26]), 'ProductID' : data[27], 'MACAddress' : "%02X:%02X:%02X:%02X:%02X:%02X" % (data[33], data[32], data[31], data[30], data[29], data[28]), 'SerialNumber' : struct.unpack("<I", struct.pack("BBBB", data[28], data[29], data[30], 0x10))[0], 'HWVersion' : "%s.%s" % (data[35], data[34]), 'CommFWVersion' : "%s.%s" % (data[37], data[36])}
+            ue9 = { 'LocalID' : data[8], 'PowerLevel' : data[9] , 'IPAddress' : parseIpAddress(data[10:14]), 'Gateway' : parseIpAddress(data[14:18]), 'Subnet' : parseIpAddress(data[18:23]), 'PortA' : struct.unpack("<H", struct.pack("BB", *data[22:24]))[0], 'PortB' : struct.unpack("<H", struct.pack("BB", *data[24:26]))[0], 'DHCPEnabled' : bool(data[26]), 'ProductID' : data[27], 'MACAddress' : "%02X:%02X:%02X:%02X:%02X:%02X" % (data[33], data[32], data[31], data[30], data[29], data[28]), 'SerialNumber' : struct.unpack("<I", struct.pack("BBBB", data[28], data[29], data[30], 0x10))[0], 'HWVersion' : "%s.%02d" % (data[35], data[34]), 'CommFWVersion' : "%s.%02d" % (data[37], data[36])}
             ue9s[ip] = ue9
         
         return ue9s
@@ -339,8 +339,8 @@ class UE9(Device):
         result = self._writeRead(command, 24, [ 0xF8, 0x09, 0x08 ])
         
         self.powerLevel = result[7]
-        self.controlFWVersion = "%s.%s" % (result[10], result[9])
-        self.controlBLVersion = "%s.%s" % (result[12], result[11])
+        self.controlFWVersion = "%s.%02d" % (result[10], result[9])
+        self.controlBLVersion = "%s.%02d" % (result[12], result[11])
         self.hiRes = bool(result[13] & 1)
         
         self.deviceName = 'UE9'
