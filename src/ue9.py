@@ -129,7 +129,15 @@ class UE9(Device):
             if DHCPEnabled:
                 command[26] = 1
         
-        result = self._writeRead(command, 38, [ 0x78, 0x10, 0x01 ])
+        result = self._writeRead(command, 38, [], checkBytes = False)
+        
+        if result[0] == 0xB8 and result[1] == 0xB8:
+            raise LabJackException("Device detected a bad checksum.")
+        elif result[1:4] != [ 0x78, 0x10, 0x01 ]:
+            raise LabJackException("Got incorrect command bytes.")
+        elif not verifyChecksum(result):
+            raise LabJackException("Checksum was incorrect.")
+        
         self.localId = result[8]
         self.powerLevel = result[9]
         self.ipAddress = parseIpAddress(result[10:14])
