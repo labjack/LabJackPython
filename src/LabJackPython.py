@@ -2218,7 +2218,6 @@ class UE9TCPHandle(object):
 
     def __init__(self, ipAddress, timeout = SOCKET_TIMEOUT):
         try:
-            print "Attempting connect in TCP Handle"
             self.data = socket.socket()
             self.data.connect((ipAddress, 52360))
             self.data.settimeout(timeout)
