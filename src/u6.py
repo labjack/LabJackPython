@@ -668,7 +668,7 @@ class U6(Device):
                 
                 if (self.streamChannelOptions[j] >> 7) == 1:
                     # do signed
-                    value = struct.unpack('<h', sample )[0]
+                    value = struct.unpack('<H', sample )[0]
                 else:
                     # do unsigned
                     value = struct.unpack('<H', sample )[0]
