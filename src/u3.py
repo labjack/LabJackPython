@@ -628,7 +628,7 @@ class U3(Device):
                 
                 if self.streamNegChannels[j] != 31:
                     # do signed
-                    value = struct.unpack('<h', sample )[0]
+                    value = struct.unpack('<H', sample )[0]
                     singleEnded = False
                 else:
                     # do unsigned
