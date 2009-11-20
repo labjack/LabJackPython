@@ -175,7 +175,7 @@ class Device(object):
             if os.name == 'posix':
                 if modbus is True:
                     writeBuffer = [ 0, 0 ] + writeBuffer
-                if self.debug: print "In write: ", writeBuffer
+                
                 newA = (ctypes.c_byte*len(writeBuffer))(0) 
                 for i in range(len(writeBuffer)):
                     newA[i] = ctypes.c_byte(writeBuffer[i])
@@ -223,7 +223,7 @@ class Device(object):
             readBytes = len(rcvString)
             packFormat = "B" * readBytes
             rcvDataBuff = struct.unpack(packFormat, rcvString)
-            return rcvDataBuff
+            return list(rcvDataBuff)
         else:
             if(os.name == 'posix'):
                 newA = (ctypes.c_byte*numBytes)()
@@ -376,7 +376,15 @@ class Device(object):
             raise LabJackException("Command returned with error number %s" % results[6])
             
     def _writeRead(self, command, readLen, commandBytes, checkBytes = True, stream=False, checksum = True):
+        # Save the number of bytes to read in case we need it.
+        self.numBytesToRead = readLen
+    
+        if self.debug: print "Write: ", command
         self.write(command, checksum = checksum)
+        
+        # We're done with this after the write, so let's not keep it around.
+        self.numBytesToRead = None
+        
         result = self.read(readLen, stream=False)
         if self.debug: print "Result: ", result
         if checkBytes:
