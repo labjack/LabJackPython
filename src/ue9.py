@@ -17,19 +17,17 @@ def unpackShort(bytes):
 
 class UE9(Device):
     """ A nice python class to represent a UE9 """
-    def __init__(self):
+    def __init__(self, debug = False):
         """
         Name: UE9.__init__(self)
-        Args: None
+        Args: debug, True for debug information
         Desc: Your basic constructor.
         
         >>> myUe9 = ue9.UE9()
         """
-        self.devType = 9
-        self.ipAdress = None
-        self.localID = None
-        self.handle = None
-        self.debug = False
+        Device.__init__(self, None, devType = 9)
+        
+        self.debug = debug
     
     def open(self, firstFound = True, ipAddress = None, localId = None, devNumber = None, ethernet=False, handleOnly = False):
         """

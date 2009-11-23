@@ -149,6 +149,8 @@ class Device(object):
         self.debug = False
         self.streamConfiged = False
         self.streamStarted = False
+        self.streamPacketOffset = 0
+        self.numBytesToRead = None
 
     def write(self, writeBuffer, modbus = False, checksum = True):
         """write([writeBuffer], modbus = False)
@@ -609,7 +611,7 @@ class Device(object):
             returnDict = dict(numPackets = numPackets, result = result, errors = errors, missed = missed )
             
             if convert:
-                returnDict.update(self.processStreamData(result))
+                returnDict.update(self.processStreamData(result, numBytes = numBytes))
             
             yield returnDict
     

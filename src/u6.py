@@ -140,13 +140,13 @@ class U6(Device):
         Args: debug, Do you want debug information?
         Desc: Your basic constructor.
         """
-        self.devType = 6
+        
+        Device.__init__(self, None, devType = 6)
+        
         self.firmwareVersion = 0
         self.bootloaderVersion = 0
         self.hardwareVersion = 0
-        self.serialNumber = 0
         self.productId = 0
-        self.localId = 0
         self.fioDirection = [None] * 8
         self.fioState = [None] * 8
         self.eioDirection = [None] * 8
@@ -156,7 +156,6 @@ class U6(Device):
         self.dac1Enable = 0
         self.dac0 = 0
         self.dac1 = 0
-        self.handle = 0
         self.calInfo = CalibrationInfo()
         self.productName = "U6"
         self.debug = debug
@@ -644,10 +643,11 @@ class U6(Device):
         self.packetsPerRequest = max(1, int(freq/SamplesPerPacket))
         self.packetsPerRequest = min(self.packetsPerRequest, 48)
     
-    def processStreamData(self, result):
+    def processStreamData(self, result, numBytes = None):
         """
-        Name: U6.processStreamData(result)
+        Name: U6.processStreamData(result, numPackets = None)
         Args: result, the string returned from streamData()
+              numBytes, the number of bytes per packet
         Desc: Breaks stream data into individual channels and applies
               calibrations.
               
@@ -655,12 +655,12 @@ class U6(Device):
         >>> print proccessStreamData(reading['result'])
         defaultDict(list, {'AIN0' : [3.123, 3.231, 3.232, ...]})
         """
-        numBytes = 14 + (self.streamSamplesPerPacket * len(self.streamChannelNumbers) * 2)
-        numPackets = len(result) // numBytes
+        if numBytes is None:
+            numBytes = 14 + (self.streamSamplesPerPacket * 2)
         
         returnDict = collections.defaultdict(list)
                 
-        j = 0
+        j = self.streamPacketOffset
         for packet in self.breakupPackets(result, numBytes):
             for sample in self.samplesFromPacket(packet):
                 if j >= len(self.streamChannelNumbers):
@@ -679,6 +679,8 @@ class U6(Device):
                 returnDict["AIN%s" % self.streamChannelNumbers[j]].append(value)
             
                 j += 1
+            
+            self.streamPacketOffset = j
 
         return returnDict
         

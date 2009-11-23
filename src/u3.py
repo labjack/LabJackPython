@@ -13,14 +13,9 @@ class U3(Device):
     u3.open()
     
     """
-    def __init__(self, handle = None, localId = None, serialNumber = None):
-        self.handle = handle
-        self.localId = localId
-        self.serialNumber = serialNumber
-        self.devType = 3
-        self.debug = False
-        self.streamConfiged = False
-        self.streamStarted = False
+    def __init__(self, debug = False):        
+        Device.__init__(self, None, devType = 3)
+        self.debug = debug
         
     def open(self, firstFound = True, localId = None, devNumber = None, handleOnly = False):
         """
@@ -604,10 +599,11 @@ class U3(Device):
         self.packetsPerRequest = max(1, int(freq/SamplesPerPacket))
         self.packetsPerRequest = min(self.packetsPerRequest, 48)
     
-    def processStreamData(self, result):
+    def processStreamData(self, result, numBytes = None):
         """
-        Name: U3.processStreamData(result)
+        Name: U3.processStreamData(result, numBytes = None)
         Args: result, the string returned from streamData()
+              numBytes, the number of bytes per packet.
         Desc: Breaks stream data into individual channels and applies
               calibrations.
               
@@ -615,18 +611,18 @@ class U3(Device):
         >>> print proccessStreamData(reading['result'])
         defaultDict(list, {'AIN0' : [3.123, 3.231, 3.232, ...]})
         """
-        numBytes = 14 + (self.streamSamplesPerPacket * len(self.streamChannelNumbers) * 2)
-        numPackets = len(result) // numBytes
+        if numBytes is None:
+            numBytes = 14 + (self.streamSamplesPerPacket * 2)
         
         returnDict = collections.defaultdict(list)
-                
-        j = 0
+        
+        
         for packet in self.breakupPackets(result, numBytes):
             for sample in self.samplesFromPacket(packet):
-                if j >= len(self.streamChannelNumbers):
-                    j = 0
+                if self.streamPacketOffset >= len(self.streamChannelNumbers):
+                    self.streamPacketOffset = 0
                 
-                if self.streamNegChannels[j] != 31:
+                if self.streamNegChannels[self.streamPacketOffset] != 31:
                     # do signed
                     value = struct.unpack('<H', sample )[0]
                     singleEnded = False
@@ -636,14 +632,14 @@ class U3(Device):
                     singleEnded = True
                 
                 lvChannel = True
-                if self.deviceName.lower().endswith('hv') and self.streamChannelNumbers[j] < 4:
+                if self.deviceName.lower().endswith('hv') and self.streamChannelNumbers[self.streamPacketOffset] < 4:
                     lvChannel = False
                
                 value = self.binaryToCalibratedAnalogVoltage(value, isLowVoltage = lvChannel, isSingleEnded = singleEnded)
                 
-                returnDict["AIN%s" % self.streamChannelNumbers[j]].append(value)
+                returnDict["AIN%s" % self.streamChannelNumbers[self.streamPacketOffset]].append(value)
             
-                j += 1
+                self.streamPacketOffset += 1
 
         return returnDict
     
