@@ -425,19 +425,19 @@ class Device(object):
         
         Open a device of type devType. 
         """
-        ct = 1
+        ct = LJ_ctUSB
         if Ethernet:
-            ct = 2
+            ct = LJ_ctETHERNET
         
         d = None
-        if firstFound:
-            d = openLabJack(devType, ct, firstFound = True, handleOnly = handleOnly)
-        elif devNumber != None:
+        if devNumber != None:
             d = openLabJack(devType, ct, firstFound = False, devNumber = devNumber, handleOnly = handleOnly)
         elif localId != None:
             d = openLabJack(devType, ct, firstFound = False, pAddress = localId, handleOnly = handleOnly)
         elif ipAddress != None:
             d = openLabJack(devType, ct, firstFound = False, pAddress = ipAddress, handleOnly = handleOnly)
+        elif firstFound:
+            d = openLabJack(devType, ct, firstFound = True, handleOnly = handleOnly)
         else:
             raise LabJackException("You must use first found, or give a localId, devNumber, or IP Address")
         
@@ -586,7 +586,7 @@ class Device(object):
         if not self.streamStarted:
             raise LabJackException("Please start streaming before reading.")
 
-        numBytes = 14 + (self.streamSamplesPerPacket * len(self.streamChannelNumbers) * 2)
+        numBytes = 14 + (self.streamSamplesPerPacket * 2)
 
         while True:
         
@@ -600,6 +600,7 @@ class Device(object):
 
             errors = 0
             missed = 0
+            firstPacket = ord(result[10])
             for i in range(numPackets):
                 e = ord(result[11+(i*numBytes)])
                 if e != 0:
@@ -608,7 +609,7 @@ class Device(object):
                     if e == 60:
                         missed += struct.unpack('<I', result[6+(i*numBytes):10+(i*numBytes)] )[0]
             
-            returnDict = dict(numPackets = numPackets, result = result, errors = errors, missed = missed )
+            returnDict = dict(numPackets = numPackets, result = result, errors = errors, missed = missed, firstPacket = firstPacket )
             
             if convert:
                 returnDict.update(self.processStreamData(result, numBytes = numBytes))
