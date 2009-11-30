@@ -444,11 +444,9 @@ class Device(object):
         self.handle = d.handle
         
         if not handleOnly:
-            self.localId = d.localId
-            self.serialNumber  = d.serialNumber
-            
-            if devType is 9:
-                self.ipAddress = d.ipAddress
+            for key, value in d.__dict__.items():
+                if key != "debug":
+                    self.__setattr__(key, value)
 
     def close(self):
         """close()
@@ -945,23 +943,22 @@ def _makeDeviceFromHandle(handle, deviceType):
             device.write(sndDataBuff, checksum = False)
             rcvDataBuff = device.read(38)
         
-            
-            device.localId = rcvDataBuff[8] & 0xff
+            # Local ID
+            device.localID = rcvDataBuff[8] & 0xff
         
-            macAddress = rcvDataBuff[28:34]
-            macAddress.reverse()
+            # MAC Address
+            device.macAddress = "%02X:%02X:%02X:%02X:%02X:%02X" % (rcvDataBuff[33], rcvDataBuff[32], rcvDataBuff[31], rcvDataBuff[30], rcvDataBuff[29], rcvDataBuff[28])
         
-            serialBytes = chr(0x10)
-            for j in macAddress[3:]:
-                serialBytes += chr(j)
-            device.serialNumber = struct.unpack(">I", serialBytes)[0]
+            # Parse out serial number
+            device.serialNumber = struct.unpack("<I", struct.pack("BBBB", rcvDataBuff[28], rcvDataBuff[29], rcvDataBuff[30], 0x10))[0]
         
             #Parse out the IP address
-            ipAddress = ""
-            for j in range(13, 9, -1):
-                ipAddress += str(int(rcvDataBuff[j]))
-                ipAddress += "." 
-            device.ipAddress = ipAddress[0:-1]
+            device.ipAddress = "%s.%s.%s.%s" % (rcvDataBuff[13], rcvDataBuff[12], rcvDataBuff[11], rcvDataBuff[10] )
+            
+            # Comm FW Version
+            device.commFWVersion = "%s.%02d" % (rcvDataBuff[37], rcvDataBuff[36])
+            
+            
         except Exception, e:
             device.close()
             raise e
@@ -986,6 +983,16 @@ def _makeDeviceFromHandle(handle, deviceType):
         serialNumber = struct.pack("<BBBB", *rcvDataBuff[15:19])
         device.serialNumber = struct.unpack('<I', serialNumber)[0]
         device.ipAddress = ""
+        device.firmwareVersion = "%d.%02d" % (rcvDataBuff[10], rcvDataBuff[9])
+        device.hardwareVersion = "%d.%02d" % (rcvDataBuff[14], rcvDataBuff[13])
+        device.versionInfo = rcvDataBuff[37]
+        device.deviceName = 'U3'
+        if device.versionInfo == 1:
+            device.deviceName += 'B'
+        elif device.versionInfo == 2:
+            device.deviceName += '-LV'
+        elif device.versionInfo == 18:
+            device.deviceName += '-HV'
         
     if deviceType == 6:
         device = Device(handle, devType = 6)
@@ -1005,6 +1012,13 @@ def _makeDeviceFromHandle(handle, deviceType):
         device.serialNumber = struct.unpack('<I', serialNumber)[0]
         device.ipAddress = ""
         
+        device.firmwareVersion = "%s.%02d" % (rcvDataBuff[10], rcvDataBuff[9])
+        device.bootloaderVersion = "%s.%02d" % (rcvDataBuff[12], rcvDataBuff[11]) 
+        device.hardwareVersion = "%s.%02d" % (rcvDataBuff[14], rcvDataBuff[13])
+        device.versionInfo = rcvDataBuff[37]
+        device.deviceName = 'U6'
+        if device.versionInfo == 12:
+            device.deviceName = 'U6-Pro'
     
     return device
 

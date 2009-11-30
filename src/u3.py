@@ -277,11 +277,37 @@ class U3(Device):
               negChannel, the negitive channel to read from.
               longSettle, set to True for longSettle
               quickSample, set to True for quickSample
-        Desc: A convenience function to read an AIN. 
-        
-        TODO: Apply conversions.
+        Desc: A convenience function to read an AIN.
         """
-        return self.getFeedback(AIN(posChannel, negChannel, longSettle, quickSample))[0]
+        try:
+            if self.firmwareVersion >= 1.18:
+                # AIN0 => Register 0, AIN1 => Register 2, AIN2 => Register 4
+                return self.readRegister(posChannel * 2)
+            else:
+                self._getAINLowLevel(posChannel, negChannel, longSettle, quickSample)
+        except AttributeError:
+            return self._getAINLowLevel(posChannel, negChannel, longSettle, quickSample)
+
+        
+    def _getAINLowLevel(self, posChannel, negChannel, longSettle, quickSample):
+        """
+        For reading the AIN using low-level commands
+        """
+        bits = self.getFeedback(AIN(posChannel, negChannel, longSettle, quickSample))[0]
+        
+        singleEnded = True
+        if negChannel != 31:
+            singleEnded = False
+        
+        lvChannel = True
+        
+        try:
+            if self.deviceName.endswith("-HV") and posChannel < 4:
+                lvChannel = False
+        except AttributeError:
+            pass
+        
+        return self.binaryToCalibratedAnalogVoltage(bits, isLowVoltage = lvChannel, isSingleEnded = singleEnded)
 
     def _buildBuffer(self, sendBuffer, readLen, commandlist):
         for cmd in commandlist:
