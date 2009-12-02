@@ -1387,11 +1387,20 @@ class Timer(FeedbackCommand):
     
     Value: Only updated if the UpdateReset bit is 1.  The meaning of this
            parameter varies with the timer mode.
+           
+    Mode: Set to the timer mode to handle any special processing. See classes
+          QuadratureInputTimer and TimerStopInput1.
 
-    >>> d.getFeedback( u3.Timer( timer, UpdateReset = False, Value = 0 ) )
+    Returns an unsigned integer of the timer value, unless Mode has been
+    specified and there are special return values. See Section 2.9.1 for
+    expected return values. 
+
+    >>> d.getFeedback( u3.Timer( timer, UpdateReset = False, Value = 0 \
+    ... , Mode = None ) )
     [ 12314 ]
     """
-    def __init__(self, timer, UpdateReset = False, Value=0):
+    def __init__(self, timer, UpdateReset = False, Value=0, Mode = None):
+        self.Mode = Mode
         if timer != 0 and timer != 1:
             raise LabJackException("Timer should be either 0 or 1.")
         if UpdateReset and Value == None:
@@ -1403,8 +1412,14 @@ class Timer(FeedbackCommand):
     readLen = 4
     
     def handle(self, input):
-        inStr = ''.join([chr(x) for x in input])
-        return struct.unpack('<I', inStr )[0]
+        inStr = struct.pack('B' * len(input), *input)
+        if self.Mode == 8:
+            return struct.unpack('<i', inStr )[0]
+        elif self.Mode == 9:
+            max, current = struct.unpack('<HH', inStr )
+            return current, max
+        else:
+            return struct.unpack('<I', inStr )[0]
 
 class Timer0(Timer):
     """
@@ -1416,8 +1431,12 @@ class Timer0(Timer):
     
     Value: Only updated if the UpdateReset bit is 1.  The meaning of this
            parameter varies with the timer mode.
+           
+    Mode: Set to the timer mode to handle any special processing. See classes
+          QuadratureInputTimer and TimerStopInput1.
 
-    >>> d.getFeedback( u3.Timer0( UpdateReset = False, Value = 0 ) )
+    >>> d.getFeedback( u3.Timer0( UpdateReset = False, Value = 0, \
+    ... Mode = None ) )
     [ 12314 ]
     """
     def __init__(self, UpdateReset = False, Value = 0):
@@ -1434,11 +1453,65 @@ class Timer1(Timer):
     Value: Only updated if the UpdateReset bit is 1.  The meaning of this
            parameter varies with the timer mode.
 
-    >>> d.getFeedback( u3.Timer1( UpdateReset = False, Value = 0 ) )
+    Mode: Set to the timer mode to handle any special processing. See classes
+          QuadratureInputTimer and TimerStopInput1.
+
+    >>> d.getFeedback( u3.Timer0( UpdateReset = False, Value = 0, \
+    ... Mode = None ) )
     [ 12314 ]
     """
+    def __init__(self, UpdateReset = False, Value = 0, Mode = None):
+        Timer.__init__(self, 1, UpdateReset, Value, Mode)
+
+class QuadratureInputTimer(Timer):
+    """
+    For reading Quadrature input timers. They are special because their values
+    are signed.
+    
+    ( Section 2.9.1.8 of the User's Guide)
+    
+    Args:
+       UpdateReset: Set True if you want to reset the counter.
+       Value: Set to 0, and UpdateReset to True to reset the counter.
+    
+    Returns a signed integer.
+    
+    >>> # Setup the two timers to be quadrature
+    >>> d.getFeedback( u3.Timer0Config( 8 ), u3.Timer1Config( 8 ) )
+    [None, None]
+    >>> # Read the value
+    >>> d.getFeedback( u3.QuadratureInputTimer() )
+    [-21]
+    
+    """
     def __init__(self, UpdateReset = False, Value = 0):
-        Timer.__init__(self, 1, UpdateReset, Value)
+        Timer.__init__(self, 0, UpdateReset, Value, Mode = 8)
+
+class TimerStopInput1(Timer1):
+    """
+    For reading a stop input timer. They are special because the value returns
+    the current edge count and the stop value.
+    
+    ( Section 2.9.1.9 of the User's Guide)
+    
+    Args:
+        UpdateReset: Set True if you want to update the value.
+        Value: The stop value. Only updated if the UpdateReset bit is 1.
+    
+    Returns a tuple where the first value is current edge count, and the second
+    value is the stop value.
+    
+    >>> # Setup the timer to be Stop Input
+    >>> d.getFeedback( u3.Timer0Config( 9, Value = 30 ) )
+    [None]
+    >>> # Read the timer
+    >>> d.getFeedback( u3.TimerStopInput1() )
+    [(0, 30)]
+    
+    """
+    def __init__(self, UpdateReset = False, Value = 0):
+        Timer.__init__(self, 1, UpdateReset, Value, Mode = 9)
+
 
 class TimerConfig(FeedbackCommand):
     """
