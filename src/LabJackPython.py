@@ -1275,8 +1275,6 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
     ec = 0
     x1Type = "int"
     if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
-
         digitalConst = [35, 36, 37, 45]
         pv = ctypes.c_double(pValue)
 
@@ -1305,11 +1303,16 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
                     newA[i] = ctypes.c_double(x1[i])
 
             ec = staticLib.eGet(Handle, IOType, Channel, ctypes.byref(pv), ctypes.byref(newA))
-            x1 = [0] * len(x1)
-            for i in range(len(x1)):
-                x1[i] = newA[i]
-                if(x1Type == "int"):
-                    x1[i] = x1[i] & 0xff
+            
+            if IOType == LJ_ioRAW_IN and Channel == 1:
+                # We return the raw byte string if we are streaming
+                x1 = struct.pack('b' * len(x1), *newA)
+            else:
+                x1 = [0] * len(x1)
+                for i in range(len(x1)):
+                    x1[i] = newA[i]
+                    if(x1Type == "int"):
+                        x1[i] = x1[i] & 0xff
             
         if ec != 0: raise LabJackException(ec)
         return pv.value, x1
