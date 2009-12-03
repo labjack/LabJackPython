@@ -470,6 +470,10 @@ class Device(object):
         
         Open a device of type devType. 
         """
+        
+        if self.handle is not None:
+            raise LabJackException(9000,"Open called on a device with a handle. Please close the device, and try again. Your device is probably already open.\nLook for lines of code that look like this:\nd = u3.U3()\nd.open() # Wrong! Device is already open.")
+        
         ct = LJ_ctUSB
         
         if Ethernet:
