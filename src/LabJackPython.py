@@ -710,7 +710,8 @@ def verifyChecksum(buffer):
     return False
 
 
-def listAll(deviceType, connectionType = LJ_ctUSB):
+# 1 = LJ_ctUSB
+def listAll(deviceType, connectionType = 1):
     """listAll(deviceType, connectionType) -> [[local ID, Serial Number, IP Address], ...]
     
     Searches for all devices of a given type over a given connection type and returns a list 
