@@ -17,7 +17,7 @@ def unpackShort(bytes):
 
 class UE9(Device):
     """ A nice python class to represent a UE9 """
-    def __init__(self, debug = False):
+    def __init__(self, debug = False, autoOpen = True, **kargs):
         """
         Name: UE9.__init__(self)
         Args: debug, True for debug information
@@ -28,8 +28,11 @@ class UE9(Device):
         Device.__init__(self, None, devType = 9)
         
         self.debug = debug
+        
+        if autoOpen:
+            self.open(**kargs)
     
-    def open(self, firstFound = True, ipAddress = None, localId = None, devNumber = None, ethernet=False, handleOnly = False):
+    def open(self, firstFound = True, ipAddress = None, localId = None, devNumber = None, ethernet=False, handleOnly = False, LJSocket = None):
         """
         Name: UE9.open(firstFound = True, ipAddress = None, localId = None, devNumber = None, ethernet=False)
         Args: firstFound, Open the first found UE9
@@ -37,9 +40,11 @@ class UE9(Device):
               localId, Specify the localId of the UE9 you want to open
               devNumber, Specify the USB dev number of the UE9
               ethernet, set to true to connect over ethernet.
+              handleOnly, if True, LabJackPython will only open a handle
+              LJSocket, set to "<ip>:<port>" to connect to LJSocket
         Desc: Opens the UE9.
         
-        >>> myUe9 = ue9.UE9()
+        >>> myUe9 = ue9.UE9(autoOpen = False)
         >>> myUe9.open()
         """
         Device.open(self, 9, Ethernet = ethernet, firstFound = firstFound, localId = localId, devNumber = devNumber, ipAddress = ipAddress, handleOnly = handleOnly)
@@ -59,7 +64,6 @@ class UE9(Device):
               with the Comm processor. Section 5.2.1 of the User's Guide.
         
         >>> myUe9 = ue9.UE9()
-        >>> myUe9.open()
         >>> myUe9.commConfig()
         {'CommFWVersion': '1.47',
          'DHCPEnabled': False,
@@ -162,7 +166,6 @@ class UE9(Device):
         Desc: Resets the pointers to the stream buffer to make it empty.
         
         >>> myUe9 = ue9.UE9()
-        >>> myUe9.open()
         >>> myUe9.flushBuffer()
         """
         command = [ 0x08, 0x08 ]
@@ -251,7 +254,6 @@ class UE9(Device):
               state. See section 5.3.2 of the User's Guide.
         
         >>> myUe9 = ue9.UE9()
-        >>> myUe9.open()
         >>> myUe9.controlConfig()
         {'CIODirection': 0,
          'CIOState': 0,
@@ -372,7 +374,6 @@ class UE9(Device):
               LabJack UE9. See section 5.3.3 of the User's Guide.
 
         >>> myUe9 = ue9.UE9()
-        >>> myUe9.open()
         >>> myUe9.feedback()
         {'AIN0': 0, ...
          'TimerB': 0,
@@ -444,7 +445,6 @@ class UE9(Device):
               Guide.
               
         >>> myUe9 = ue9.UE9()
-        >>> myUe9.open()
         >>> myUe9.singleIO(1, 0, Dir = 1, State = 0)
         {'FIO0 Direction': 1, 'FIO0 State': 0}
         """
@@ -523,7 +523,6 @@ class UE9(Device):
               Timer#Value, Only updates if UpdateReset is True. The meaning of this parameter varies with the timer mode. See Section 2.10 for further information.
         Desc: Enables, configures, and reads the counters and timers. See section 5.3.5 of the User's Guide for more information
         >>> dev = UE9()
-        >>> dev.open()
         >>> dev.timerCounter()
         {'Counter0Enabled': False, 'Timer5Enabled': False, 'Timer0Enabled': False, 'Timer1': 0, 'Timer4': 0, 'Timer3Enabled': False, 'Timer4Enabled': False, 'Timer5': 0, 'Counter1Enabled': False, 'Timer3': 0, 'Timer2': 0, 'Timer1Enabled': False, 'Timer0': 0, 'Timer2Enabled': False}
         """
@@ -626,7 +625,6 @@ class UE9(Device):
               guide before you do something you may regret.
         
         >>> myUE9 = UE9()
-        >>> myUE9.open()
         >>> myUE9.readMem(0)
         [ < userdata stored in block 0 > ]
         
@@ -657,7 +655,6 @@ class UE9(Device):
               guide before you do something you may regret.
         
         >>> myUE9 = UE9()
-        >>> myUE9.open()
         >>> myUE9.writeMem(0, [ < userdata to be stored in block 0 > ])
         
         NOTE: Do not call this function while streaming.
@@ -688,7 +685,6 @@ class UE9(Device):
               something you may regret.
         
         >>> myUE9 = UE9()
-        >>> myUE9.open()
         >>> myUE9.eraseMem()
         
         NOTE: Do not call this function while streaming.

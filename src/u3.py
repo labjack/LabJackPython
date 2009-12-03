@@ -10,26 +10,30 @@ class U3(Device):
     U3 Class for all U3 specific low-level commands.
     
     u3 = U3()
-    u3.open()
     
     """
-    def __init__(self, debug = False):        
+    def __init__(self, debug = False, autoOpen = True, **kargs):        
         Device.__init__(self, None, devType = 3)
         self.debug = debug
         
-    def open(self, firstFound = True, localId = None, devNumber = None, handleOnly = False):
+        if autoOpen:
+            self.open(**kargs)
+        
+    def open(self, firstFound = True, localId = None, devNumber = None, handleOnly = False, LJSocket = None):
         """
         Name: U3.open(firstFound = True, localId = None, devNumber = None,
-                      handleOnly = False)
-        Args: firstFound, will open the first U3 found.
-              localId, the localID of the U3 you wish to open
-              devNumber, firstFound is devNumber = 1, devNumber = 2 is second
-                         found.
-              handleOnly, if True, it won't read anything about the U3 just 
-                          get the device handle.
+                      handleOnly = False, LJSocket = None)
+        Args: firstFound, If True, use the first found U3
+              localId, open a U3 with the given local id.
+              devNumber, open a U3 with the given devNumber
+              handleOnly, if True, LabJackPython will only open a handle
+              LJSocket, set to "<ip>:<port>" to connect to LJSocket
         Desc: Use to open a U3.
+        
+        >>> myU3 = u3.U3(autoOpen = False)
+        >>> myU3.open()
         """
-        Device.open(self, 3, firstFound = firstFound, localId = localId, devNumber = devNumber, handleOnly = handleOnly )
+        Device.open(self, 3, firstFound = firstFound, localId = localId, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket )
     
     def configU3(self, LocalID = None, TimerCounterConfig = None, FIOAnalog = None, FIODirection = None, FIOState = None, EIOAnalog = None, EIODirection = None, EIOState = None, CIODirection = None, CIOState = None, DAC1Enable = None, DAC0 = None, DAC1 = None, TimerClockConfig = None, TimerClockDivisor = None, CompatibilityOptions = None ):
         """
@@ -333,21 +337,19 @@ class U3(Device):
         Args: the FeedbackCommands to run
         Desc: Forms the commandlist into a packet, sends it to the U3, and reads the response.
         
-        >>> myU3 = U3()
-        >>> myU3.open()
-        >>> ledCommand = U3.LED(False)
-        >>> internalTempCommand = U3.AIN(30, 31, True)
+        >>> myU3 = u3.U3()
+        >>> ledCommand = u3.LED(False)
+        >>> internalTempCommand = u3.AIN(30, 31, True)
         >>> myU3.getFeedback(ledCommand, internalTempCommand)
         [None, 23200]
 
         OR if you like the list version better:
         
         >>> myU3 = U3()
-        >>> myU3.open()
-        >>> ledCommand = U3.LED(False)
-        >>> internalTempCommand = U3.AIN(30, 31, True)
+        >>> ledCommand = u3.LED(False)
+        >>> internalTempCommand = u3.AIN(30, 31, True)
         >>> commandList = [ ledCommand, internalTempCommand ]
-        >>> myU6.getFeedback(commandList)
+        >>> myU3.getFeedback(commandList)
         [None, 23200]
         
         """
@@ -1439,8 +1441,8 @@ class Timer0(Timer):
     ... Mode = None ) )
     [ 12314 ]
     """
-    def __init__(self, UpdateReset = False, Value = 0):
-        Timer.__init__(self, 0, UpdateReset, Value)
+    def __init__(self, UpdateReset = False, Value = 0, Mode = None):
+        Timer.__init__(self, 0, UpdateReset, Value, Mode)
 
 class Timer1(Timer):
     """
@@ -1456,7 +1458,7 @@ class Timer1(Timer):
     Mode: Set to the timer mode to handle any special processing. See classes
           QuadratureInputTimer and TimerStopInput1.
 
-    >>> d.getFeedback( u3.Timer0( UpdateReset = False, Value = 0, \
+    >>> d.getFeedback( u3.Timer1( UpdateReset = False, Value = 0, \
     ... Mode = None ) )
     [ 12314 ]
     """

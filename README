@@ -8,7 +8,6 @@ From there, interacting with your devices is easy.
 For U3:
 >>> import u3
 >>> d = u3.U3()
->>> d.open()
 >>> d.configU3()
 {'BootloaderVersion': '0.27',
  'CIODirection': 0,
@@ -19,7 +18,6 @@ For U3:
 For U6:
 >>> import u6
 >>> d = u6.U6()
->>> d.open()
 >>> d.configU6()
 {'BootloaderVersion': '6.15',
  'FirmwareVersion': '0.88',
@@ -27,4 +25,10 @@ For U6:
 }
 >>> d.close()
 
-Full UE9 support coming soon.
+For UE9:
+>>> import ue9
+>>> d = ue9.UE9()
+>>> d.commConfig()
+{'IPAddress' : '192.168.1.209'
+ ...,
+}

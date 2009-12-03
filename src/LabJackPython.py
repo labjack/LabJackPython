@@ -4,12 +4,10 @@ Windows UD Driver, and the LabJack Linux and Mac drivers.
 
 Author LabJack Corporation
 
-Version 0.7.0
+Version 0.8.0
 
 For use with drivers:
-    - Windows UD driver: 2.69
-    - Linux driver: 1.1
-    - Mac driver: 1.0
+    - UD Driver or Mac/Linux Exodriver
 
 
 This python wrapper is intended to be used as an easy way to implement the 
@@ -54,6 +52,10 @@ Version History
         - Removed large static function encapsulating all functions.  Works as one module now.
         - Changed Read and Write to increase speed
         - Performed many other minor revisions.
+    - 0.8.0 December 3, 2009
+        - All changes made on GitHub up to this point.
+        - Added LJSocket support
+        - U3/U6/UE9 now all auto-open on construction
 """
 
 import collections
@@ -64,12 +66,7 @@ from decimal import Decimal
 import socket
 import Modbus
 
-__version = "0.7.0"
-
-DEBUG = False
-
-#Define constants used as default parameters.
-LJ_ctUSB = 1
+__version = "0.8.0"
 
 SOCKET_TIMEOUT = 10
 BROADCAST_SOCKET_TIMEOUT = 1
@@ -166,7 +163,16 @@ class Device(object):
 
         handle = self.handle
 
-        if(isinstance(handle, UE9TCPHandle)):
+        if(isinstance(handle, LJSocketHandle)):
+            if modbus is True:
+                writeBuffer = [ 0, 0 ] + writeBuffer
+            
+            packFormat = "B" * len(writeBuffer)
+            tempString = struct.pack(packFormat, *writeBuffer)
+            
+            handle.socket.send(tempString)
+            
+        elif(isinstance(handle, UE9TCPHandle)):
             packFormat = "B" * len(writeBuffer)
             tempString = struct.pack(packFormat, *writeBuffer)
             if modbus is True:
@@ -202,7 +208,14 @@ class Device(object):
             raise LabJackException("The device handle is None.")
         handle = self.handle
         
-        if(isinstance(handle, UE9TCPHandle)):
+        if(isinstance(handle, LJSocketHandle)):
+            rcvString = handle.socket.recv(numBytes)
+            readBytes = len(rcvString)
+            packFormat = "B" * readBytes
+            rcvDataBuff = struct.unpack(packFormat, rcvString)
+            return list(rcvDataBuff)
+            
+        elif(isinstance(handle, UE9TCPHandle)):
             if stream is True:
                 rcvString = handle.stream.recv(numBytes)
             else:
@@ -419,25 +432,31 @@ class Device(object):
             return False
         
 
-    def open(self, devType, Ethernet=False, firstFound = True, localId = None, devNumber = None, ipAddress = None, handleOnly = False):
+    def open(self, devType, Ethernet=False, firstFound = True, localId = None, devNumber = None, ipAddress = None, handleOnly = False, LJSocket = None):
         """
-        Device.open(devType, Ethernet=False, firstFound = True, localId = None, devNumber = None, ipAddress = None, handleOnly = False)
+        Device.open(devType, Ethernet=False, firstFound = True, localId = None, devNumber = None, ipAddress = None, handleOnly = False, LJSocket = None)
         
         Open a device of type devType. 
         """
         ct = LJ_ctUSB
+        
         if Ethernet:
             ct = LJ_ctETHERNET
         
+        if LJSocket is not None:
+            ct = LJ_ctLJSOCKET
+        
         d = None
         if devNumber != None:
-            d = openLabJack(devType, ct, firstFound = False, devNumber = devNumber, handleOnly = handleOnly)
+            d = openLabJack(devType, ct, firstFound = False, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket)
         elif localId != None:
-            d = openLabJack(devType, ct, firstFound = False, pAddress = localId, handleOnly = handleOnly)
+            d = openLabJack(devType, ct, firstFound = False, pAddress = localId, handleOnly = handleOnly, LJSocket = LJSocket)
         elif ipAddress != None:
-            d = openLabJack(devType, ct, firstFound = False, pAddress = ipAddress, handleOnly = handleOnly)
+            d = openLabJack(devType, ct, firstFound = False, pAddress = ipAddress, handleOnly = handleOnly, LJSocket = LJSocket)
+        elif LJSocket is not None:
+            d = openLabJack(devType, ct, handleOnly = handleOnly, LJSocket = LJSocket)
         elif firstFound:
-            d = openLabJack(devType, ct, firstFound = True, handleOnly = handleOnly)
+            d = openLabJack(devType, ct, firstFound = True, handleOnly = handleOnly, LJSocket = LJSocket)
         else:
             raise LabJackException("You must use first found, or give a localId, devNumber, or IP Address")
         
@@ -461,10 +480,9 @@ class Device(object):
         
         For Windows, Linux, and Mac
         """
-        if(os.name == 'posix'):
-            if(isinstance(self.handle, UE9TCPHandle)):
-                self.handle.close()
-            else:    
+        if isinstance(self.handle, UE9TCPHandle) or isinstance(self.handle, LJSocketHandle):
+            self.handle.close()
+        elif os.name == 'posix':
                 staticLib.LJUSB_CloseDevice(self.handle);
             
         self.handle = None
@@ -786,12 +804,23 @@ def deviceCount(devType = None):
         return staticLib.LJUSB_GetDevCount(devType)
 
 #Windows, Linux, and Mac
-def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, devNumber = None, handleOnly = False):
-    """openLabJack(deviceType, connectionType, firstFound = True, pAddress = 1)
+def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, devNumber = None, handleOnly = False, LJSocket = None):
+    """openLabJack(deviceType, connectionType, firstFound = True, pAddress = 1, LJSocket = None)
     
         Note: On Windows, Ue9 over Ethernet, pAddress MUST be the IP address. 
     """
     rcvDataBuff = []
+
+    # LJSocket handles work indepenent of OS
+    if connectionType == LJ_ctLJSOCKET:
+        if LJSocket is not '':
+            ip, port = LJSocket.split(":")
+            port = int(port)
+            handle = LJSocketHandle(ip, port, deviceType, firstFound, pAddress)
+        else:
+            handle = LJSocketHandle('localhost', 6000, deviceType, firstFound, pAddress)
+                
+        return Device(handle, devType = deviceType)
 
     #If windows operating system then use the UD Driver
     if(os.name == 'nt'):
@@ -2228,6 +2257,72 @@ def setChecksum8(buffer, numBytes):
     return buffer
 
 
+class LJSocketHandle(object):
+    """
+    Class to replace a device handle with a socket to a LJSocket server.
+    """
+    def __init__(self, ipAddress, port, devType, firstFound, pAddress):
+        try:
+            serverSocket = socket.socket()
+            serverSocket.connect((ipAddress, port))
+            serverSocket.settimeout(SOCKET_TIMEOUT)
+            
+            f = serverSocket.makefile(bufsize = 0)
+            f.write("scan\r\n")
+            
+            l = f.readline().strip()
+            try:
+                status, numLines = l.split(' ')
+            except ValueError:
+                raise Exception("Got invalid line from server: %s" % l)
+                
+            if status.lower().startswith('ok'):
+                lines = []
+                marked = None
+                for i in range(int(numLines)):
+                    l = f.readline().strip()
+                    dev = self.parseline(l)
+                    if devType == dev['prodId']:
+                        lines.append(dev)
+                        
+                        if not firstFound and (dev['localId'] == pAddress or dev['serial'] == pAddress):
+                            marked = dev                 
+                
+                f.close()
+                serverSocket.close()
+                
+                print "Result of scan:"
+                print lines
+                
+                if firstFound and len(lines) > 0:
+                    self.socket = socket.socket()
+                    self.socket.connect((ipAddress, lines[0]['port']))
+                    self.socket.settimeout(SOCKET_TIMEOUT)
+                elif marked is not None:
+                    self.socket = socket.socket()
+                    self.socket.connect((ipAddress, marked['port']))
+                    self.socket.settimeout(SOCKET_TIMEOUT)
+                else:
+                    raise Exception("Labjack not found.")
+                
+            else:
+                raise Exception("Got an error from springboard. It said '%s'" % l)
+            
+        except Exception, e:
+            raise LabJackException(ec = LJE_LABJACK_NOT_FOUND, errorString = "Couldn't connect to a LabJack at %s:%s. The error was: %s" % (ipAddress, port, str(e)))
+    
+    def close(self):
+        self.socket.close()
+        
+    def parseline(self, line):
+        try:
+            prodId, port, localId, serial = line.split(' ')
+        except ValueError:
+            raise Exception("")
+        
+        return { 'prodId' : int(prodId), 'port' : int(port), 'localId' : int(localId), 'serial' : int(serial)  }
+
+
 #Class for handling UE9 TCP Connections
 class UE9TCPHandle(object):
     """__UE9TCPHandle(ipAddress)
@@ -2300,6 +2395,9 @@ If a device is opened with the raw connection types, only LJ_ioRAW_OUT
 and LJ_ioRAW_IN io types should be used
 """
 
+LJ_ctLJSOCKET = 200
+"""Connection type for USB LabJack connected to LJSocket server.
+"""
 
 # io types:
 LJ_ioGET_AIN = 10 # UE9 + U3.  This is single ended version.

@@ -134,10 +134,12 @@ class CalibrationInfo(object):
 
 class U6(Device):
     """ A Python class that represents a U6 """
-    def __init__(self, debug = False):
+    def __init__(self, debug = False, autoOpen = True, **kargs):
         """
-        Name: U6.__init__(self, debug = False)
+        Name: U6.__init__(self, debug = False, autoOpen = True, **kargs)
         Args: debug, Do you want debug information?
+              autoOpen, If true, then the constructor will call open for you
+              **kargs, The arguments to be passed to open.
         Desc: Your basic constructor.
         """
         
@@ -159,18 +161,25 @@ class U6(Device):
         self.calInfo = CalibrationInfo()
         self.productName = "U6"
         self.debug = debug
-
-    def open(self, localId = None, firstFound = True, devNumber = None, handleOnly = False):
-        """
-        Name: U6.open(localId = None, firstFound = True)
-        Args: firstFound, use the first found U6?
-              localId, open this local id
-        Desc: Opens a U6 for reading.
         
-        >>> myU6 = U6()
-        >>> myU6.openU6()
+        if autoOpen:
+            self.open(**kargs)
+
+    def open(self, localId = None, firstFound = True, devNumber = None, handleOnly = False, LJSocket = None):
         """
-        Device.open(self, 6, firstFound = firstFound, localId = localId, devNumber = devNumber, handleOnly = handleOnly )
+        Name: U6.open(localId = None, firstFound = True, devNumber = None,
+                      handleOnly = False, LJSocket = None)
+        Args: firstFound, If True, use the first found U6
+              localId, open a U6 with the given local id.
+              devNumber, open a U6 with the given devNumber
+              handleOnly, if True, LabJackPython will only open a handle
+              LJSocket, set to "<ip>:<port>" to connect to LJSocket
+        Desc: Opens a U6 for reading and writing.
+        
+        >>> myU6 = u6.U6(autoOpen = False)
+        >>> myU6.open()
+        """
+        Device.open(self, 6, firstFound = firstFound, localId = localId, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket )
     
     def configU6(self, LocalID = None):
         """
@@ -179,7 +188,6 @@ class U6(Device):
         Desc: Writes the Local ID, and reads some hardware information.
         
         >>> myU6 = u6.U6()
-        >>> myU6.open()
         >>> myU6.configU6()
         {'BootloaderVersion': '6.15',
          'FirmwareVersion': '0.88',
@@ -234,7 +242,6 @@ class U6(Device):
         Desc: Writes and reads the current IO configuration.
         
         >>> myU6 = u6.U6()
-        >>> myU6.open()
         >>> myU6.configIO()
         {'Counter0Enabled': False,
          'Counter1Enabled': False,
@@ -272,8 +279,6 @@ class U6(Device):
         
         result = self._writeRead(command, 16, [0xf8, 0x05, 0x0B])
         
-        print result
-        
         return { 'NumberTimersEnabled' : result[8], 'Counter0Enabled' : bool(result[9] & 1), 'Counter1Enabled' : bool( (result[9] >> 1) & 1), 'TimerCounterPinOffset' : result[10] }
         
     def configTimerClock(self, TimerClockBase = None, TimerClockDivisor = None):
@@ -288,7 +293,6 @@ class U6(Device):
         Desc: Writes and read the timer clock configuration.
         
         >>> myU6 = u6.U6()
-        >>> myU6.open()
         >>> myU6.configTimerClock()
         {'TimeClockDivisor': 256, 'TimerClockBase': 2}
         """
@@ -339,10 +343,9 @@ class U6(Device):
         """
         Name: getFeedback(commandlist)
         Args: the FeedbackCommands to run
-        Desc: Forms the commandlist into a packet, sends it to the U3, and reads the response.
+        Desc: Forms the commandlist into a packet, sends it to the U6, and reads the response.
         
         >>> myU6 = U6()
-        >>> myU6.open()
         >>> ledCommand = u6.LED(False)
         >>> internalTempCommand = u6.AIN(30, 31, True)
         >>> myU6.getFeedback(ledCommand, internalTempCommand)
@@ -351,7 +354,6 @@ class U6(Device):
         OR if you like the list version better:
         
         >>> myU6 = U6()
-        >>> myU6.open()
         >>> ledCommand = u6.LED(False)
         >>> internalTempCommand = u6.AIN(30, 31, True)
         >>> commandList = [ ledCommand, internalTempCommand ]
@@ -387,7 +389,6 @@ class U6(Device):
               guide before you do something you may regret.
         
         >>> myU6 = U6()
-        >>> myU6.open()
         >>> myU6.readMem(0)
         [ < userdata stored in block 0 > ]
         
@@ -424,7 +425,6 @@ class U6(Device):
               guide before you do something you may regret.
         
         >>> myU6 = U6()
-        >>> myU6.open()
         >>> myU6.writeMem(0, [ < userdata to be stored in block 0 > ])
         
         NOTE: Do not call this function while streaming.
@@ -460,7 +460,6 @@ class U6(Device):
               something you may regret.
         
         >>> myU6 = U6()
-        >>> myU6.open()
         >>> myU6.eraseMem()
         
         NOTE: Do not call this function while streaming.
@@ -500,7 +499,6 @@ class U6(Device):
               defaults.
         
         >>> myU6 = U6()
-        >>> myU6.open()
         >>> myU6.setDefaults()
         """
         command = [ 0 ] * 8
@@ -531,7 +529,6 @@ class U6(Device):
         Desc: Reads the power-up defaults from flash.
         
         >>> myU6 = U6()
-        >>> myU6.open()
         >>> myU6.readDefaults(0)
         [ 0, 0, ... , 0]        
         """
@@ -1020,10 +1017,10 @@ class U6(Device):
         Desc: Gets the slopes and offsets for AIN and DACs,
               as well as other calibration data
         
-        >>> myU3 = U6()
-        >>> myU3.openU6()
-        >>> myU3.getCalibrationData()
-        >>> myU3.calInfo
+        >>> myU6 = U6()
+        >>> myU6.openU6()
+        >>> myU6.getCalibrationData()
+        >>> myU6.calInfo
         <ainDiffOffset: -2.46886488446,...>
         """
         if self.debug is True:
@@ -1207,7 +1204,8 @@ class U6(Device):
         """
         Name: getTemperature
         Args: none
-        Desc: Reads the U3's internal temperature sensor in Kelvin.  See Section 2.6.4 of the U3 User's Guide.
+        Desc: Reads the U6's internal temperature sensor in Kelvin. 
+              See Section 2.6.4 of the U6 User's Guide.
         
         >>> myU6.getTemperature()
         299.87723471224308
@@ -1631,23 +1629,38 @@ class Timer(FeedbackCommand):
     Value: Only updated if the UpdateReset bit is 1.  The meaning of this
            parameter varies with the timer mode.
 
-    >>> d.getFeedback( u6.Timer( timer, UpdateReset = False, Value = 0 ) )
+    Mode: Set to the timer mode to handle any special processing. See classes
+          QuadratureInputTimer and TimerStopInput1.
+
+    Returns an unsigned integer of the timer value, unless Mode has been
+    specified and there are special return values. See Section 2.9.1 for
+    expected return values. 
+
+    >>> d.getFeedback( u6.Timer( timer, UpdateReset = False, Value = 0 \
+    ... , Mode = None ) )
     [ 12314 ]
     """
-    def __init__(self, timer, UpdateReset = False, Value=0):
+    def __init__(self, timer, UpdateReset = False, Value=0, Mode = None):
         if timer != 0 and timer != 1:
             raise LabJackException("Timer should be either 0 or 1.")
         if UpdateReset and Value == None:
             raise LabJackException("UpdateReset set but no value.")
-            
+        
+        self.Mode = Mode
         
         self.cmdBytes = [ (42 + (2*timer)), UpdateReset, Value % 256, Value >> 8 ]
     
     readLen = 4
     
     def handle(self, input):
-        inStr = ''.join([chr(x) for x in input])
-        return struct.unpack('<I', inStr )
+        inStr = struct.pack('B' * len(input), *input)
+        if self.Mode == 8:
+            return struct.unpack('<i', inStr )[0]
+        elif self.Mode == 9:
+            max, current = struct.unpack('<HH', inStr )
+            return current, max
+        else:
+            return struct.unpack('<I', inStr )[0]
 
 class Timer0(Timer):
     """
@@ -1660,11 +1673,15 @@ class Timer0(Timer):
     Value: Only updated if the UpdateReset bit is 1.  The meaning of this
            parameter varies with the timer mode.
 
-    >>> d.getFeedback( u6.Timer0( UpdateReset = False, Value = 0 ) )
+    Mode: Set to the timer mode to handle any special processing. See classes
+          QuadratureInputTimer and TimerStopInput1.
+
+    >>> d.getFeedback( u6.Timer0( UpdateReset = False, Value = 0, \
+    ... Mode = None ) )
     [ 12314 ]
     """
-    def __init__(self, UpdateReset = False, Value = 0):
-        Timer.__init__(self, 0, UpdateReset, Value)
+    def __init__(self, UpdateReset = False, Value = 0, Mode = None):
+        Timer.__init__(self, 0, UpdateReset, Value, Mode)
 
 class Timer1(Timer):
     """
@@ -1677,11 +1694,64 @@ class Timer1(Timer):
     Value: Only updated if the UpdateReset bit is 1.  The meaning of this
            parameter varies with the timer mode.
 
-    >>> d.getFeedback( u6.Timer1( UpdateReset = False, Value = 0 ) )
+    Mode: Set to the timer mode to handle any special processing. See classes
+          QuadratureInputTimer and TimerStopInput1.
+
+    >>> d.getFeedback( u6.Timer1( UpdateReset = False, Value = 0, \
+    ... Mode = None ) )
     [ 12314 ]
     """
+    def __init__(self, UpdateReset = False, Value = 0, Mode = None):
+        Timer.__init__(self, 1, UpdateReset, Value, Mode)
+
+class QuadratureInputTimer(Timer):
+    """
+    For reading Quadrature input timers. They are special because their values
+    are signed.
+    
+    ( Section 2.9.1.8 of the User's Guide)
+    
+    Args:
+       UpdateReset: Set True if you want to reset the counter.
+       Value: Set to 0, and UpdateReset to True to reset the counter.
+    
+    Returns a signed integer.
+    
+    >>> # Setup the two timers to be quadrature
+    >>> d.getFeedback( u6.Timer0Config( 8 ), u6.Timer1Config( 8 ) )
+    [None, None]
+    >>> # Read the value
+    >>> d.getFeedback( u6.QuadratureInputTimer() )
+    [-21]
+    
+    """
     def __init__(self, UpdateReset = False, Value = 0):
-        Timer.__init__(self, 1, UpdateReset, Value)
+        Timer.__init__(self, 0, UpdateReset, Value, Mode = 8)
+
+class TimerStopInput1(Timer1):
+    """
+    For reading a stop input timer. They are special because the value returns
+    the current edge count and the stop value.
+    
+    ( Section 2.9.1.9 of the User's Guide)
+    
+    Args:
+        UpdateReset: Set True if you want to update the value.
+        Value: The stop value. Only updated if the UpdateReset bit is 1.
+    
+    Returns a tuple where the first value is current edge count, and the second
+    value is the stop value.
+    
+    >>> # Setup the timer to be Stop Input
+    >>> d.getFeedback( u6.Timer0Config( 9, Value = 30 ) )
+    [None]
+    >>> # Read the timer
+    >>> d.getFeedback( u6.TimerStopInput1() )
+    [(0, 30)]
+    
+    """
+    def __init__(self, UpdateReset = False, Value = 0):
+        Timer.__init__(self, 1, UpdateReset, Value, Mode = 9)
 
 class TimerConfig(FeedbackCommand):
     """
@@ -1787,7 +1857,7 @@ class Counter1(Counter):
     Returns the current count from the counter if enabled.  If reset,
     this is the value before the reset.
     
-    >>> d.getFeedback( u3.Counter1( Reset = False ) )
+    >>> d.getFeedback( u6.Counter1( Reset = False ) )
     [ 2183 ]
     '''
     def __init__(self, Reset = False):
