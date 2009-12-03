@@ -275,14 +275,9 @@ class Device(object):
         pkt = Modbus.readHoldingRegistersRequest(addr, numReg = numReg)
         pkt = [ ord(c) for c in pkt ]
         
-        
-        if self.debug: print "Sent: ", pkt
-        
         numBytes = 9 + (2 * int(numReg))
         
         response = self._modbusWriteRead(pkt, numBytes)
-        
-        if self.debug: print "Response is: ", response
         
         packFormat = ">" + "B" * numBytes
         response = struct.pack(packFormat, *response)
@@ -318,13 +313,7 @@ class Device(object):
         request = [ ord(c) for c in request ]
         numBytes = 12
         
-        if self.debug: print "Sent: ", request
-        
         response = self._modbusWriteRead(request, numBytes)
-        if self.debug: print "Response is: ", response
-            
-        response = list(response)
-        if self.debug: print "response from write is: ", response
         
         if request != response:
             raise LabJackException(0, "Error writing register. Make sure you're writing to an address that allows writes.")
@@ -337,28 +326,18 @@ class Device(object):
         payload = struct.pack('>BHHBf', 0x10, addr, 0x02, 0x04, value)
         request = struct.pack('>HHHB', 0, 0, len(payload)+1, 0xff) + payload
         request = [ ord(c) for c in request ]
-        if self.debug: print "Request is: ", request
         numBytes = 14
         
         response = self._modbusWriteRead(request, numBytes)
-        if self.debug: print "Response is: ", response
-            
-        response = list(response)
-        if self.debug: print "response from write is: ", response
 
         return str(value)
         
     def writeMultipleRegisters(self, startAddr, values):
         request = Modbus.writeRegistersRequest(startAddr, values)
         request = [ ord(c) for c in request ]
-        if self.debug: "Request is: ", request
         numBytes = 12
         
         response = self._modbusWriteRead(request, numBytes)
-        if self.debug: print "Response is: ", response
-            
-        response = list(response)
-        if self.debug: print "response from write is: ", response
 
         return str(values)
         
@@ -369,12 +348,18 @@ class Device(object):
         return True
     
     def _modbusWriteRead(self, request, numBytes):
+        if self.debug: print "Sending: ", request
+        
         self.write(request, modbus = True, checksum = False)
         try:
-            return self.read(numBytes, modbus = True)
+            result = self.read(numBytes, modbus = True)
+            if self.debug: print "Response: ", result
+            return result
         except LabJackException:
             self.write(request, modbus = True, checksum = False)
-            return self.read(numBytes, modbus = True)
+            result = self.read(numBytes, modbus = True)
+            if self.debug: print "Response: ", result
+            return result
     
     def _checkCommandBytes(self, results, commandBytes):
         """

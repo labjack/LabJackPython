@@ -370,11 +370,16 @@ class U6(Device):
             sendBuffer += [0]
         sendBuffer[2] = len(sendBuffer) / 2 - 3
         
+        if self.debug: print "Sending: ", sendBuffer
+        
         self.write(sendBuffer)
         if readLen % 2:
             readLen += 1
 
         rcvBuffer = self.read(readLen)
+        
+        if self.debug: print "Response: ", rcvBuffer
+        
         results = []
         i = 9
         return self._buildFeedbackResults(rcvBuffer, commandlist, results, i)
@@ -1150,6 +1155,7 @@ class U6(Device):
             negSlope = self.calInfo.proAinNegSlope[gainIndex]
             posSlope = self.calInfo.proAinSlope[gainIndex]
         
+        
         if bits < center:
             return (center - bits) * negSlope
         else:
@@ -1301,7 +1307,7 @@ class AIN24(FeedbackCommand):
         byte2 = ( ResolutionIndex & 0xf )
         byte2 = ( ( GainIndex & 0xf ) << 4 ) + byte2
         
-        byte3 = (int(Differential) << 8) + SettlingFactor
+        byte3 = (int(Differential) << 7) + SettlingFactor
         self.cmdBytes = [ 0x02, PositiveChannel, byte2, byte3 ]
 
     readLen =  3
@@ -1347,7 +1353,7 @@ class AIN24AR(FeedbackCommand):
         byte2 = ( ResolutionIndex & 0xf )
         byte2 = ( ( GainIndex & 0xf ) << 4 ) + byte2
         
-        byte3 = (int(Differential) << 8) + SettlingFactor
+        byte3 = (int(Differential) << 7) + SettlingFactor
         self.cmdBytes = [ 0x03, PositiveChannel, byte2, byte3 ]
 
     readLen =  5
