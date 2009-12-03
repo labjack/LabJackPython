@@ -87,9 +87,7 @@ class MainWindow:
             if len(LabJackPython.listAll(3)) > 0: self.device = U3()
             elif len(LabJackPython.listAll(6)) > 0: self.device = U6()
             else: self.device = UE9()
-
-            # Open the device and display serial number
-            self.device.open()
+            
             self.serialDisplay.config(text=self.device.serialNumber)
             #if self.deviceSelection.get() == "U6" or self.deviceSelection.get() == "U3": self.device.setToFactoryDefaults()
 

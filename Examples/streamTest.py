@@ -12,7 +12,6 @@ MAX_REQUESTS = 75
 ## Uncomment these lines to stream from a U3
 ################################################################################
 #d = u3.U3()
-#d.open()
 #
 ## to learn the if the U3 is an HV
 #d.configU3()
@@ -28,7 +27,6 @@ MAX_REQUESTS = 75
 ## Uncomment these lines to stream from a U6
 ################################################################################
 #d = u6.U6()
-#d.open()
 #
 ## For applying the proper calibration to readings.
 #d.getCalibrationData()
