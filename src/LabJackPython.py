@@ -147,7 +147,6 @@ class Device(object):
         self.streamConfiged = False
         self.streamStarted = False
         self.streamPacketOffset = 0
-        self.numBytesToRead = None
 
     def write(self, writeBuffer, modbus = False, checksum = True):
         """write([writeBuffer], modbus = False)
@@ -257,7 +256,7 @@ class Device(object):
                     return eGetRaw(handle, LJ_ioRAW_IN, 1, numBytes, tempBuff)[1]
                 return eGetRaw(handle, LJ_ioRAW_IN, 0, numBytes, tempBuff)[1]
     
-    def readRegister(self, addr, numReg = None, format = None):
+    def readRegister(self, addr, numReg = None, format = None, unitId = None):
         """ Reads a specific register from the device and returns the value.
         Requires Modbus.py
         
@@ -269,27 +268,55 @@ class Device(object):
         Modbus is not supported for UE9s over USB. If you try it, a LabJackException is raised.
         """
         
+        pkt, numBytes = self._buildReadRegisterPacket(addr, numReg, unitId)
+        
+        response = self._modbusWriteRead(pkt, numBytes)
+        
+        return self._parseReadRegisterResponse(response, numBytes, addr, format)
+        
+    def _buildReadRegisterPacket(self, addr, numReg, unitId):
+        """
+        self._buildReadRegisterPacket(addr, numReg)
+
+        Builds a raw modbus "Read Register" packet to be written to a device
+
+        returns a tuple:
+        ( < Packet as a list >, < number of bytes to read > )
+        """
         if numReg == None:
             numReg = Modbus.calcNumberOfRegisters(addr)
         
-        pkt = Modbus.readHoldingRegistersRequest(addr, numReg = numReg)
+        pkt = Modbus.readHoldingRegistersRequest(addr, numReg = numReg, unitId = unitId)
         pkt = [ ord(c) for c in pkt ]
         
         numBytes = 9 + (2 * int(numReg))
         
-        response = self._modbusWriteRead(pkt, numBytes)
-        
-        packFormat = ">" + "B" * numBytes
-        response = struct.pack(packFormat, *response)
-        
-        if format == None and numReg == 2:
-            format = '>f'
-            
-        value = Modbus.readHoldingRegistersResponse(response, payloadFormat=format)[0]
-        
+        return (pkt, numBytes)
+    
+    def _parseReadRegisterResponse(self, response, numBytes, addr, format):
+        """
+        self._parseReadRegisterReponse(reponse, numBytes, addr, format)
+
+        Takes a "Read Register" response and converts it to a value
+
+        returns the value
+        """
+        if len(response) != numBytes:
+            raise LabJackException(9001, "Got incorrect number of bytes from device. Expected %s bytes, got %s bytes. The packet recieved was: %s" % (numBytes, len(response),response))
+
+        if isinstance(response, list):
+            packFormat = ">" + "B" * numBytes
+            response = struct.pack(packFormat, *response)
+
+        if format == None:
+            format = Modbus.calcFormat(addr)
+
+        value = Modbus.readHoldingRegistersResponse(response, payloadFormat=format)
+
         return value
+
         
-    def writeRegister(self, addr, value):
+    def writeRegister(self, addr, value, unitId = None):
         """ 
         Writes a value to a register. Returns the value to be written, if successful.
         Requires Modbus.py
@@ -302,44 +329,69 @@ class Device(object):
         Modbus is not supported for UE9's over USB. If you try it, a LabJackException is raised.
         """
         
+        pkt, numBytes = self._buildWriteRegisterPacket(addr, value, unitId)
+        
+        response = self._modbusWriteRead(pkt, numBytes)
+        
+        return self._parseWriteRegisterResponse(response, pkt, value)
+        
+    def _buildWriteRegisterPacket(self, addr, value, unitId):
+        """
+        self._buildWriteRegisterPacket(addr, value)
+
+        Builds a raw modbus "Write Register" packet to be written to a device
+
+        returns a tuple:
+        ( < Packet as a list >, < number of bytes to read > )
+        """
+
         if type(value) is list:
-            return self.writeMultipleRegisters(addr, value)
-        
-        numReg = Modbus.calcNumberOfRegisters(addr)
-        if numReg > 1:
-            return self.writeFloatToRegister(addr, value)
-        
-        request = Modbus.writeRegisterRequest(addr, value)
+            return self._buildWriteMultipleRegisters(addr, value, unitId)
+
+        fmt = Modbus.calcFormat(addr)
+        if fmt != '>H':
+            return self._buildWriteFloatToRegister(addr, value, unitId, fmt)
+
+        request = Modbus.writeRegisterRequest(addr, value, unitId)
         request = [ ord(c) for c in request ]
         numBytes = 12
-        
-        response = self._modbusWriteRead(request, numBytes)
-        
-        if request != response:
-            raise LabJackException(0, "Error writing register. Make sure you're writing to an address that allows writes.")
-        
-        return str(value)
-        
-    def writeFloatToRegister(self, addr, value):
+        return request, numBytes
+
+    def _buildWriteFloatToRegister(self, addr, value, unitId, fmt = '>f'):
         numReg = 2
+
+        if not isinstance(value, int) and not isinstance(value, float):
+            raise TypeError("Value must be a float or int.")
+            
+        if unitId is None:
+            unitId = 0xff
+
         # Function, Address, Num Regs, Byte count, Data
-        payload = struct.pack('>BHHBf', 0x10, addr, 0x02, 0x04, value)
-        request = struct.pack('>HHHB', 0, 0, len(payload)+1, 0xff) + payload
+        payload = struct.pack('>BHHB', 0x10, addr, 0x02, 0x04) + struct.pack(fmt, value)
+        request = struct.pack('>HHHB', 0, 0, len(payload)+1, unitId) + payload
         request = [ ord(c) for c in request ]
         numBytes = 14
-        
-        response = self._modbusWriteRead(request, numBytes)
 
-        return str(value)
+        return (request, numBytes)
         
-    def writeMultipleRegisters(self, startAddr, values):
-        request = Modbus.writeRegistersRequest(startAddr, values)
+        
+    def _buildWriteMultipleRegisters(self, startAddr, values, unitId = None):
+        request = Modbus.writeRegistersRequest(startAddr, values, unitId)
         request = [ ord(c) for c in request ]
         numBytes = 12
-        
-        response = self._modbusWriteRead(request, numBytes)
 
-        return str(values)
+        return (request, numBytes)
+        
+    def _parseWriteRegisterResponse(self, response, request, value):
+        response = list(response)
+
+        if request[7] == 6 and request != response:
+            raise LabJackException(9002, "Error writing register. Make sure you're writing to an address that allows writes.")
+        elif request[7] == 16:
+            # Need smarts for checking for errors.
+            pass
+
+        return value
         
     
     def setDIOState(IOnum, state):
@@ -376,14 +428,9 @@ class Device(object):
             raise LabJackException("Command returned with error number %s" % results[6])
             
     def _writeRead(self, command, readLen, commandBytes, checkBytes = True, stream=False, checksum = True):
-        # Save the number of bytes to read in case we need it.
-        self.numBytesToRead = readLen
-    
+        
         if self.debug: print "Write: ", command
         self.write(command, checksum = checksum)
-        
-        # We're done with this after the write, so let's not keep it around.
-        self.numBytesToRead = None
         
         result = self.read(readLen, stream=False)
         if self.debug: print "Result: ", result

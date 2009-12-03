@@ -361,12 +361,11 @@ class U3(Device):
         if len(sendBuffer) % 2:
             sendBuffer += [0]
         sendBuffer[2] = len(sendBuffer) / 2 - 3
-        self.write(sendBuffer)
+        
         if readLen % 2:
             readLen += 1
-        rcvBuffer = self.read(readLen)
-        
-        if self.debug: print "Result: ", rcvBuffer
+            
+        rcvBuffer = self._writeRead(sendBuffer, readLen, [], checkBytes = False, stream = False, checksum = True)
         
         # Check the response for errors
         if rcvBuffer[1] != 0xF8 or rcvBuffer[3] != 0x00:

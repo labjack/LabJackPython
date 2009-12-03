@@ -1,7 +1,7 @@
-#File: Modbus.py
-#Author: James Howard
-#Date: 05.05.2008
-# Updated by Mike C.: 10/21/2008
+# File: Modbus.py
+# Author: LabJack Corp.
+# Created: 05.05.2008
+# Last Modified: 12/3/2009
 
 from struct import pack, unpack #, unpack_from  # unpack_from is new in 2.5
 
@@ -26,12 +26,17 @@ BYTES_PER_REGISTER        = 2
 OUTGOING_HEADER_BYTES = (0, 0, 6, 0xff)
 TCP_HEADER = pack('>HHHB', *OUTGOING_HEADER_BYTES)
 
-def readHoldingRegistersRequest(addr, numReg = None):
+def readHoldingRegistersRequest(addr, numReg = None, unitId = None):
     if numReg is None:
         numReg = calcNumberOfRegisters(addr)
-    packet = TCP_HEADER + pack('>BHH', 0x03, addr, numReg)
-    #print "making readHoldingRegistersRequest packet"
-    #print [ ord(c) for c in packet ]
+        
+    if unitId is None:
+        packet = TCP_HEADER + pack('>BHH', 0x03, addr, numReg)
+    else:
+        bytes = list(OUTGOING_HEADER_BYTES)
+        bytes[3] = unitId
+        packet = pack('>HHHB', *bytes) + pack('>BHH', 0x03, addr, numReg)
+
     return packet
 
 def readHoldingRegistersResponse(packet, payloadFormat=None):
@@ -48,7 +53,7 @@ def readHoldingRegistersResponse(packet, payloadFormat=None):
 
     #Check for exception
     if header[4] == 0x83:
-        raise ModbusException(packet[5])
+        raise ModbusException(header[5])
 
     #Check for proper command
     if header[4] != 0x03:
@@ -69,14 +74,19 @@ def readHoldingRegistersResponse(packet, payloadFormat=None):
     if payloadFormat == '>s': 
        payloadFormat = '>' + 's' *  payloadLength
 
+    #print "Info: "
     #print payloadFormat
+    #print type(packet)
     #print [ ord(c) for c in packet ]
     
     # Mike C.: unpack_from new in 2.5.  Won't work on Joyent.
     #payload = unpack_from(payloadFormat, packet, offset = HEADER_LENGTH)
     payload = unpack(payloadFormat, packet[HEADER_LENGTH:])
-
-    return payload
+    
+    if len(payload) == 1:
+        return payload[0]
+    else:
+        return list(payload)
 
 def readInputRegistersRequest(addr, numReg = None):
     if numReg is None:
@@ -131,16 +141,30 @@ def readInputRegistersResponse(packet, payloadFormat=None):
     return payload
 
 
-def writeRegisterRequest(addr, value):
-    packet = TCP_HEADER + pack('>BHH', 0x06, addr, value)
-    #print "making writeRegisterRequest packet"
-    #print [ ord(c) for c in packet ]
+def writeRegisterRequest(addr, value, unitId = None):
+    if not isinstance(value, int):
+        raise TypeError("Value written must be an integer.")
+
+    if unitId is None:
+        packet = TCP_HEADER + pack('>BHH', 0x06, addr, value)
+    else:
+        bytes = list(OUTGOING_HEADER_BYTES)
+        bytes[3] = unitId
+        packet = pack('>HHHB', *bytes) + pack('>BHH', 0x06, addr, value)
+
     return packet
     
-def writeRegistersRequest(startAddr, values):
+def writeRegistersRequest(startAddr, values, unitId = None):
     numReg = len(values)
     
-    header = (0, 0, 7+(numReg*2), 0xff, 16, startAddr, numReg, numReg*2)
+    for v in values:
+        if not isinstance(v, int):
+            raise TypeError("Value written must be an integer.")
+    
+    if unitId is None:
+        unitId = 0xff
+    
+    header = (0, 0, 7+(numReg*2), unitId, 16, startAddr, numReg, numReg*2)
     header = pack('>HHHBBHHB', *header)
     
     format = '>' + 'H' * numReg
@@ -168,21 +192,36 @@ class ModbusException(Exception):
 
 
 def calcNumberOfRegisters(addr):
+    return calcNumberOfRegistersAndFormat(addr)[0]
+
+def calcFormat(addr):
+    return calcNumberOfRegistersAndFormat(addr)[1]
+
+def calcNumberOfRegistersAndFormat(addr):
     # TODO add special cases for channels above
     if addr < 1000:
         # Analog Inputs
-        return 2
+        return (2, '>f')
     elif addr >= 5000 and addr < 6000:
         # DAC Values
-        return 2
+        return (2, '>f')
     elif addr >= 7000 and addr < 8000:
         # Timers / Counters
-        return 2
+        return (2, '>I')
     elif addr in range(64008,64018) or addr == 65001:
         # Serial Number
-        return 2
+        return (2, '>I')
+    elif addr in range(10000,10010):
+        # VBatt/Temp/RH/Light/Pressure
+        return (2, '>f')
+    elif addr in range(57002, 57010):
+        # TX/RX Bridge stuff
+        return (2, '>I')
+    elif addr in range(57050, 57056):
+        # VUSB/VJack/VST
+        return (2, '>f')
     else:
-        return 1
+        return (1, '>H')
 
 
 def getStartingAddress(packet):

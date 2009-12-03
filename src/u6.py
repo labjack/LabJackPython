@@ -370,15 +370,18 @@ class U6(Device):
             sendBuffer += [0]
         sendBuffer[2] = len(sendBuffer) / 2 - 3
         
-        if self.debug: print "Sending: ", sendBuffer
-        
-        self.write(sendBuffer)
         if readLen % 2:
             readLen += 1
-
-        rcvBuffer = self.read(readLen)
         
-        if self.debug: print "Response: ", rcvBuffer
+        rcvBuffer = self._writeRead(sendBuffer, readLen, [], checkBytes = False, stream = False, checksum = True)
+        
+        # Check the response for errors
+        if rcvBuffer[1] != 0xF8 or rcvBuffer[3] != 0x00:
+            raise LabJackException("Got incorrect command bytes")
+        elif not verifyChecksum(rcvBuffer):
+            raise LabJackException("Checksum was incorrect")
+        elif rcvBuffer[6] != 0:
+            raise LabJackException("Got error number %d from labjack" % rcvBuffer[6])
         
         results = []
         i = 9
