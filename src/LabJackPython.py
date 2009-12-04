@@ -831,6 +831,13 @@ def listAll(deviceType, connectionType = 1):
         if deviceType == 6:
             return __listAllU6Unix()
 
+def isHandleValid(handle):
+    if(os.name == 'nt'):
+        return True
+    else:
+        return staticLib.LJUSB_IsHandleValid(handle)
+
+
 def deviceCount(devType = None):
     """Returns the number of devices connected. """
     if(os.name == 'nt'):
