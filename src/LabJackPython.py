@@ -1392,6 +1392,11 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
             if IOType == LJ_ioRAW_IN and Channel == 1:
                 # We return the raw byte string if we are streaming
                 x1 = struct.pack('b' * len(x1), *newA)
+            if IOType == LJ_ioRAW_IN and Channel == 0:
+                x1 = [0] * int(pv.value)
+                for i in range(len(x1)):
+                    x1[i] = newA[i] & 0xff
+                
             else:
                 x1 = [0] * len(x1)
                 for i in range(len(x1)):
@@ -2130,7 +2135,7 @@ def __listAllUE9Unix(connectionType):
             sndDataBuff = setChecksum(sndDataBuff)
 
             try:
-                device.write(sndDataBuff)
+                device.write(sndDataBuff, checksum = False)
                 rcvDataBuff = device.read(38)
 
                 #Parse the packet
@@ -2236,7 +2241,7 @@ def __listAllU3Unix():
         sndDataBuff = setChecksum(sndDataBuff)
 
         try:
-            device.write(sndDataBuff)
+            device.write(sndDataBuff, checksum = False)
             rcvDataBuff = device.read(38)
         except LabJackException, e:
             device.close()
@@ -2270,7 +2275,7 @@ def __listAllU6Unix():
         sndDataBuff[3] = 0x08
 
         try:
-            device.write(sndDataBuff)
+            device.write(sndDataBuff, checksum = False)
             rcvDataBuff = device.read(38)
         except LabJackException, e:
             device.close()
