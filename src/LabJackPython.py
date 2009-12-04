@@ -464,9 +464,9 @@ class Device(object):
             return False
         
 
-    def open(self, devType, Ethernet=False, firstFound = True, localId = None, devNumber = None, ipAddress = None, handleOnly = False, LJSocket = None):
+    def open(self, devType, Ethernet=False, firstFound = True, serial = None, localId = None, devNumber = None, ipAddress = None, handleOnly = False, LJSocket = None):
         """
-        Device.open(devType, Ethernet=False, firstFound = True, localId = None, devNumber = None, ipAddress = None, handleOnly = False, LJSocket = None)
+        Device.open(devType, Ethernet=False, firstFound = True, serial = None, localId = None, devNumber = None, ipAddress = None, handleOnly = False, LJSocket = None)
         
         Open a device of type devType. 
         """
@@ -485,6 +485,8 @@ class Device(object):
         d = None
         if devNumber != None:
             d = openLabJack(devType, ct, firstFound = False, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket)
+        elif serial != None:
+            d = openLabJack(devType, ct, firstFound = False, pAddress = serial, handleOnly = handleOnly, LJSocket = LJSocket)
         elif localId != None:
             d = openLabJack(devType, ct, firstFound = False, pAddress = localId, handleOnly = handleOnly, LJSocket = LJSocket)
         elif ipAddress != None:

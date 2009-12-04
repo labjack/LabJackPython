@@ -165,11 +165,12 @@ class U6(Device):
         if autoOpen:
             self.open(**kargs)
 
-    def open(self, localId = None, firstFound = True, devNumber = None, handleOnly = False, LJSocket = None):
+    def open(self, localId = None, firstFound = True, serial = None, devNumber = None, handleOnly = False, LJSocket = None):
         """
         Name: U6.open(localId = None, firstFound = True, devNumber = None,
                       handleOnly = False, LJSocket = None)
         Args: firstFound, If True, use the first found U6
+              serial, open a U6 with the given serial number
               localId, open a U6 with the given local id.
               devNumber, open a U6 with the given devNumber
               handleOnly, if True, LabJackPython will only open a handle
@@ -179,7 +180,7 @@ class U6(Device):
         >>> myU6 = u6.U6(autoOpen = False)
         >>> myU6.open()
         """
-        Device.open(self, 6, firstFound = firstFound, localId = localId, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket )
+        Device.open(self, 6, firstFound = firstFound, serial = serial, localId = localId, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket )
     
     def configU6(self, LocalID = None):
         """

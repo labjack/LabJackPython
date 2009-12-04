@@ -19,11 +19,12 @@ class U3(Device):
         if autoOpen:
             self.open(**kargs)
         
-    def open(self, firstFound = True, localId = None, devNumber = None, handleOnly = False, LJSocket = None):
+    def open(self, firstFound = True, serial = None, localId = None, devNumber = None, handleOnly = False, LJSocket = None):
         """
         Name: U3.open(firstFound = True, localId = None, devNumber = None,
                       handleOnly = False, LJSocket = None)
         Args: firstFound, If True, use the first found U3
+              serial, open a U3 with the given serial number
               localId, open a U3 with the given local id.
               devNumber, open a U3 with the given devNumber
               handleOnly, if True, LabJackPython will only open a handle
@@ -33,7 +34,7 @@ class U3(Device):
         >>> myU3 = u3.U3(autoOpen = False)
         >>> myU3.open()
         """
-        Device.open(self, 3, firstFound = firstFound, localId = localId, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket )
+        Device.open(self, 3, firstFound = firstFound, serial = serial, localId = localId, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket )
     
     def configU3(self, LocalID = None, TimerCounterConfig = None, FIOAnalog = None, FIODirection = None, FIOState = None, EIOAnalog = None, EIODirection = None, EIOState = None, CIODirection = None, CIOState = None, DAC1Enable = None, DAC0 = None, DAC1 = None, TimerClockConfig = None, TimerClockDivisor = None, CompatibilityOptions = None ):
         """

@@ -32,10 +32,11 @@ class UE9(Device):
         if autoOpen:
             self.open(**kargs)
     
-    def open(self, firstFound = True, ipAddress = None, localId = None, devNumber = None, ethernet=False, handleOnly = False, LJSocket = None):
+    def open(self, firstFound = True, serial = None, ipAddress = None, localId = None, devNumber = None, ethernet=False, handleOnly = False, LJSocket = None):
         """
         Name: UE9.open(firstFound = True, ipAddress = None, localId = None, devNumber = None, ethernet=False)
         Args: firstFound, Open the first found UE9
+              serial, open a UE9 with the given serial number.
               ipAddress, Specify the IP Address of the UE9 you want to open
               localId, Specify the localId of the UE9 you want to open
               devNumber, Specify the USB dev number of the UE9
@@ -47,7 +48,7 @@ class UE9(Device):
         >>> myUe9 = ue9.UE9(autoOpen = False)
         >>> myUe9.open()
         """
-        Device.open(self, 9, Ethernet = ethernet, firstFound = firstFound, localId = localId, devNumber = devNumber, ipAddress = ipAddress, handleOnly = handleOnly)
+        Device.open(self, 9, Ethernet = ethernet, firstFound = firstFound, serial = serial, localId = localId, devNumber = devNumber, ipAddress = ipAddress, handleOnly = handleOnly)
         
     def commConfig(self, LocalID = None, IPAddress = None, Gateway = None, Subnet = None, PortA = None, PortB = None, DHCPEnabled = None):
         """
