@@ -813,7 +813,7 @@ def listAll(deviceType, connectionType = 1):
         
         deviceList = dict()
     
-        for i in range(pNumFound.value):
+        for i in xrange(pNumFound.value):
             deviceValue = dict(localId = pIDs[i], serialNumber = pSerialNumbers[i], ipAddress = DoubleToStringAddress(pAddresses[i]), devType = deviceType)
             deviceList[pSerialNumbers[i]] = deviceValue
     
@@ -833,12 +833,22 @@ def listAll(deviceType, connectionType = 1):
 
 def deviceCount(devType = None):
     """Returns the number of devices connected. """
-    if devType == None:
-        numu3 = staticLib.LJUSB_GetDevCount(3)
-        numue9 = staticLib.LJUSB_GetDevCount(9)
-        return numu3 + numue9
+    if(os.name == 'nt'):
+        if devType is None:
+            numdev = len(listAll(3))
+            numdev += len(listAll(9))
+            numdev += len(listAll(6))
+            return numdev
+        else:
+            return len(listAll(devType))
     else:
-        return staticLib.LJUSB_GetDevCount(devType)
+        if devType == None:
+            numdev = staticLib.LJUSB_GetDevCount(3)
+            numdev += staticLib.LJUSB_GetDevCount(9)
+            numdev += staticLib.LJUSB_GetDevCount(6)
+            return numdev
+        else:
+            return staticLib.LJUSB_GetDevCount(devType)
 
 #Windows, Linux, and Mac
 def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, devNumber = None, handleOnly = False, LJSocket = None):
