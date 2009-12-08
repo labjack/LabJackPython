@@ -113,7 +113,7 @@ class UE9(Device):
             snbytes = Subnet.split('.')
             snbytes = [ int(x) for x in snbytes ]
             snbytes.reverse()
-            command[18:21] = gwbytes
+            command[18:21] = snbytes
             
         if PortA != None:
             command[6] |= (1 << 5)
