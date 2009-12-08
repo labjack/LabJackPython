@@ -6,19 +6,6 @@ from LabJackPython import *
 
 import struct
 
-def toDouble(buffer):
-    """
-    Name: toDouble(buffer)
-    Args: buffer, an array with 8 bytes
-    Desc: Converts the 8 byte array into a floating point number.
-    """
-    if type(buffer) == type(''):
-        bufferStr = buffer[:8]
-    else:
-        bufferStr = ''.join(chr(x) for x in buffer[:8])
-    dec, wh = struct.unpack('<Ii', bufferStr)
-    return float(wh) + float(dec)/2**32
-
 def dumpPacket(buffer):
     """
     Name: dumpPacket(buffer)
@@ -1227,7 +1214,7 @@ class U6(Device):
         """
         Name: getAIN
         Args: positiveChannel, resolutionIndex = 0, gainIndex = 15, settlingFactor = 0, differential = False
-        Desc: Reads an AIN can applies the calibration constants to it.
+        Desc: Reads an AIN and applies the calibration constants to it.
         
         >>> myU6.getAIN(14)
         299.87723471224308

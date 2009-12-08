@@ -370,7 +370,7 @@ class Device(object):
         payload = struct.pack('>BHHB', 0x10, addr, 0x02, 0x04) + struct.pack(fmt, value)
         request = struct.pack('>HHHB', 0, 0, len(payload)+1, unitId) + payload
         request = [ ord(c) for c in request ]
-        numBytes = 14
+        numBytes = 12
 
         return (request, numBytes)
         
@@ -937,7 +937,7 @@ def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, 
                 
                 for i in range(numDevices):
               
-                    handle = openDev(i + 1, 0, deviceType)
+                    handle = openDev(i + 1, 0, devType)
                     
                     try:
                         if handle <= 0:
@@ -2123,48 +2123,12 @@ def __listAllUE9Unix(connectionType):
 
     if connectionType == LJ_ctUSB:
         numDevices = staticLib.LJUSB_GetDevCount(LJ_dtUE9)
-
-        for i in range(numDevices):
-            handle = staticLib.LJUSB_OpenDevice(i + 1, 0, LJ_dtUE9)
-            device = Device(handle, devType = 9)
-            #Construct a comm config packet
-            sndDataBuff = [0] * 38
-            sndDataBuff[1] = 0x78
-            sndDataBuff[2] = 0x10
-            sndDataBuff[3] = 0x01
-            sndDataBuff = setChecksum(sndDataBuff)
-
-            try:
-                device.write(sndDataBuff, checksum = False)
-                rcvDataBuff = device.read(38)
-
-                #Parse the packet
-                macAddress = rcvDataBuff[28:34]
-                macAddress.reverse()
-
-                # The serial number is four bytes:
-                # 0x10 and the last three bytes of the MAC address
-                serialBytes = chr(0x10)
-                for j in macAddress[3:]:
-                    serialBytes += chr(j)
-                serial = struct.unpack(">I", serialBytes)[0]
-
-                #Parse out the IP address
-                ipAddress = ""
-                for j in range(13, 9, -1):
-                    ipAddress += str(int(rcvDataBuff[j]))
-                    ipAddress += "." 
-                ipAddress = ipAddress[0:-1]
-
-                #Local ID
-                localId = rcvDataBuff[8] & 0xff
-                deviceList[serial] = dict(devType = LJ_dtUE9, localId = localId, \
-                                                serialNumber = serial, ipAddress = ipAddress)
-                device.close()
-            except Exception, e:
-                print e
-                device.close()
-                continue
+    
+        for i in xrange(numDevices):
+            device = openLabJack(LJ_dtUE9, 1, firstFound = False, devNumber = i+1)
+            device.close()
+            
+            deviceList[str(device.serialNumber)] = device.__dict__
 
     elif connectionType == LJ_ctETHERNET:
         #Create a socket
@@ -2226,33 +2190,12 @@ def __listAllU3Unix():
     deviceList = {}
     numDevices = staticLib.LJUSB_GetDevCount(LJ_dtU3)
 
-    for i in range(numDevices):
-        handle = staticLib.LJUSB_OpenDevice(i + 1, 0, LJ_dtU3)
-        
-        if handle == 0:
-            continue
-        
-        device = Device(handle, devType = 3)
-        sndDataBuff = [0] * 26
-        sndDataBuff[1] = 0xf8
-        sndDataBuff[2] = 0x0a
-        sndDataBuff[3] = 0x08
-
-        sndDataBuff = setChecksum(sndDataBuff)
-
-        try:
-            device.write(sndDataBuff, checksum = False)
-            rcvDataBuff = device.read(38)
-        except LabJackException, e:
-            device.close()
-            raise LabJackException("Error in listAllU3")
-
-        serialNumber = struct.pack("<BBBB", *rcvDataBuff[15:19])
-        serialNumber = struct.unpack('<I', serialNumber)[0]
-        localId = rcvDataBuff[21] & 0xff
-        deviceList[serialNumber] = dict(devType = LJ_dtU3, localId = localId, \
-                                        serialNumber = serialNumber, ipAddress = None)
+    for i in xrange(numDevices):
+        device = openLabJack(LJ_dtU3, 1, firstFound = False, devNumber = i+1)
         device.close()
+        
+        deviceList[str(device.serialNumber)] = device.__dict__
+        
 
     return deviceList
 
@@ -2260,37 +2203,13 @@ def __listAllU3Unix():
 def __listAllU6Unix():
     """ List all for U6's """
     deviceList = {}
-    numDevices = staticLib.LJUSB_GetDevCount(6)
+    numDevices = staticLib.LJUSB_GetDevCount(LJ_dtU6)
 
-    for i in range(numDevices):
-        handle = staticLib.LJUSB_OpenDevice(i + 1, 0, 6)
-        
-        if handle == 0:
-            continue
-        
-        device = Device(handle, devType = 6)
-        sndDataBuff = [0] * 26
-        sndDataBuff[1] = 0xf8
-        sndDataBuff[2] = 0x0a
-        sndDataBuff[3] = 0x08
-
-        try:
-            device.write(sndDataBuff, checksum = False)
-            rcvDataBuff = device.read(38)
-        except LabJackException, e:
-            device.close()
-            raise LabJackException("Error in listAllU6")
-
-        serialNumber = struct.pack("<BBBB", *rcvDataBuff[15:19])
-        serialNumber = struct.unpack('<I', serialNumber)[0]
-        localId = rcvDataBuff[21] & 0xff
-        pro = False
-        if rcvDataBuff[37] == 12:
-            pro = True
-        
-        deviceList[serialNumber] = dict(devType = 6, localId = localId, \
-                                        serialNumber = serialNumber, ipAddress = None, Pro=pro)
+    for i in xrange(numDevices):
+        device = openLabJack(LJ_dtU6, 1, firstFound = False, devNumber = i+1)
         device.close()
+        
+        deviceList[str(device.serialNumber)] = device.__dict__
 
     return deviceList
 
@@ -2420,7 +2339,15 @@ class UE9TCPHandle(object):
 
 
     
+def toDouble(bytes):
+    """
+    Name: toDouble(buffer)
+    Args: buffer, an array with 8 bytes
+    Desc: Converts the 8 byte array into a floating point number.
+    """
+    right, left = struct.unpack("<Ii", struct.pack("B" * 8, *bytes[0:8]))
     
+    return float("%s.%s" % (left, right))
     
 #device types
 LJ_dtUE9 = 9

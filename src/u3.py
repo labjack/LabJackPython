@@ -15,6 +15,7 @@ class U3(Device):
     def __init__(self, debug = False, autoOpen = True, **kargs):        
         Device.__init__(self, None, devType = 3)
         self.debug = debug
+        self.calData = None
         
         if autoOpen:
             self.open(**kargs)
@@ -1065,24 +1066,94 @@ class U3(Device):
         
         return { 'StatusReg' : result[8], 'StatusRegCRC' : result[9], 'Temperature' : temp, 'TemperatureCRC' : result[12] , 'Humidity' : humid, 'HumidityCRC' : result[15] }
         
-    def binaryToCalibratedAnalogVoltage(self, bits, isLowVoltage = True, isSingleEnded = False, isSpecialSetting = False):
+    def binaryToCalibratedAnalogVoltage(self, bits, isLowVoltage = True, isSingleEnded = False, isSpecialSetting = False, channelNumber = 0):
         """
-        TODO: Apply real calibration constants, not just nominal.
+        Converts the bits returned from AIN functions into a calibrated voltage.
         """
+        if self.calData is not None:
+            hasCal = True
+        
         if isLowVoltage:
             if isSingleEnded and not isSpecialSetting:
-                return ( bits * 0.000037231 ) + 0
+                if hasCal:
+                    return ( bits * self.calData['lvSESlope'] ) + self.calData['lvSEOffset']
+                else:
+                    return ( bits * 0.000037231 ) + 0
             elif isSingleEnded and isSpecialSetting:
                 return (float(bits)/65536)*3.6
             else:
-                return (float(bits)/65536)*4.88 - 2.44
+                if hasCal:
+                    return ( bits * self.calData['lvDiffSlope'] ) + self.calData['lvDiffOffset']
+                else:
+                    return (float(bits)/65536)*4.88 - 2.44
         else:
             if isSingleEnded and not isSpecialSetting:
-                return ( bits * 0.000314 ) + -10.3
+                if hasCal:
+                    return ( bits * self.calData['hvAIN%sSlope' % channelNumber] ) + self.calData['hvAIN%sOffset' % channelNumber]
+                else:
+                    return ( bits * 0.000314 ) + -10.3
             elif isSingleEnded and isSpecialSetting:
                 return (float(bits)/65536)*30.4
             else:
                 raise Exception, "Can't do differential on high voltage channels"
+    
+    def voltageToDACBits(self, volts, dacNumber = 0, is16Bits = False):
+        if self.calData is not None:
+            if is16Bits:
+                bits = ( volts * self.calData['dac%sSlope' % dacNumber] * 256) + self.calData['dac%sOffset' % dacNumber] * 256
+            else:
+                bits = ( volts * self.calData['dac%sSlope' % dacNumber] ) + self.calData['dac%sOffset' % dacNumber]
+        else:
+            bits = ( volts / 4.95 ) * 256
+            
+        return int(bits)
+    
+    def getCalibrationData(self):
+        """
+        Reads in the U3's calibrations, so they can be applied to readings.
+        
+        Section 2.6.2 of the User's Guide
+        
+        """
+        self.calData = dict()
+        
+        calData = self.readCal(0)
+        
+        self.calData['lvSESlope'] = toDouble(calData[0:8])
+        self.calData['lvSEOffset'] = toDouble(calData[8:16])
+        self.calData['lvDiffSlope'] = toDouble(calData[16:24])
+        self.calData['lvDiffOffset'] = toDouble(calData[24:32])
+        
+        calData = self.readCal(1)
+        
+        self.calData['dac0Slope'] = toDouble(calData[0:8])
+        self.calData['dac0Offset'] = toDouble(calData[8:16])
+        self.calData['dac1Slope'] = toDouble(calData[16:24])
+        self.calData['dac1Offset'] = toDouble(calData[24:32])
+        
+        calData = self.readCal(2)
+        
+        self.calData['tempSlope'] = toDouble(calData[0:8])
+        self.calData['vRefAtCAl'] = toDouble(calData[8:16])
+        self.calData['vRef1.5AtCal'] = toDouble(calData[16:24])
+        self.calData['vRegAtCal'] = toDouble(calData[24:32])
+        
+        calData = self.readCal(3)
+        
+        self.calData['hvAIN0Slope'] = toDouble(calData[0:8])
+        self.calData['hvAIN1Slope'] = toDouble(calData[8:16])
+        self.calData['hvAIN2Slope'] = toDouble(calData[16:24])
+        self.calData['hvAIN3Slope'] = toDouble(calData[24:32])
+        
+        calData = self.readCal(4)
+        
+        self.calData['hvAIN0Offset'] = toDouble(calData[0:8])
+        self.calData['hvAIN1Offset'] = toDouble(calData[8:16])
+        self.calData['hvAIN2Offset'] = toDouble(calData[16:24])
+        self.calData['hvAIN3Offset'] = toDouble(calData[24:32])
+        
+        return self.calData
+        
         
 
 class FeedbackCommand(object):
