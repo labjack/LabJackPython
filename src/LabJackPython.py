@@ -65,6 +65,7 @@ import struct
 from decimal import Decimal
 import socket
 import Modbus
+import atexit # For auto-closing devices
 
 __version = "0.8.0"
 
@@ -147,6 +148,7 @@ class Device(object):
         self.streamConfiged = False
         self.streamStarted = False
         self.streamPacketOffset = 0
+        self._autoCloseSetup = False
 
     def write(self, writeBuffer, modbus = False, checksum = True):
         """write([writeBuffer], modbus = False)
@@ -504,6 +506,11 @@ class Device(object):
             for key, value in d.__dict__.items():
                 if key != "debug":
                     self.__setattr__(key, value)
+                    
+        if not self._autoCloseSetup:
+            # Only need to register auto-close once per device.
+            atexit.register(self.close)
+            self._autoCloseSetup = True
 
     def close(self):
         """close()
