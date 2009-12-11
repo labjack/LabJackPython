@@ -2354,7 +2354,7 @@ def toDouble(bytes):
     """
     right, left = struct.unpack("<Ii", struct.pack("B" * 8, *bytes[0:8]))
     
-    return float("%s.%s" % (left, right))
+    return float(left) + float(right)/(2**32)
     
 #device types
 LJ_dtUE9 = 9
