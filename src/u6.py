@@ -1210,10 +1210,10 @@ class U6(Device):
         result = self.getFeedback(AIN24AR(14))
         return self.binaryToCalibratedAnalogTemperature(result[0]['AIN'])
         
-    def getAIN(self, positiveChannel, resolutionIndex = 0, gainIndex = 15, settlingFactor = 0, differential = False):
+    def getAIN(self, positiveChannel, resolutionIndex = 0, gainIndex = 0, settlingFactor = 0, differential = False):
         """
         Name: getAIN
-        Args: positiveChannel, resolutionIndex = 0, gainIndex = 15, settlingFactor = 0, differential = False
+        Args: positiveChannel, resolutionIndex = 0, gainIndex = 0, settlingFactor = 0, differential = False
         Desc: Reads an AIN and applies the calibration constants to it.
         
         >>> myU6.getAIN(14)
@@ -1312,7 +1312,7 @@ class AIN24AR(FeedbackCommand):
     '''
     Autorange Analog Input 24-bit Feedback command
 
-    ainARCommand = AIN24AR(0, ResolutionIndex = 0, GainIndex = 15, SettlingFactor = 0, Differential = False)
+    ainARCommand = AIN24AR(0, ResolutionIndex = 0, GainIndex = 0, SettlingFactor = 0, Differential = False)
     
     See section 5.2.5.3 of the user's guide
     
@@ -1333,11 +1333,11 @@ class AIN24AR(FeedbackCommand):
         }
         
     >>> d.getFeedback( u6.AIN24AR( PositiveChannel, ResolutionIndex = 0,
-                                   GainIndex = 15, SettlingFactor = 0,
+                                   GainIndex = 0, SettlingFactor = 0,
                                    Differential = False ) )
-    { 'AIN' : 193847, 'ResolutionIndex' : 0, 'GainIndex' : 15, 'Status' : 0 }
+    { 'AIN' : 193847, 'ResolutionIndex' : 0, 'GainIndex' : 0, 'Status' : 0 }
     '''
-    def __init__(self, PositiveChannel, ResolutionIndex = 0, GainIndex = 15, SettlingFactor = 0, Differential = False):
+    def __init__(self, PositiveChannel, ResolutionIndex = 0, GainIndex = 0, SettlingFactor = 0, Differential = False):
         if PositiveChannel not in validChannels:
             raise LabJackException("Invalid Positive Channel specified")
 
