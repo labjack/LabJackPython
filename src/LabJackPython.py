@@ -149,6 +149,8 @@ class Device(object):
         self.streamStarted = False
         self.streamPacketOffset = 0
         self._autoCloseSetup = False
+        self.modbusPrependZeros = True
+        
 
     def write(self, writeBuffer, modbus = False, checksum = True):
         """write([writeBuffer], modbus = False)
@@ -165,7 +167,7 @@ class Device(object):
         handle = self.handle
 
         if(isinstance(handle, LJSocketHandle)):
-            if modbus is True:
+            if modbus is True and self.modbusPrependZeros:
                 writeBuffer = [ 0, 0 ] + writeBuffer
             
             packFormat = "B" * len(writeBuffer)
@@ -182,14 +184,13 @@ class Device(object):
                 handle.data.send(tempString)
         else:
             if os.name == 'posix':
-                if modbus is True:
+                if modbus is True and self.modbusPrependZeros:
                     writeBuffer = [ 0, 0 ] + writeBuffer
                 
                 newA = (ctypes.c_byte*len(writeBuffer))(0) 
                 for i in range(len(writeBuffer)):
                     newA[i] = ctypes.c_byte(writeBuffer[i])
-                writeBytes = staticLib.LJUSB_BulkWrite(handle, 1, \
-                                                       ctypes.byref(newA), len(writeBuffer))
+                writeBytes = staticLib.LJUSB_Write(handle, ctypes.byref(newA), len(writeBuffer))
                 if(writeBytes != len(writeBuffer)):
                     raise LabJackException("Could only write " + str(writeBytes) + \
                                            " of " + str(len(writeBuffer)) + " bytes")
@@ -245,12 +246,12 @@ class Device(object):
                 newA = (ctypes.c_byte*numBytes)()
                 
                 if(stream):
-                    readBytes = staticLib.LJUSB_BulkRead(handle, 4, ctypes.byref(newA), numBytes)
+                    readBytes = staticLib.LJUSB_Stream(handle, ctypes.byref(newA), numBytes)
                     if readBytes == 0:
                         return ''
                     return struct.pack('b' * readBytes, *newA) # return the byte string in stream mode
                 else:
-                    readBytes = staticLib.LJUSB_BulkRead(handle, 2, ctypes.byref(newA), numBytes)
+                    readBytes = staticLib.LJUSB_Read(handle, ctypes.byref(newA), numBytes)
                     return [(newA[i] & 0xff) for i in range(readBytes)] # return a list of integers in command/response mode
             elif os.name == 'nt':
                 tempBuff = [0] * numBytes
