@@ -1002,11 +1002,11 @@ class UE9(Device):
                 
         if len(result) > 12:
             if oddResponse:
-                return { 'AckArray' : result[8:12], 'I2CBytesRecieved' : result[12:-1] }
+                return { 'AckArray' : result[8:12], 'I2CBytes' : result[12:-1] }
             else:
-                return { 'AckArray' : result[8:12], 'I2CBytesRecieved' : result[12:] }
+                return { 'AckArray' : result[8:12], 'I2CBytes' : result[12:] }
         else:
-            return { 'AckArray' : result[8:], 'I2CBytesRecieved' : [] }
+            return { 'AckArray' : result[8:], 'I2CBytes' : [] }
     
     def sht1x(self, DataPinNum = 0, ClockPinNum = 1, SHTOptions = 0xc0):
         """

@@ -885,7 +885,7 @@ class U6(Device):
         
         return { 'NumAsynchBytesInRXBuffer' : result[7], 'AsynchBytes' : result[8:] }
     
-    def i2c(self, Address, I2CBytes, EnableClockStretching = False, NoStopWhenRestarting = False, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 0, SCLPinNum = 1, numI2CBytesToReceive = 0, AddressByte = None):
+    def i2c(self, Address, I2CBytes, EnableClockStretching = False, NoStopWhenRestarting = False, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 0, SCLPinNum = 1, NumI2CBytesToReceive = 0, AddressByte = None):
         """
         Name: U6.i2c(Address, I2CBytes, EnableClockStretching = False, NoStopWhenRestarting = False, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 0, SCLPinNum = 1, NumI2CBytesToReceive = 0, AddressByte = None)
         Args: Address, the address (Not shifted over)

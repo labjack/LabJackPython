@@ -1009,11 +1009,11 @@ class U3(Device):
                 
         if len(result) > 12:
             if oddResponse:
-                return { 'AckArray' : result[8:12], 'I2CBytesRecieved' : result[12:-1] }
+                return { 'AckArray' : result[8:12], 'I2CBytes' : result[12:-1] }
             else:
-                return { 'AckArray' : result[8:12], 'I2CBytesRecieved' : result[12:] }
+                return { 'AckArray' : result[8:12], 'I2CBytes' : result[12:] }
         else:
-            return { 'AckArray' : result[8:], 'I2CBytesRecieved' : [] }
+            return { 'AckArray' : result[8:], 'I2CBytes' : [] }
         
     def sht1x(self, DataPinNum = 4, ClockPinNum = 5, SHTOptions = 0xc0):
         """
@@ -1070,8 +1070,7 @@ class U3(Device):
         """
         Converts the bits returned from AIN functions into a calibrated voltage.
         """
-        if self.calData is not None:
-            hasCal = True
+        hasCal = self.calData is not None
         
         if isLowVoltage:
             if isSingleEnded and not isSpecialSetting:
