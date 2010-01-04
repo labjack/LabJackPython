@@ -897,14 +897,7 @@ def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, 
         devHandle = handle.value
         
         if not handleOnly:
-            serial = int(eGet(devHandle, LJ_ioGET_CONFIG, LJ_chSERIAL_NUMBER, 0, 0))
-            localId = int(eGet(devHandle, LJ_ioGET_CONFIG, LJ_chLOCALID, 0, 0))
-            
-            ipAddress = ""
-            if(deviceType == LJ_dtUE9):
-                ipAddress = DoubleToStringAddress(eGet(devHandle, LJ_ioGET_CONFIG, LJ_chIP_ADDRESS, 0, 0))
-            
-            return Device(devHandle, localId = localId, ipAddress = ipAddress, serialNumber = serial, devType = deviceType)
+            return _makeDeviceFromHandle(devHandle, deviceType)
         else:
             return Device(devHandle, devType = deviceType)
 
