@@ -107,20 +107,26 @@ class LJTickDAC(Tk):
             sclPin = self.dacPin
             sdaPin = sclPin + 1
 
-        # Make request for DACA
-        try:voltage = float(self.dacAEntry.get())
+        # Get voltage for DACA
+        try:voltageA = float(self.dacAEntry.get())
         except:
             self.showErrorWindow("Invalid entry", "Please enter a numerical value for DAC A")
             return
-        self.device.i2c(18, [48, int(((voltage*self.aSlope)+self.aOffset)/256), int(((voltage*self.aSlope)+self.aOffset)%256)], SDAPinNum = sdaPin, SCLPinNum = sclPin)
 
-        # Make request for DACB
-        try:voltage = float(self.dacBEntry.get())
+        # Get voltage DACB
+        try:voltageB = float(self.dacBEntry.get())
         except:
             self.showErrorWindow("Invalid entry", "Please enter a numerical value for DAC B")
             return
-        self.device.i2c(18, [49, int(((voltage*self.bSlope)+self.bOffset)/256), int(((voltage*self.bSlope)+self.bOffset)%256)], SDAPinNum = sdaPin, SCLPinNum = sclPin)
-    
+
+        # Make requests
+        try:
+            self.device.i2c(18, [48, int(((voltageA*self.aSlope)+self.aOffset)/256), int(((voltageA*self.aSlope)+self.aOffset)%256)], SDAPinNum = sdaPin, SCLPinNum = sclPin)
+            self.device.i2c(18, [49, int(((voltageB*self.bSlope)+self.bOffset)/256), int(((voltageB*self.bSlope)+self.bOffset)%256)], SDAPinNum = sdaPin, SCLPinNum = sclPin)
+        except:
+            self.showErrorWindow("I2C Error", "Whoops! Something went wrong when setting the LJTickDAC. Is the device detached?\n\nPython error:" + str(sys.exc_info()[1]))
+            self.showSetup()
+            
     def searchForDevices(self):
         """
         Name: searchForDevices()
@@ -364,14 +370,19 @@ class AINReadThread(Thread):
         Name: run()
         Desc: Starts this thread
         """
-        self.running = True
-        while self.running:
-            if self.deviceType == LJTickDAC.UE9: voltage = self.device.feedback(AINMask=5)['AIN'+str(self.pinNum)]/65536.0*5 # See section 2.7.2 until better calibartion is applied
-            elif self.deviceType == LJTickDAC.U3:
-                voltage = self.device.getAIN(self.pinNum)
-            else: voltage = self.device.getAIN(self.pinNum)
-            self.displayLabel.config(text=str(voltage))
-            time.sleep(1)
-
+        try:
+            self.running = True
+            while self.running:
+                if self.deviceType == LJTickDAC.UE9:
+                    # See section 2.7.2 until better calibartion is applied
+                    voltage = self.device.feedback(AINMask=5)['AIN'+str(self.pinNum)]/65536.0*5 
+                elif self.deviceType == LJTickDAC.U3:
+                    voltage = self.device.getAIN(self.pinNum)
+                else: voltage = self.device.getAIN(self.pinNum)
+                self.displayLabel.config(text=str(voltage))
+                time.sleep(1)
+        except:
+            self.displayLabel.config(text="AIN read error. Device detached?\nClick \"Setup\" to start again...")
+        
 # Create application
 LJTickDAC().mainloop()
