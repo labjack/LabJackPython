@@ -689,6 +689,87 @@ class Device(object):
         self.streamStarted = False
 
 
+    def getName(self):
+        """
+        Name: Device.getName()
+        Args: None
+        Desc: Returns the name of a device.
+              Always returns a unicode string.
+              Works as of the following firmware versions:
+              U6 - 1.00
+              U3 - 1.22
+              UE9 - 2.00
+        
+        >>> d = u3.U3()
+        >>> d.open()
+        >>> d.getName()
+        u'My LabJack U3'
+        """
+        strLen = (self.readRegister(58000, format='BB'))[0]/2
+        strLen -= 1
+        if strLen < 24:
+            name = self.readRegister(58000, numReg=strLen+1, format='<BB'+'H'*(strLen))
+            name = struct.pack('H'*strLen, *name[2:]).decode('UTF-16')
+        else:
+            name = self.readRegister(58000, numReg=23+1, format='<BB'+'H'*(23))
+            name = struct.pack('H'*23, *name[2:]).decode('UTF-16')
+            
+            remainder = strLen + 1 - 23
+            
+            otherHalf = self.readRegister(58024, numReg=remainder, format='<'+'H'*(remainder))
+            
+            if not isinstance(otherHalf, list):
+                otherHalf = [ otherHalf ]
+            
+            otherHalf = struct.pack('H'*remainder, *otherHalf).decode('UTF-16')
+            
+            name = name + otherHalf
+        
+        return name
+        
+    def setName(self, name = "My LabJack U3"):
+        """
+        Name: Device.setName(name = ""My LabJack U3")
+        Args: name, the name you'd like to assign the the U3
+        Desc: Writes a new name to the device.
+              Names a limited to 30 characters or less.
+              Works as of the following firmware versions:
+              U6 - 1.00
+              U3 - 1.22
+              UE9 - 2.00
+        
+        >>> d = u3.U3()
+        >>> d.open()
+        >>> d.getName()
+        u'My LabJack U3'
+        >>> d.setName("Johann")
+        >>> d.getName()
+        u'Johann'
+        """
+        strLen = len(name)
+        
+        if strLen > 31:
+            raise LabJackException("The name is too long, must be less than 31 characters.")
+        
+        newname = name.encode('UTF-16')
+        if strLen < 24:
+            newname = struct.unpack('<'+'H'*strLen, newname[2:])
+            newname = struct.unpack('BB'*strLen, struct.pack('<'+'H'*strLen, *newname))
+            newname = [ (strLen*2+2 << 8) + 3] + list(struct.unpack('<'+'H'*(strLen), struct.pack('BB'*(strLen), *newname)))
+            self.writeRegister(58000, list(newname))
+        else:
+            packet1 = struct.unpack('<'+'H'*23, newname[2:48])
+            packet1 = struct.unpack('BB' * 23,  struct.pack('<'+'H'*23, *packet1))
+            packet1 = [ (strLen*2+1 << 8) + 3] + list(struct.unpack('<'+'H'*(23), struct.pack('BB'*(23), *packet1)))
+            self.writeRegister(58000, list(packet1))
+            
+            remainder = strLen - 23
+            
+            packet2 = struct.unpack('<'+'H'*remainder, newname[48:])
+            packet2 = struct.unpack('BB' * remainder,  struct.pack('<'+'H'*remainder, *packet2))
+            packet2 = list(packet2)
+            packet2 = struct.unpack('<'+'H'*(remainder), struct.pack('BB'*(remainder), *packet2))
+            self.writeRegister(58024, list(packet2))
 
 # --------------------- BEGIN LabJackPython ---------------------------------
 
@@ -765,6 +846,40 @@ def listAll(deviceType, connectionType = 1):
     
     WORKS on WINDOWS, MAC, UNIX
     """
+    
+    if connectionType == LJ_ctLJSOCKET:
+        ipAddress, port = deviceType.split(":")
+        port = int(port)
+        
+        serverSocket = socket.socket()
+        serverSocket.connect((ipAddress, port))
+        serverSocket.settimeout(SOCKET_TIMEOUT)
+        
+        f = serverSocket.makefile(bufsize = 0)
+        f.write("scan\r\n")
+        
+        l = f.readline().strip()
+        try:
+            status, numLines = l.split(' ')
+        except ValueError:
+            raise Exception("Got invalid line from server: %s" % l)
+            
+        if status.lower().startswith('ok'):
+            lines = []
+            marked = None
+            for i in range(int(numLines)):
+                l = f.readline().strip()
+                dev = parseline(l)
+                if dev['port'] != 5020:
+                    lines.append(dev)       
+            
+            f.close()
+            serverSocket.close()
+            
+            print "Result of scan:"
+            print lines
+            return lines
+    
     if deviceType == 12:
         if U12DriverPresent():
             u12Driver = ctypes.windll.LoadLibrary("ljackuw")
@@ -2262,7 +2377,11 @@ class LJSocketHandle(object):
                 marked = None
                 for i in range(int(numLines)):
                     l = f.readline().strip()
-                    dev = self.parseline(l)
+                    dev = parseline(l)
+                    
+                    if dev['port'] == 5020:
+                        continue
+                    
                     if devType == dev['prodId']:
                         lines.append(dev)
                         
@@ -2294,14 +2413,15 @@ class LJSocketHandle(object):
     
     def close(self):
         self.socket.close()
+
         
-    def parseline(self, line):
-        try:
-            prodId, port, localId, serial = line.split(' ')
-        except ValueError:
-            raise Exception("")
-        
-        return { 'prodId' : int(prodId), 'port' : int(port), 'localId' : int(localId), 'serial' : int(serial)  }
+def parseline(line):
+    try:
+        prodId, port, localId, serial = line.split(' ')
+    except ValueError:
+        raise Exception("")
+    
+    return { 'prodId' : int(prodId), 'port' : int(port), 'localId' : int(localId), 'serial' : int(serial)  }
 
 
 #Class for handling UE9 TCP Connections
