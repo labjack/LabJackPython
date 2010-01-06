@@ -11,6 +11,8 @@ class Bridge(Device):
     >>> import bridge
     >>> d = bridge.Bridge()
     """
+    # ------------------ Object Functions ------------------
+    # These functions are part of object interaction in python
     
     def __init__(self, handle = None, localId = None, serialNumber = None, autoOpen = True, **kargs):
         Device.__init__(self, None, devType = 0x501)
@@ -46,12 +48,52 @@ class Bridge(Device):
         else:
             return Device.writeRegister(self, addr, value, unitId = unitId)
     
-    def VUSB(self):
+    # ------------------ Convenience Functions ------------------
+    # These functions call read register for you. 
+        
+    def usbFirmwareVersion(self):
+        left, right = self.readRegister(57000, format = 'BB')
+        return float("%s.%02d" % (left, right))
+    
+    def usbBufferStatus(self):
+        return self.readRegister(57001)
+    
+    def numUSBRX(self):
+        return self.readRegister(57002, numReg = 2, format = '>I')
+        
+    def numUSBTX(self):
+        return self.readRegister(57004, numReg = 2, format = '>I')
+        
+    def numPIBRX(self):
+        return self.readRegister(57006, numReg = 2, format = '>I')
+        
+    def numPIBTX(self):
+        return self.readRegister(57008, numReg = 2, format = '>I')
+        
+    def lastUsbError(self):
+        return self.readRegister(57010)
+    
+    def dmOverflows(self):
+        return self.readRegister(57011)
+        
+    def numPibTos(self):
+        return self.readRegister(57014)
+        
+    def numUsbTos(self):
+        return self.readRegister(57015)
+    
+    def vUsb(self):
         return self.readRegister(57050, numReg = 2, format = '>f')
-        
-    def UsbFirmwareVersion(self):
-        return self.readRegister(57000)
-        
+    
+    def vJack(self):
+        return self.readRegister(57052, numReg = 2, format = '>f')
+    
+    def vSt(self):
+        return self.readRegister(57054, numReg = 2, format = '>f')
+    
+    # ------------------ Mote Functions ------------------
+    # These functions help you work with the motes.
+    
     def listMotes(self):
         numMotes = self.readRegister(59200, numReg = 2, format = '>I')
         
@@ -71,7 +113,8 @@ class Bridge(Device):
 
 
 class Mote(object):
-    
+    # ------------------ Object Functions ------------------
+    # These functions are part of object interaction in python
     def __init__(self, bridge, moteId):
         self.bridge = bridge
         self.moteId = moteId
@@ -87,8 +130,17 @@ class Mote(object):
     
     def writeRegister(self, addr, value):
         return self.bridge.writeRegister(addr, value, unitId = self.moteId)
+        
+    def close(self):
+        self.bridge = None
+    
+    # ------------------ Convenience Functions ------------------
+    # These functions call read register for you. 
     
     def sensorSweep(self):
+        """
+        Performs a sweep of all the sensors on the sensor mote.
+        """
         rxLqi, txLqi, battery, temp, light, motion, sound, rh = self.readRegister(12000, numReg = 16, format = ">" + "f"*8)
         
         results = dict()
@@ -102,6 +154,9 @@ class Mote(object):
         results['RH'] = rh
         
         return results
-    
-    def close(self):
-        self.bridge = None
+        
+    def panId(self):
+        return self.readRegister(50000)
+        
+    def sleepTime(self):
+        return self.readRegister(50100, numReg = 2, format = ">I")
