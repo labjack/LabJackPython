@@ -7,6 +7,7 @@ Desc: An example program that will calculate the values that can be found in
 
 import u6 # Import the u6 class
 import math # Need math for square root and log.
+from datetime import datetime
 
 # The size of the various ranges
 ranges = [20, 2, 0.2, 0.02]
@@ -27,9 +28,15 @@ def calcNoiseAndResolution(d, resolutionIndex, voltageRange):
     # The feedback command to send to the device
     cmd = u6.AIN24AR(15, ResolutionIndex = resolutionIndex, GainIndex = voltageRange, SettlingFactor = 4)
     
+    start = datetime.now()
+    
     # Collect 128 samples
     for i in xrange(128):
         readings.append(d.getFeedback(cmd)[0]['AIN'])
+    
+    finish = datetime.now()
+    
+    print "%s per sample" % ( (finish-start) / 128)
     
     # The Peak-To-Peak Noise is difference between the max and the min.
     p2pn = max(readings) - min(readings)
