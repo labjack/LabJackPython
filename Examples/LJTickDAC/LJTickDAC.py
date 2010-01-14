@@ -54,30 +54,30 @@ class LJTickDAC(Tk):
         self.title("LJTickDAC")
 
         # Create and place labels
-        Label(self, text="Serial Num:", font=(self.FONT, self.FONT_SIZE)).grid(row=0, column=0, sticky=W)
-        self.serialDisplay = Label(self, font=(self.FONT, self.FONT_SIZE), text="please wait...",)
+        Label(self, text="Serial Num:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=0, column=0, sticky=W)
+        self.serialDisplay = Label(self, font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE), text="please wait...",)
         self.serialDisplay.grid(row=0, column=1, sticky=W)
-        Label(self, text="DAC A:", font=(self.FONT, self.FONT_SIZE)).grid(row=1, column=0, sticky=W)
-        Label(self, text="DAC B:", font=(self.FONT, self.FONT_SIZE)).grid(row=2, column=0, sticky=W)
-        self.ainALabel = Label(self, text="AIN:", font=(self.FONT, self.FONT_SIZE))
+        Label(self, text="DAC A:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=1, column=0, sticky=W)
+        Label(self, text="DAC B:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=2, column=0, sticky=W)
+        self.ainALabel = Label(self, text="AIN:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE))
         self.ainALabel.grid(row=3, column=0, sticky=W)
-        self.ainDisplay = Label(self, text="not configured", font=(self.FONT, self.FONT_SIZE))
+        self.ainDisplay = Label(self, text="not configured", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE))
         self.ainDisplay.grid(row=3, column=1, sticky=W)
 
         # Create and place entry boxes
-        self.dacAEntry = Entry(self, font=(self.FONT, self.FONT_SIZE))
+        self.dacAEntry = Entry(self, font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE))
         self.dacAEntry.grid(row=1, column=1, sticky=E+W)
-        self.dacBEntry = Entry(self, font=(self.FONT, self.FONT_SIZE))
+        self.dacBEntry = Entry(self, font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE))
         self.dacBEntry.grid(row=2, column=1, sticky=E+W)
 
         # Create and place buttons
-        Button(self, text="Setup", command=self.showSetup, font=(self.FONT, self.FONT_SIZE)).grid(row=4, column=0, sticky=W)
-        Button(self, text="Apply Changes", font=(self.FONT, self.FONT_SIZE), comman=self.updateDevice).grid(row=4, column=1, sticky=E+W)
-        Label(self, text="(c) 2009 Labjack Corp.                         ", font=(self.FONT, self.FONT_SIZE)).grid(row=5, column=0, columnspan=2, sticky=W, padx=1, pady=1)
+        Button(self, text="Setup", command=self.showSetup, font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=4, column=0, sticky=W)
+        Button(self, text="Apply Changes", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE), comman=self.updateDevice).grid(row=4, column=1, sticky=E+W)
+        Label(self, text="(c) 2009 Labjack Corp.                         ", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=5, column=0, columnspan=2, sticky=W, padx=1, pady=1)
 
         # Set defaults
-        self.ainPin = self.AIN_PIN_DEFAULT
-        self.dacPin = self.DAC_PIN_DEFAULT
+        self.ainPin = LJTickDAC.AIN_PIN_DEFAULT
+        self.dacPin = LJTickDAC.DAC_PIN_DEFAULT
 
         # Create a variable for the ain read thread
         self.ainReadThread = None
@@ -101,7 +101,7 @@ class LJTickDAC(Tk):
         """
         # Determine pin numbers
         if self.deviceType == self.U3:
-            sclPin = self.dacPin + self.U3_DAC_PIN_OFFSET
+            sclPin = self.dacPin + LJTickDAC.U3_DAC_PIN_OFFSET
             sdaPin = sclPin + 1
         else:
             sclPin = self.dacPin
@@ -132,9 +132,9 @@ class LJTickDAC(Tk):
         Name: searchForDevices()
         Desc: Determines which devices are available
         """
-        self.u3Available = len(LabJackPython.listAll(self.U3)) > 0
-        self.u6Available = len(LabJackPython.listAll(self.U6)) > 0
-        self.ue9Available = len(LabJackPython.listAll(self.UE9)) > 0
+        self.u3Available = len(LabJackPython.listAll(LJTickDAC.U3)) > 0
+        self.u6Available = len(LabJackPython.listAll(LJTickDAC.U6)) > 0
+        self.ue9Available = len(LabJackPython.listAll(LJTickDAC.UE9)) > 0
         
     def loadFirstDevice(self):
         """
@@ -146,15 +146,9 @@ class LJTickDAC(Tk):
             self.searchForDevices()
             
             # Determine which device to use
-            if self.u3Available:
-                self.device = U3()
-                self.deviceType = self.U3
-            elif self.u6Available:
-                self.device = U6()
-                self.deviceType = self.U6
-            elif self.ue9Available:
-                self.device = UE9()
-                self.deviceType = self.UE9
+            if self.u3Available: self.deviceType = LJTickDAC.U3
+            elif self.u6Available: self.deviceType = LJTickDAC.U6
+            elif self.ue9Available: self.deviceType = LJTickDAC.UE9
             else:
                 self.showErrorWindow("Fatal Error", "No LabJacks were found to be connected to your computer.\nPlease check your wiring and try again.")
                 sys.exit()
@@ -174,15 +168,15 @@ class LJTickDAC(Tk):
         self.deviceType = deviceType
         
         # Determine which device to use
-        if self.deviceType == self.U3: self.device = U3()
-        elif self.deviceType == self.U6: self.device = U6()
+        if self.deviceType == LJTickDAC.U3: self.device = U3()
+        elif self.deviceType == LJTickDAC.U6: self.device = U6()
         else: self.device = UE9()
             
         # Display serial number
         self.serialDisplay.config(text=self.device.serialNumber)
 
         # Configure pins if U3
-        if self.deviceType == self.U3:
+        if self.deviceType == LJTickDAC.U3:
             self.device.configIO(FIOAnalog=15, TimerCounterPinOffset=8) # Configures FIO0-2 as analog
         
         # Get the calibration constants
@@ -208,17 +202,21 @@ class LJTickDAC(Tk):
         Name: updateSettings(deviceType, ainPin, dacPin)
         Desc: updates the configuration of the application
         """
-        if self.ainReadThread != None: self.ainReadThread.stop()
-        self.device.close()
-        self.ainPin = ainPin
-        self.dacPin = dacPin
-        self.loadDevice(deviceType)
+        try:
+            if self.ainReadThread != None: self.ainReadThread.stop()
+            self.device.close()
+            self.ainPin = ainPin
+            self.dacPin = dacPin
+            self.loadDevice(deviceType)
 
-        if ainPin != -1: # AIN is configured
-            self.ainReadThread = AINReadThread(self.ainDisplay, self.device, self.deviceType, self.ainPin)
-            self.ainReadThread.start()
-        else:
-            self.ainDisplay.config(text="disabled")
+            if ainPin != -1: # AIN is configured
+                self.ainReadThread = AINReadThread(self.ainDisplay, self.device, self.deviceType, self.ainPin)
+                self.ainReadThread.start()
+            else:
+                self.ainDisplay.config(text="disabled")
+        except:
+            self.showErrorWindow("Update Settings Error", "Python error:" + str(sys.exc_info()[1]))
+            sys.exit()
 
     def cleanUp(self):
         """
@@ -236,8 +234,8 @@ class LJTickDAC(Tk):
               See datasheet for more info
         """
         # Determine pin numbers
-        if self.deviceType == self.U3:
-            sclPin = self.dacPin + self.U3_DAC_PIN_OFFSET
+        if self.deviceType == LJTickDAC.U3:
+            sclPin = self.dacPin + LJTickDAC.U3_DAC_PIN_OFFSET
             sdaPin = sclPin + 1
         else:
             sclPin = self.dacPin
@@ -270,21 +268,21 @@ class SettingsWindow(Toplevel):
         self.parent = parent
 
         # Create and place labels
-        Label(self, text="Device:", font=(self.FONT, self.FONT_SIZE)).grid(row=0, column=0, sticky=W)
-        Label(self, text="DAC Pins:", font=(self.FONT, self.FONT_SIZE)).grid(row=1, column=0, sticky=W)
-        Label(self, text="AIN Pins:", font=(self.FONT, self.FONT_SIZE)).grid(row=2, column=0, sticky=W)
+        Label(self, text="Device:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=0, column=0, sticky=W)
+        Label(self, text="DAC Pins:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=1, column=0, sticky=W)
+        Label(self, text="AIN Pins:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=2, column=0, sticky=W)
         Label(self, text="Notice: Settings only take effect after clicking apply. AIN pins are provided for testing.").grid(row=4, column=0, columnspan=2)
         # Create and place radio buttons for the device
         self.deviceVar = IntVar()
         self.deviceVar.set(currentDevice)
         deviceFrame = Frame(self)
-        u3Radio = Radiobutton(deviceFrame, text="U3", variable=self.deviceVar, value=LJTickDAC.U3, font=(self.FONT, self.FONT_SIZE), command=self.adjustText)
+        u3Radio = Radiobutton(deviceFrame, text="U3", variable=self.deviceVar, value=LJTickDAC.U3, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE), command=self.adjustText)
         u3Radio.grid(row=0, column=0)
         if not u3Available: u3Radio.config(state=DISABLED)
-        u6Radio = Radiobutton(deviceFrame, text="U6", variable=self.deviceVar, value=LJTickDAC.U6, font=(self.FONT, self.FONT_SIZE), command=self.adjustText)
+        u6Radio = Radiobutton(deviceFrame, text="U6", variable=self.deviceVar, value=LJTickDAC.U6, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE), command=self.adjustText)
         u6Radio.grid(row=0, column=1)
         if not u6Available: u6Radio.config(state=DISABLED)
-        ue9Radio = Radiobutton(deviceFrame, text="UE9", variable=self.deviceVar, value=LJTickDAC.UE9, font=(self.FONT, self.FONT_SIZE), command=self.adjustText)
+        ue9Radio = Radiobutton(deviceFrame, text="UE9", variable=self.deviceVar, value=LJTickDAC.UE9, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE), command=self.adjustText)
         ue9Radio.grid(row=0, column=2)
         if not ue9Available: ue9Radio.config(state=DISABLED)
         deviceFrame.grid(row=0, column=1, sticky=E+W)
@@ -293,9 +291,9 @@ class SettingsWindow(Toplevel):
         self.dacPin = IntVar()
         self.dacPin.set(currentDACPin)
         dacPinFrame = Frame(self)
-        self.dacOptARadio = Radiobutton(dacPinFrame, text="FIO 0/1", variable=self.dacPin, value=0, font=(self.FONT, self.FONT_SIZE))
+        self.dacOptARadio = Radiobutton(dacPinFrame, text="FIO 0/1", variable=self.dacPin, value=0, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE))
         self.dacOptARadio.grid(row=0, column=0)
-        self.dacOptBRadio = Radiobutton(dacPinFrame, text="FIO 2/3", variable=self.dacPin, value=2, font=(self.FONT, self.FONT_SIZE))
+        self.dacOptBRadio = Radiobutton(dacPinFrame, text="FIO 2/3", variable=self.dacPin, value=2, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE))
         self.dacOptBRadio.grid(row=0, column=1)
         dacPinFrame.grid(row=1, column=1, sticky=E+W)
 
@@ -303,17 +301,17 @@ class SettingsWindow(Toplevel):
         self.ainPin = IntVar()
         self.ainPin.set(currentAINPin)
         ainPinFrame = Frame(self)
-        Radiobutton(ainPinFrame, text="None", variable=self.ainPin, value=-1, font=(self.FONT, self.FONT_SIZE)).grid(row=0, column=0)
-        self.ainOptARadio = Radiobutton(ainPinFrame, text="AIN 0", variable=self.ainPin, value=0, font=(self.FONT, self.FONT_SIZE))
+        Radiobutton(ainPinFrame, text="None", variable=self.ainPin, value=-1, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE)).grid(row=0, column=0)
+        self.ainOptARadio = Radiobutton(ainPinFrame, text="AIN 0", variable=self.ainPin, value=0, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE))
         self.ainOptARadio.grid(row=0, column=1)
-        self.ainOptBRadio = Radiobutton(ainPinFrame, text="AIN 2", variable=self.ainPin, value=2, font=(self.FONT, self.FONT_SIZE))
+        self.ainOptBRadio = Radiobutton(ainPinFrame, text="AIN 2", variable=self.ainPin, value=2, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE))
         self.ainOptBRadio.grid(row=0, column=2)
         ainPinFrame.grid(row=2, column=1, sticky=E+W)
 
         # Create and place apply and cancel buttons
         buttonsFrame = Frame(self)
-        Button(buttonsFrame, text="Apply", command=self.applyChanges, font=(self.FONT, self.FONT_SIZE)).grid(row=0, column=0)
-        #Button(buttonsFrame, text="Cancel", font=(self.FONT, self.FONT_SIZE)).grid(row=0, column=1)
+        Button(buttonsFrame, text="Apply", command=self.applyChanges, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE)).grid(row=0, column=0)
+        #Button(buttonsFrame, text="Cancel", font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE)).grid(row=0, column=1)
         buttonsFrame.grid(row=3, column=0, columnspan=2, sticky=E+W)
 
         # Adjust text for device and prepare for future adjustments
