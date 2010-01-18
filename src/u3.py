@@ -153,7 +153,7 @@ class U3(Device):
         
         return { 'FirmwareVersion' : self.firmwareVersion, 'BootloaderVersion' : self.bootloaderVersion, 'HardwareVersion' : self.hardwareVersion, 'SerialNumber' : self.serialNumber, 'ProductID' : self.productId, 'LocalID' : self.localId, 'TimerCounterMask' : self.timerCounterMask, 'FIOAnalog' : self.fioAnalog, 'FIODirection' : self.fioDirection, 'FIOState' : self.fioState, 'EIOAnalog' : self.eioAnalog, 'EIODirection' : self.eioDirection, 'EIOState' : self.eioState, 'CIODirection' : self.cioDirection, 'CIOState' : self.cioState, 'DAC1Enable' : self.dac1Enable, 'DAC0' : self.dac0, 'DAC1' : self.dac1, 'TimerClockConfig' : self.timerClockConfig, 'TimerClockDivisor' : self.timerClockDivisor, 'CompatibilityOptions' : self.compatibilityOptions, 'VersionInfo' : self.versionInfo, 'DeviceName' : self.deviceName }
 
-    def configIO(self, TimerCounterPinOffset = 4, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None):
+    def configIO(self, TimerCounterPinOffset = None, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None):
         """
         Name: U3.configIO(TimerCounterPinOffset = 4, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None)
         Args: See section 5.2.3 of the user's guide.
@@ -191,12 +191,12 @@ class U3(Device):
         
         if EnableUART is not None:
             command[9] = int(EnableUART) << 2
-            if TimerCounterPinOffset is None:
-                TimerCounterPinOffset = 4
-            
         
-        if TimerCounterPinOffset is not None:
+        if TimerCounterPinOffset is None:
+            command[8] |= ( 4 & 15 ) << 4
+        else:
             command[8] |= ( TimerCounterPinOffset & 15 ) << 4
+            
         if EnableCounter1 is not None:
             command[8] |= 1 << 3
         if EnableCounter0 is not None:
@@ -1232,11 +1232,15 @@ class U3(Device):
         parser.set(section, "enablecounter1", str(ec1) )
         parser.set(section, "timercounterpinoffset", str(cpo) )
         
+        if nte > 0:
+            mode, value = self.readRegister(7100, numReg = 2, format = ">HH")
+            parser.set(section, "timer0 mode", str(mode))
+            parser.set(section, "timer0 value", str(value))
         
-        #parser.set(section, "timer0 mode", "-1")
-        #parser.set(section, "timer1 mode", "-1")
-        #parser.set(section, "timer0 value", "-1")
-        #parser.set(section, "timer1 value", "-1")
+        if nte == 2:
+            mode, value = self.readRegister(7102, numReg = 2, format = ">HH")
+            parser.set(section, "timer1 mode", str(mode))
+            parser.set(section, "timer1 value", str(value))
         
         return parser
 

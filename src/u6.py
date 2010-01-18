@@ -1282,10 +1282,10 @@ class U6(Device):
             parser.set(section, key, str(value))
             
         
-        #parser.set(section, "timer0 mode", "-1")
-        #parser.set(section, "timer1 mode", "-1")
-        #parser.set(section, "timer0 value", "-1")
-        #parser.set(section, "timer1 value", "-1")
+        for i in range(ioconfig['NumberTimersEnabled']):
+            mode, value = self.readRegister(7100 + (2 * i), numReg = 2, format = ">HH")
+            parser.set(section, "timer%s mode" % i, str(mode))
+            parser.set(section, "timer%s value" % i, str(value))
         
         return parser
 
