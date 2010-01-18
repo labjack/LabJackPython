@@ -3,7 +3,7 @@ Name: u3.py
 Desc: Defines a much better U3 class.
 """
 from LabJackPython import *
-import struct
+import struct, ConfigParser
 
 class U3(Device):
     """
@@ -213,11 +213,18 @@ class U3(Device):
         result = self._writeRead(command, 12, [0xF8, 0x03, 0x0B])
         
         self.timerCounterConfig = result[8]
+        
+        self.numberTimersEnabled = self.timerCounterConfig & 3
+        self.counter0Enabled = bool( (self.timerCounterConfig >> 2) & 1 )
+        self.counter1Enabled = bool( (self.timerCounterConfig >> 3) & 1 )
+        self.timerCounterPinOffset = ( self.timerCounterConfig >> 4 )
+        
+        
         self.dac1Enable = result[9]
         self.fioAnalog = result[10]
         self.eioAnalog = result[11]
         
-        return { 'TimerCounterConfig' : self.timerCounterConfig, 'DAC1Enable' : self.dac1Enable, 'FIOAnalog' : self.fioAnalog, 'EIOAnalog' : self.eioAnalog }
+        return { 'TimerCounterConfig' : self.timerCounterConfig, 'DAC1Enable' : self.dac1Enable, 'FIOAnalog' : self.fioAnalog, 'EIOAnalog' : self.eioAnalog, 'NumberOfTimersEnabled' : self.numberTimersEnabled, 'EnableCounter0' : self.counter0Enabled, 'EnableCounter1' : self.counter1Enabled, 'TimerCounterPinOffset' : self.timerCounterPinOffset }
     
     def configTimerClock(self, TimerClockBase = None, TimerClockDivisor = None):
         """
@@ -1153,7 +1160,191 @@ class U3(Device):
         
         return self.calData
         
+
+    def exportConfig(self):
+        """
+        Name: U3.exportConfig( ) 
+        Args: None
+        Desc: Takes a configuration and puts it into a ConfigParser object.
+        """
+        # Make a new configuration file
+        parser = ConfigParser.SafeConfigParser()
         
+        # Local Id and name
+        self.configU3()
+        
+        section = "Identifiers"
+        parser.add_section(section)
+        parser.set(section, "local id", str(self.localId))
+        parser.set(section, "name", str(self.getName()))
+        parser.set(section, "device type", str(self.devType))
+        
+        # FIO Direction / State
+        section = "FIOs"
+        parser.add_section(section)
+        
+        dirs, states = self.getFeedback( PortDirRead(), PortStateRead() )
+        
+        parser.set(section, "FIOs Analog", str( self.readRegister(50590) ))
+        parser.set(section, "EIOs Analog", str( self.readRegister(50591) ))
+        
+        for key, value in dirs.items():
+            parser.set(section, "%ss Directions" % key, str(value))
+            
+        for key, value in states.items():
+            parser.set(section, "%ss States" % key, str(value))
+            
+        # DACs
+        section = "DACs"
+        parser.add_section(section)
+        
+        dac0 = self.readRegister(5000)
+        dac0 = max(dac0, 0)
+        dac0 = min(dac0, 5)
+        parser.set(section, "dac0", "%0.2f" % dac0)
+        
+        dac1 = self.readRegister(5002)
+        dac1 = max(dac1, 0)
+        dac1 = min(dac1, 5)
+        parser.set(section, "dac1", "%0.2f" % dac1)
+        
+        # Timer Clock Configuration
+        section = "Timer Clock Speed Configuration"
+        parser.add_section(section)
+        
+        timerclockconfig = self.configTimerClock()
+        for key, value in timerclockconfig.items():
+            parser.set(section, key, str(value))
+        
+        # Timers / Counters
+        section = "Timers And Counters"
+        parser.add_section(section)
+        
+        timerCounterConfig = self.configIO()['TimerCounterConfig']
+        
+        nte = timerCounterConfig & 3
+        ec0 = bool( (timerCounterConfig >> 2) & 1 )
+        ec1 = bool( (timerCounterConfig >> 3) & 1 )
+        cpo = ( timerCounterConfig >> 4 )
+        
+        parser.set(section, "numbertimersenabled", str(nte) )
+        parser.set(section, "enablecounter0", str(ec0) )
+        parser.set(section, "enablecounter1", str(ec1) )
+        parser.set(section, "timercounterpinoffset", str(cpo) )
+        
+        
+        #parser.set(section, "timer0 mode", "-1")
+        #parser.set(section, "timer1 mode", "-1")
+        #parser.set(section, "timer0 value", "-1")
+        #parser.set(section, "timer1 value", "-1")
+        
+        return parser
+
+    def loadConfig(self, configParserObj):
+        """
+        Name: U3.loadConfig( configParserObj ) 
+        Args: configParserObj, A Config Parser object to load in
+        Desc: Takes a configuration and updates the U3 to match it.
+        """
+        parser = configParserObj
+        
+        # Set Identifiers:
+        section = "Identifiers"
+        if parser.has_section(section):
+            if parser.has_option(section, "device type"):
+                if parser.getint(section, "device type") != self.devType:
+                    raise Exception("Not a U3 Config file.")
+            
+            if parser.has_option(section, "local id"):
+                self.configU3( LocalID = parser.getint(section, "local id"))
+                
+            if parser.has_option(section, "name"):
+                self.setName( parser.get(section, "name") )
+            
+        # Set FIOs:
+        section = "FIOs"
+        if parser.has_section(section):
+            fiodirs = 0
+            ciodirs = 0
+            miodirs = 0
+            
+            fiostates = 0
+            ciostates = 0
+            miostates = 0
+            
+            if parser.has_option(section, "fios directions"):
+                fiodirs = parser.getint(section, "fios directions")
+            if parser.has_option(section, "eios directions"):
+                eiodirs = parser.getint(section, "eios directions")
+            if parser.has_option(section, "cios directions"):
+                ciodirs = parser.getint(section, "cios directions")
+            
+            if parser.has_option(section, "fios states"):
+                fiostates = parser.getint(section, "fios states")
+            if parser.has_option(section, "eios states"):
+                eiostates = parser.getint(section, "eios states")
+            if parser.has_option(section, "cios states"):
+                ciostates = parser.getint(section, "cios states")
+            
+            self.getFeedback( PortDirWrite([fiodirs, eiodirs, ciodirs]), PortStateWrite([fiostates, eiostates, ciostates]) )
+                
+        # Set DACs:
+        section = "DACs"
+        if parser.has_section(section):
+            if parser.has_option(section, "dac0"):
+                self.writeRegister(5000, parser.getfloat(section, "dac0"))
+            
+            if parser.has_option(section, "dac1"):
+                self.writeRegister(5002, parser.getfloat(section, "dac1"))
+                
+        # Set Timer Clock Configuration
+        section = "Timer Clock Speed Configuration"
+        if parser.has_section(section):
+            if parser.has_option(section, "timerclockbase") and parser.has_option(section, "timeclockdivisor"):
+                self.configTimerClock(TimerClockBase = parser.getint(section, "timerclockbase"), TimerClockDivisor = parser.getint(section, "timeclockdivisor"))
+        
+        # Set Timers / Counters
+        section = "Timers And Counters"
+        if parser.has_section(section):
+            nte = None
+            c0e = None
+            c1e = None
+            cpo = None
+            
+            if parser.has_option(section, "NumberTimersEnabled"):
+                nte = parser.getint(section, "NumberTimersEnabled")
+            
+            if parser.has_option(section, "TimerCounterPinOffset"):
+                cpo = parser.getint(section, "TimerCounterPinOffset")
+            
+            if parser.has_option(section, "Counter0Enabled"):
+                c0e = parser.getboolean(section, "Counter0Enabled")
+            
+            if parser.has_option(section, "Counter1Enabled"):
+                c1e = parser.getboolean(section, "Counter1Enabled")
+                
+            self.configIO(NumberOfTimersEnabled = nte, EnableCounter1 = c1e, EnableCounter0 = c0e, TimerCounterPinOffset = cpo)
+            
+            
+            mode = None
+            value = None
+            
+            if parser.has_option(section, "timer0 mode"):
+                mode = parser.getint(section, "timer0 mode")
+                
+                if parser.has_option(section, "timer0 value"):
+                    value = parser.getint(section, "timer0 mode")
+                
+                self.getFeedback( Timer0Config(mode, value) )
+            
+            if parser.has_option(section, "timer1 mode"):
+                mode = parser.getint(section, "timer1 mode")
+                
+                if parser.has_option(section, "timer1 value"):
+                    value = parser.getint(section, "timer1 mode")
+                
+                self.getFeedback( Timer1Config(mode, value) )
+      
 
 class FeedbackCommand(object):
     readLen = 0
