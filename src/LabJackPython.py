@@ -66,6 +66,7 @@ from decimal import Decimal
 import socket
 import Modbus
 import atexit # For auto-closing devices
+import threading
 
 __version = "0.8.0"
 
@@ -150,6 +151,7 @@ class Device(object):
         self.streamPacketOffset = 0
         self._autoCloseSetup = False
         self.modbusPrependZeros = True
+        self.deviceLock = threading.Lock()
         
 
     def write(self, writeBuffer, modbus = False, checksum = True):
@@ -403,18 +405,19 @@ class Device(object):
         return True
     
     def _modbusWriteRead(self, request, numBytes):
-        if self.debug: print "Sending: ", request
-        
-        self.write(request, modbus = True, checksum = False)
-        try:
-            result = self.read(numBytes, modbus = True)
-            if self.debug: print "Response: ", result
-            return result
-        except LabJackException:
+        with self.deviceLock:
+            if self.debug: print "Sending: ", request
+            
             self.write(request, modbus = True, checksum = False)
-            result = self.read(numBytes, modbus = True)
-            if self.debug: print "Response: ", result
-            return result
+            try:
+                result = self.read(numBytes, modbus = True)
+                if self.debug: print "Response: ", result
+                return result
+            except LabJackException:
+                self.write(request, modbus = True, checksum = False)
+                result = self.read(numBytes, modbus = True)
+                if self.debug: print "Response: ", result
+                return result
     
     def _checkCommandBytes(self, results, commandBytes):
         """
@@ -431,15 +434,18 @@ class Device(object):
             raise LabJackException("Command returned with error number %s" % results[6])
             
     def _writeRead(self, command, readLen, commandBytes, checkBytes = True, stream=False, checksum = True):
-        
-        if self.debug: print "Write: ", command
-        self.write(command, checksum = checksum)
-        
-        result = self.read(readLen, stream=False)
-        if self.debug: print "Result: ", result
-        if checkBytes:
-            self._checkCommandBytes(result, commandBytes)
-        return result
+    
+        # Acquire the device lock.
+        with self.deviceLock:
+            if self.debug: print "Write: ", command
+            self.write(command, checksum = checksum)
+            
+            result = self.read(readLen, stream=False)
+            if self.debug: print "Result: ", result
+            if checkBytes:
+                self._checkCommandBytes(result, commandBytes)
+                        
+            return result
     
     
     def ping(self):
@@ -1003,6 +1009,10 @@ def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, 
 
     #If windows operating system then use the UD Driver
     if(os.name == 'nt'):
+        if devNumber is not None:
+            devs = listAll(deviceType)
+            pAddress = devs.keys()[(devNumber-1)]
+        
         handle = ctypes.c_long()
         pAddress = str(pAddress)
         ec = staticLib.OpenLabJack(deviceType, connectionType, 
@@ -2379,7 +2389,7 @@ class LJSocketHandle(object):
                     l = f.readline().strip()
                     dev = parseline(l)
                     
-                    if dev['port'] == 5020:
+                    if dev['port'] in (5020, 502):
                         continue
                     
                     if devType == dev['prodId']:
