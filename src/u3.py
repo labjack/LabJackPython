@@ -16,6 +16,7 @@ class U3(Device):
         Device.__init__(self, None, devType = 3)
         self.debug = debug
         self.calData = None
+        self.ledState = True
         
         if autoOpen:
             self.open(**kargs)
@@ -261,6 +262,10 @@ class U3(Device):
         
         return { 'TimerClockBase' : self.timerClockBase, 'TimerClockDivisor' : self.timerClockDivisor }
 
+    def toggleLED(self):
+        self.getFeedback( LED( not self.ledState ) )
+        self.ledState = not self.ledState
+    
     def setFIOState(self, fioNum, state = 1):
         """
         Name: U3.setFIOState(fioNum, state = 1)
