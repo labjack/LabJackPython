@@ -57,6 +57,8 @@ Version History
         - Added LJSocket support
         - U3/U6/UE9 now all auto-open on construction
 """
+# We use the 'with' keyword to manage the thread-safe device lock. It's built-in on 2.6; 2.5 requires an import.
+from __future__ import with_statement
 
 import collections
 import ctypes
@@ -66,7 +68,7 @@ from decimal import Decimal
 import socket
 import Modbus
 import atexit # For auto-closing devices
-import threading
+import threading # For a thread-save device lock
 
 __version = "0.8.0"
 
