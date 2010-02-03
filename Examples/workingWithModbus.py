@@ -13,9 +13,11 @@ if __name__ == '__main__':
     print "This program shows how to work with modbus and your device. Registers are taken directly from the Modbus map (http://labjack.com/support/modbus).\n"
     
     print "Opening device...",
-    d = u3.U3()
-    #d = u6.U6()
-    #d = ue9.UE9()
+    d = u3.U3() # Opens first found U3 over USB
+    #d = u6.U6() # Opens first found U6 over USB
+    #d = ue9.UE9() # Opens first found UE9 over USB
+    # Opens a UE9 at IP Address 192.168.1.129
+    #d = ue9.UE9( ethernet = True, ipAddress = "192.168.1.129") 
     print "Done\n"
 
     isU3 = False
