@@ -1,7 +1,8 @@
-Welcome to the next iteration of LabJack Python!
+Python 2.5 or higher is required to use LabJackPython.
 
 Installation is easy:
-    # python setup.py install
+    $ cd src/
+    $ sudo python setup.py install
     
 From there, interacting with your devices is easy.
 
@@ -32,3 +33,5 @@ For UE9:
 {'IPAddress' : '192.168.1.209'
  ...,
 }
+
+From there, check the Examples/ directory, especially the workingWithModbus.py file to get started.
