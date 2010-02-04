@@ -123,7 +123,11 @@ def _loadLibrary():
         except:
             raise LabJackException("Could not load labjackud driver.")
 
-staticLib = _loadLibrary()
+try:
+    staticLib = _loadLibrary()
+except LabJackException, e:
+    print "%s: %s" % ( type(e), e )
+    staticLib = None
 
 class Device(object):
     """Device(handle, localId = None, serialNumber = None, ipAddress = "", type = None)
