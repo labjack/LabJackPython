@@ -15,6 +15,8 @@ def unpackInt(bytes):
 def unpackShort(bytes):
     return struct.unpack("<H", struct.pack("BB", *bytes))[0]
 
+DEFAULT_CAL_CONSTANTS = { "AINSlopes" : { '0' : 0.000077503, '1' : 0.000038736, '2' : 0.000019353, '3' : 0.0000096764, '8' : 0.00015629  }, "AINOffsets" : { '0' : -0.012000, '1' : -0.012000, '2' : -0.012000, '3' : -0.012000, '8' : -5.1760 } }
+
 class UE9(Device):
     """ A nice python class to represent a UE9 """
     def __init__(self, debug = False, autoOpen = True, **kargs):
@@ -28,6 +30,7 @@ class UE9(Device):
         Device.__init__(self, None, devType = 9)
         
         self.debug = debug
+        self.calData = None
         
         if autoOpen:
             self.open(**kargs)
@@ -488,7 +491,7 @@ class UE9(Device):
             command[4] = DAC & 0xff
             command[5] = (DAC >> 8) & 0xf
         
-        result = self._writeRead(command, 8, [ 0xA3 ])
+        result = self._writeRead(command, 8, [ 0xA3 ], checkBytes = False)
         
         if result[2] == 0:
             #Digital Bit Read
@@ -504,7 +507,7 @@ class UE9(Device):
             return { "%s Direction" % self.digitalPorts[result[3]] : result[4], "%s State" % self.digitalPorts[result[3]] : result [5] }
         elif result[2] == 4:
             #Analog In
-            ain = (result[6] << 16) + (result[5] << 8) + result[4]
+            ain = float((result[6] << 16) + (result[5] << 8) + result[4]) / 256
             return { "AIN%s" % result[3] : ain }
         elif result[2] == 5:
             #Analog Out
@@ -616,13 +619,13 @@ class UE9(Device):
 
         return returnValue
 
-    def readMem(self, BlockNum, ReadCal=False):
+    def readMem(self, BlockNum):
         """
-        Name: UE9.readMem(BlockNum, ReadCal=False)
+        Name: UE9.readMem(BlockNum)
         Args: BlockNum, which block to read
               ReadCal, set to True to read the calibration data
         Desc: Reads 1 block (128 bytes) from the non-volatile user or 
-              calibration memory. Please read section 5.2.10 of the user's
+              calibration memory. Please read section 5.3.10 of the user's
               guide before you do something you may regret.
         
         >>> myUE9 = UE9()
@@ -1047,10 +1050,73 @@ class UE9(Device):
         return { 'StatusReg' : result[8], 'StatusCRC' : result[9], 'Temperature' : temp, 'TemperatureCRC' : result[12], 'Humidity' : humid, 'HumidityCRC' : result[15] }
     
         
+    def binaryToCalibratedAnalogVoltage(self, bits, gain):
+        """ Name: UE9.binaryToCalibratedAnalogVoltage( bits, gain )
+            Args: bits, the binary value to be converted
+                  gain, the gain used. Please use the values from 5.3.3 of the
+                        UE9's user's guide.
+            Desc: Converts the binary value returned from Feedback and SingleIO
+                  to a calibrated, analog voltage.
+            
+            >>> print d.singleIO(4, 1, BipGain = 0x01, Resolution = 12 )
+            {'AIN1': 65520.0}
+            >>> print d.binaryToCalibratedAnalogVoltage(65520.0, 0x01)
+            2.52598272
+        """
+        if self.calData is not None:
+            slope = self.calData['AINSlopes'][str(gain)]
+            offset = self.calData['AINOffsets'][str(gain)]
+        else:
+            slope = DEFAULT_CAL_CONSTANTS['AINSlopes'][str(gain)]
+            offset = DEFAULT_CAL_CONSTANTS['AINOffsets'][str(gain)]
         
+        return (bits * slope) + offset
         
+    def getCalibrationData(self):
+        """ Name: UE9.getCalibrationData()
+            Args: None
+            Desc: Reads the calibration constants off the UE9, and stores them
+                  for use with binaryToCalibratedAnalogVoltage.
+            
+            Note: Please note that this function calls controlConfig to check
+                  if the device is a UE9 or not. It also makes calls to
+                  readMem, so please don't call this while streaming.
+        """
         
+        # Insure that we know if we are dealing with a Pro or not.
+        self.controlConfig()
         
+        results = dict()
         
+        ainslopes = { '0' : None, '1' : None, '2' : None, '3' : None, '8' : None }
+        ainoffsets = { '0' : None, '1' : None, '2' : None, '3' : None, '8' : None }
         
+        memBlock = self.readMem(0)
+        ainslopes['0'] = toDouble(memBlock[:8])
+        ainoffsets['0'] = toDouble(memBlock[8:16])
         
+        ainslopes['1'] = toDouble(memBlock[16:24])
+        ainoffsets['1'] = toDouble(memBlock[24:32])
+        
+        ainslopes['2'] = toDouble(memBlock[32:40])
+        ainoffsets['2'] = toDouble(memBlock[40:48])
+        
+        ainslopes['3'] = toDouble(memBlock[48:56])
+        ainoffsets['3'] = toDouble(memBlock[56:])
+        
+        memBlock = self.readMem(1)
+        ainslopes['8'] = toDouble(memBlock[:8])
+        ainoffsets['8'] = toDouble(memBlock[8:16])
+        
+        if self.deviceName.endswith("Pro"):
+            memBlock = self.readMem(3)
+            ainslopes['0'] = toDouble(memBlock[:8])
+            ainoffsets['0'] = toDouble(memBlock[8:16])
+            
+            memBlock = self.readMem(4)
+            ainslopes['8'] = toDouble(memBlock[:8])
+            ainoffsets['8'] = toDouble(memBlock[8:16])
+        
+        self.calData = { "AINSlopes" : ainslopes, "AINOffsets" : ainoffsets }
+        
+        return self.calData
