@@ -4,6 +4,15 @@ Desc: Defines a class for working with the wireless bridge
 """
 from LabJackPython import *
 
+if os.name == "nt":
+    try:
+        skymoteLib = ctypes.windll.LoadLibrary("liblabjackusb")
+    except:
+        raise ImportError("Couldn't load liblabjackusb.dll. Please install, and try again.")
+        
+    
+
+
 class Bridge(Device):
     """
     Bridge class for working with wireless bridges
@@ -29,8 +38,24 @@ class Bridge(Device):
         if autoOpen:
             self.open(**kargs)
         
-    def open(self, firstFound = True, localId = None, devNumber = None, handleOnly = False, LJSocket = "localhost:6000"): # "
+    def open(self, firstFound = True, localId = None, devNumber = None, handleOnly = False, LJSocket = "localhost:6000"): #"
         Device.open(self, 0x501, firstFound = firstFound, localId = localId, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket)
+    
+    if os.name == "nt":
+        def _readFromUDDriver(self, numBytes, stream, modbus):
+            newA = (ctypes.c_byte*numBytes)()
+            readBytes = skymoteLib.LJUSB_IntRead(self.handle, 0x81, ctypes.byref(newA), numBytes)
+            return [(newA[i] & 0xff) for i in range(readBytes)]
+            
+        def _writeToUDDriver(self, writeBuffer, modbus):
+            newA = (ctypes.c_byte*len(writeBuffer))(0) 
+            for i in range(len(writeBuffer)):
+                newA[i] = ctypes.c_byte(writeBuffer[i])
+            
+            writeBytes = skymoteLib.LJUSB_IntWrite(self.handle, 1, ctypes.byref(newA), len(writeBuffer))
+            
+            if(writeBytes != len(writeBuffer)):
+                raise LabJackException( "Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
     
     def read(self, numBytes, stream = False, modbus = False):
         result = Device.read(self, 64, stream, modbus)

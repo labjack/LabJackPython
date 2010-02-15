@@ -232,3 +232,7 @@ def getStartingAddress(packet):
 def getRequestType(packet):
     """Get the request type of a modbus request."""
     return ord(packet[7])
+    
+def getTransactionId(packet):
+    """Pulls out the transaction id of the packet"""
+    return struct.unpack(">H", packet[:2])

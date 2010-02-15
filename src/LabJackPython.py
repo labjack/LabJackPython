@@ -4,7 +4,7 @@ Windows UD Driver, and the LabJack Linux and Mac drivers.
 
 Author LabJack Corporation
 
-Version 0.8.0
+Version 0.8.1
 
 For use with drivers:
     - UD Driver or Mac/Linux Exodriver
@@ -56,6 +56,16 @@ Version History
         - All changes made on GitHub up to this point.
         - Added LJSocket support
         - U3/U6/UE9 now all auto-open on construction
+    - 0.8.1 February 15, 2009
+        - All bug fixes and changes made on GitHub to date.
+        - Re-worked open, write, and read to be broken out into several 
+          functions.
+            - Re-work of open now allows the use of firstFound and devNumber
+              for Ethernet UE9's on Mac/Linux.
+            - Re-work of open also allows Windows User's to work with their
+              UE9 over Ethernet without the UD Driver installed.
+        - Added better support for up-and-coming devices, including adding
+          bridge.py to the list of installed modules.
 """
 # We use the 'with' keyword to manage the thread-safe device lock. It's built-in on 2.6; 2.5 requires an import.
 from __future__ import with_statement
@@ -70,7 +80,7 @@ import Modbus
 import atexit # For auto-closing devices
 import threading # For a thread-save device lock
 
-__version = "0.8.0"
+__version = "0.8.1"
 
 SOCKET_TIMEOUT = 10
 BROADCAST_SOCKET_TIMEOUT = 1
@@ -102,7 +112,9 @@ class LabJackException(Exception):
           return self.errorString
 
 # Raised when the return value of OpenDevice is null.
-class NullHandleException(Exception): pass
+class NullHandleException(LabJackException):
+    def __init__(self):
+        self.errorString = "Couldn't open device. Please check that the device you are trying to open is connected."
 
 def _loadLibrary():
     """_loadLibrary()
@@ -115,13 +127,12 @@ def _loadLibrary():
                 try:
                     return ctypes.cdll.LoadLibrary("liblabjackusb.dylib")
                 except:
-                    raise LabJackException("Could not load labjackusb driver.  " + \
-                                           "Ethernet connectivity availability only.")
+                    raise LabJackException("Could not load labjackusb driver. Ethernet connectivity availability only.")
     if(os.name == 'nt'):
         try:
             return ctypes.windll.LoadLibrary("labjackud")
         except:
-            raise LabJackException("Could not load labjackud driver.")
+            raise LabJackException("Could not load labjackud driver. Ethernet connectivity availability only.")
 
 try:
     staticLib = _loadLibrary()
@@ -160,6 +171,42 @@ class Device(object):
         self.deviceLock = threading.Lock()
         
 
+    def _writeToLJSocketHandle(self, writeBuffer, modbus):
+        if modbus is True and self.modbusPrependZeros:
+                writeBuffer = [ 0, 0 ] + writeBuffer
+            
+        packFormat = "B" * len(writeBuffer)
+        tempString = struct.pack(packFormat, *writeBuffer)
+        
+        self.handle.socket.send(tempString)
+
+    def _writeToUE9TCPHandle(self, writeBuffer, modbus):
+        packFormat = "B" * len(writeBuffer)
+        tempString = struct.pack(packFormat, *writeBuffer)
+        
+        if modbus is True:
+            self.handle.modbus.send(tempString)
+        else:
+            self.handle.data.send(tempString)
+
+    def _writeToExodriver(self, writeBuffer, modbus):
+        if modbus is True and self.modbusPrependZeros:
+            writeBuffer = [ 0, 0 ] + writeBuffer
+        
+        newA = (ctypes.c_byte*len(writeBuffer))(0) 
+        for i in range(len(writeBuffer)):
+            newA[i] = ctypes.c_byte(writeBuffer[i])
+        
+        writeBytes = staticLib.LJUSB_Write(self.handle, ctypes.byref(newA), len(writeBuffer))
+        
+        if(writeBytes != len(writeBuffer)):
+            raise LabJackException( "Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
+            
+    def _writeToUDDriver(self, writeBuffer, modbus):
+        if modbus is True and self.modbusPrependZeros:
+            writeBuffer = [ 0, 0 ] + writeBuffer
+        eGetRaw(handle, LJ_ioRAW_OUT, 0, len(writeBuffer), writeBuffer)
+
     def write(self, writeBuffer, modbus = False, checksum = True):
         """write([writeBuffer], modbus = False)
             
@@ -175,38 +222,15 @@ class Device(object):
         handle = self.handle
 
         if(isinstance(handle, LJSocketHandle)):
-            if modbus is True and self.modbusPrependZeros:
-                writeBuffer = [ 0, 0 ] + writeBuffer
-            
-            packFormat = "B" * len(writeBuffer)
-            tempString = struct.pack(packFormat, *writeBuffer)
-            
-            handle.socket.send(tempString)
-            
+            self._writeToLJSocketHandle(writeBuffer, modbus)
         elif(isinstance(handle, UE9TCPHandle)):
-            packFormat = "B" * len(writeBuffer)
-            tempString = struct.pack(packFormat, *writeBuffer)
-            if modbus is True:
-                handle.modbus.send(tempString)
-            else:
-                handle.data.send(tempString)
+            self._writeToUE9TCPHandle(writeBuffer, modbus)
         else:
             if os.name == 'posix':
-                if modbus is True and self.modbusPrependZeros:
-                    writeBuffer = [ 0, 0 ] + writeBuffer
-                
-                newA = (ctypes.c_byte*len(writeBuffer))(0) 
-                for i in range(len(writeBuffer)):
-                    newA[i] = ctypes.c_byte(writeBuffer[i])
-                writeBytes = staticLib.LJUSB_Write(handle, ctypes.byref(newA), len(writeBuffer))
-                if(writeBytes != len(writeBuffer)):
-                    raise LabJackException("Could only write " + str(writeBytes) + \
-                                           " of " + str(len(writeBuffer)) + " bytes")
+                self._writeToExodriver(writeBuffer, modbus)
             elif os.name == 'nt':
-                if modbus is True:
-                    writeBuffer = [ 0, 0 ] + writeBuffer
-                eGetRaw(handle, LJ_ioRAW_OUT, 0, len(writeBuffer), writeBuffer)
-        
+                self._writeToUDDriver(writeBuffer, modbus)
+    
     def read(self, numBytes, stream = False, modbus = False):
         """read(numBytes, stream = False, modbus = False)
             
@@ -219,53 +243,58 @@ class Device(object):
         handle = self.handle
         
         if(isinstance(handle, LJSocketHandle)):
-            rcvString = handle.socket.recv(numBytes)
-            readBytes = len(rcvString)
-            packFormat = "B" * readBytes
-            rcvDataBuff = struct.unpack(packFormat, rcvString)
-            return list(rcvDataBuff)
+            return self._readFromLJSocketHandle(numBytes)
             
         elif(isinstance(handle, UE9TCPHandle)):
-            if stream is True:
-                rcvString = handle.stream.recv(numBytes)
-            else:
-                if modbus is True:
-                    try:
-                        rcvString = handle.modbus.recv(numBytes)
-                    except socket.error, e:
-                        try:
-                            if self.debug: print "Attempting connect in Read"
-                            handle.modbus = socket.socket()
-                            handle.modbus.connect((self.ipAddress, 502))
-                            handle.modbus.settimeout(10)
-                            raise LabJackException("Read had a problem, but it's ok now.")
-                        except LabJackException, g:
-                            raise g
-                        except:
-                            raise e
-                else:
-                    rcvString = handle.data.recv(numBytes)
-            readBytes = len(rcvString)
-            packFormat = "B" * readBytes
-            rcvDataBuff = struct.unpack(packFormat, rcvString)
-            return list(rcvDataBuff)
+            return self._readFromUE9TCPHandle(numBytes, stream, modbus)
         else:
             if(os.name == 'posix'):
-                newA = (ctypes.c_byte*numBytes)()
-                
-                if(stream):
-                    readBytes = staticLib.LJUSB_Stream(handle, ctypes.byref(newA), numBytes)
-                    if readBytes == 0:
-                        return ''
-                    return struct.pack('b' * readBytes, *newA) # return the byte string in stream mode
-                else:
-                    readBytes = staticLib.LJUSB_Read(handle, ctypes.byref(newA), numBytes)
-                    return [(newA[i] & 0xff) for i in range(readBytes)] # return a list of integers in command/response mode
+                return self._readFromExodriver(numBytes, stream, modbus)
             elif os.name == 'nt':
-                tempBuff = [0] * numBytes
-                if stream:
-                    return eGetRaw(handle, LJ_ioRAW_IN, 1, numBytes, tempBuff)[1]
-                return eGetRaw(handle, LJ_ioRAW_IN, 0, numBytes, tempBuff)[1]
+                return self._readFromUDDriver(numBytes, stream, modbus)
+                
+    def _readFromLJSocketHandle(self, numBytes):
+        """
+        Reads from LJSocket. Returns the result as a list.
+        """
+        rcvString = handle.socket.recv(numBytes)
+        readBytes = len(rcvString)
+        packFormat = "B" * readBytes
+        rcvDataBuff = struct.unpack(packFormat, rcvString)
+        return list(rcvDataBuff)
+        
+    def _readFromUE9TCPHandle(self, numBytes, stream, modbus):
+        if stream is True:
+            rcvString = self.handle.stream.recv(numBytes)
+        else:
+            if modbus is True:
+                rcvString = self.handle.modbus.recv(numBytes)
+            else:
+                rcvString = self.handle.data.recv(numBytes)
+        readBytes = len(rcvString)
+        packFormat = "B" * readBytes
+        rcvDataBuff = struct.unpack(packFormat, rcvString)
+        return list(rcvDataBuff)
+        
+    def _readFromExodriver(self, numBytes, stream, modbus):
+        newA = (ctypes.c_byte*numBytes)()
+        
+        if(stream):
+            readBytes = staticLib.LJUSB_Stream(self.handle, ctypes.byref(newA), numBytes)
+            if readBytes == 0:
+                return ''
+            # return the byte string in stream mode
+            return struct.pack('b' * readBytes, *newA)
+        else:
+            readBytes = staticLib.LJUSB_Read(self.handle, ctypes.byref(newA), numBytes)
+            # return a list of integers in command/response mode
+            return [(newA[i] & 0xff) for i in range(readBytes)]
+            
+    def _readFromUDDriver(self, numBytes, stream, modbus):
+        tempBuff = [0] * numBytes
+        if stream:
+            return eGetRaw(self.handle, LJ_ioRAW_IN, 1, numBytes, tempBuff)[1]
+        return eGetRaw(self.handle, LJ_ioRAW_IN, 0, numBytes, tempBuff)[1]
     
     def readRegister(self, addr, numReg = None, format = None, unitId = None):
         """ Reads a specific register from the device and returns the value.
@@ -516,9 +545,8 @@ class Device(object):
         self.handle = d.handle
         
         if not handleOnly:
-            for key, value in d.__dict__.items():
-                if key != "debug":
-                    self.__setattr__(key, value)
+            for key, value in d.changed.items():
+                self.__setattr__(key, value)
                     
         if not self._autoCloseSetup:
             # Only need to register auto-close once per device.
@@ -994,6 +1022,172 @@ def deviceCount(devType = None):
         else:
             return staticLib.LJUSB_GetDevCount(devType)
 
+
+def _openLabJackUsingLJSocket(deviceType, firstFound, pAddress, LJSocket, handleOnly ):
+    if LJSocket is not '':
+        ip, port = LJSocket.split(":")
+        port = int(port)
+        handle = LJSocketHandle(ip, port, deviceType, firstFound, pAddress)
+    else:
+        handle = LJSocketHandle('localhost', 6000, deviceType, firstFound, pAddress)
+      
+    return handle
+
+def _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, devNumber ):
+    if devNumber is not None:
+        devs = listAll(deviceType)
+        pAddress = devs.keys()[(devNumber-1)]
+    
+    handle = ctypes.c_long()
+    pAddress = str(pAddress)
+    ec = staticLib.OpenLabJack(deviceType, connectionType, 
+                                pAddress, firstFound, ctypes.byref(handle))
+
+    if ec != 0: raise LabJackException(ec)
+    devHandle = handle.value
+    
+    return devHandle
+    
+def _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber):
+    devType = ctypes.c_ulong(deviceType)
+    openDev = staticLib.LJUSB_OpenDevice
+    openDev.restype = ctypes.c_void_p
+    
+    if(devNumber != None):
+        handle = openDev(devNumber, 0, devType)
+        if handle <= 0:
+            raise NullHandleException()
+        return handle
+    elif(firstFound):
+        handle = openDev(1, 0, devType)
+        if handle <= 0:
+            raise NullHandleException()
+        return handle
+    else:
+        if handleOnly:
+            raise LabjackException("Can't use handleOnly with an id.")
+               
+        numDevices = staticLib.LJUSB_GetDevCount(deviceType)
+        
+        for i in range(numDevices):
+            handle = openDev(i + 1, 0, devType)
+            
+            try:
+                if handle <= 0:
+                    raise NullHandleException()
+                device = _makeDeviceFromHandle(handle, deviceType)
+            except:
+                continue
+            
+            if device.localId == pAddress or device.serialNumber == pAddress or device.ipAddress == pAddress:
+                return device
+            else:
+                device.close()
+        
+    raise LabJackException(LJE_LABJACK_NOT_FOUND) 
+
+def _openUE9OverEthernet(firstFound, pAddress, devNumber):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    s.settimeout(BROADCAST_SOCKET_TIMEOUT)
+
+    sndDataBuff = [0] * 6
+    sndDataBuff[0] = 0x22
+    sndDataBuff[1] = 0x78
+    sndDataBuff[3] = 0xa9
+
+    outBuff = ""
+    for item in sndDataBuff:
+        outBuff += chr(item)
+    s.sendto(outBuff, ("255.255.255.255", 52362))
+
+    try:
+        count = 1
+        while True:
+            rcvDataBuff = s.recv(128)
+            rcvDataBuff = [ord(val) for val in rcvDataBuff]
+            if verifyChecksum(rcvDataBuff):
+                #Parse the packet
+                macAddress = rcvDataBuff[28:34]
+                macAddress.reverse()
+
+                # The serial number is four bytes:
+                # 0x10 and the last three bytes of the MAC address
+                serialBytes = chr(0x10)
+                for j in macAddress[3:]:
+                    serialBytes += chr(j)
+                serialNumber = struct.unpack(">I", serialBytes)[0]
+
+                #Parse out the IP address
+                ipAddress = ""
+                for j in range(13, 9, -1):
+                    ipAddress += str(int(rcvDataBuff[j]))
+                    ipAddress += "." 
+                ipAddress = ipAddress[0:-1]
+
+                #Local ID
+                localId = rcvDataBuff[8] & 0xff
+                
+                # Check if we have found the device we are looking for.
+                # pAddress represents either Local ID, Serial Number, or the
+                # IP Address. This is so there are no conflicting identifiers.
+                if firstFound \
+                or devNumber == count \
+                or pAddress in [localId, serialNumber, ipAddress]:
+                    handle = UE9TCPHandle(ipAddress)
+                    return handle
+                
+                count += 1
+            else:
+                # Got a bad checksum.
+                pass
+    except:
+        raise LabJackException(LJE_LABJACK_NOT_FOUND)
+
+def _openWirelessBridgeOnWindows(firstFound, pAddress, devNumber):
+    try:
+        skymoteLib = ctypes.windll.LoadLibrary("liblabjackusb")
+    except:
+        raise ImportError("Couldn't load liblabjackusb.dll. Please install, and try again.")
+        
+    devType = ctypes.c_ulong(0x501)
+    openDev = skymoteLib.LJUSB_OpenDevice
+    openDev.restype = ctypes.c_void_p
+    
+    if(devNumber != None):
+        handle = openDev(devNumber, 0, devType)
+        if handle <= 0:
+            raise NullHandleException()
+        return handle
+    elif(firstFound):
+        handle = openDev(1, 0, devType)
+        if handle <= 0:
+            raise NullHandleException()
+        return handle
+    else:
+        raise LabjackException("Bridges don't have identifiers yet.")
+        if handleOnly:
+            raise LabjackException("Can't use handleOnly with an id.")
+               
+        numDevices = skymoteLib.LJUSB_GetDevCount(deviceType)
+        
+        for i in range(numDevices):
+            handle = openDev(i + 1, 0, devType)
+            
+            try:
+                if handle <= 0:
+                    raise NullHandleException()
+                device = _makeDeviceFromHandle(handle, deviceType)
+            except:
+                continue
+            
+            if device.localId == pAddress or device.serialNumber == pAddress or device.ipAddress == pAddress:
+                return device
+            else:
+                device.close()
+        
+    raise LabJackException(LJE_LABJACK_NOT_FOUND) 
+
 #Windows, Linux, and Mac
 def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, devNumber = None, handleOnly = False, LJSocket = None):
     """openLabJack(deviceType, connectionType, firstFound = True, pAddress = 1, LJSocket = None)
@@ -1001,155 +1195,39 @@ def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, 
         Note: On Windows, Ue9 over Ethernet, pAddress MUST be the IP address. 
     """
     rcvDataBuff = []
+    handle = None
 
     # LJSocket handles work indepenent of OS
     if connectionType == LJ_ctLJSOCKET:
-        if LJSocket is not '':
-            ip, port = LJSocket.split(":")
-            port = int(port)
-            handle = LJSocketHandle(ip, port, deviceType, firstFound, pAddress)
-        else:
-            handle = LJSocketHandle('localhost', 6000, deviceType, firstFound, pAddress)
-                
-        return Device(handle, devType = deviceType)
-
-    #If windows operating system then use the UD Driver
-    if(os.name == 'nt'):
-        if devNumber is not None:
-            devs = listAll(deviceType)
-            pAddress = devs.keys()[(devNumber-1)]
-        
-        handle = ctypes.c_long()
-        pAddress = str(pAddress)
-        ec = staticLib.OpenLabJack(deviceType, connectionType, 
-                                    pAddress, firstFound, ctypes.byref(handle))
-
-        if ec != 0: raise LabJackException(ec)
-        devHandle = handle.value
-        
-        if not handleOnly:
-            return _makeDeviceFromHandle(devHandle, deviceType)
-        else:
-            return Device(devHandle, devType = deviceType)
+        handle = _openLabJackUsingLJSocket(deviceType, firstFound, pAddress, LJSocket, handleOnly )
 
     # Linux/Mac need to work in the low level driver.
-    if(os.name == 'posix'):
-        if(connectionType == LJ_ctUSB):
-            devType = ctypes.c_ulong(deviceType)
-            openDev = staticLib.LJUSB_OpenDevice
-            openDev.restype = ctypes.c_void_p
+    if os.name == 'posix' and connectionType == LJ_ctUSB:
+        handle = _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber)
+        if isinstance( handle, Device ):
+            return handle
+    
+    #If windows operating system then use the UD Driver
+    if os.name == 'nt':
+        if deviceType == 0x501:
+            handle = _openWirelessBridgeOnWindows(firstFound, pAddress, devNumber)
+        elif staticLib is not None:
+            handle = _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, devNumber )
+    
+    if connectionType == LJ_ctETHERNET and deviceType == LJ_dtUE9 :
+        handle = _openUE9OverEthernet(firstFound, pAddress, devNumber)
             
-            if(devNumber != None):
-                try:
-                    handle = openDev(devNumber, 0, devType)
-                    if handle <= 0:
-                        raise NullHandleException
-                    if not handleOnly:
-                        return _makeDeviceFromHandle(handle, deviceType)
-                    else:
-                        return Device(handle, deviceType)
-                except Exception, e:
-                    raise LabJackException(LJE_LABJACK_NOT_FOUND)
-            elif(firstFound):
-                try:
-                    handle = openDev(1, 0, devType)
-                    if handle <= 0:
-                        raise NullHandleException
-                    if not handleOnly:
-                        return _makeDeviceFromHandle(handle, deviceType)
-                    else:
-                        return Device(handle, deviceType)
-                except Exception, e:
-                    print type(e), e
-                    raise LabJackException(LJE_LABJACK_NOT_FOUND)
-            else:
-                if handleOnly:
-                    raise LabjackException("Can't use handleOnly with an id.")         
-                numDevices = staticLib.LJUSB_GetDevCount(deviceType)
-                
-                for i in range(numDevices):
-              
-                    handle = openDev(i + 1, 0, devType)
-                    
-                    try:
-                        if handle <= 0:
-                            raise NullHandleException
-                        device = _makeDeviceFromHandle(handle, deviceType)
-                    except:
-                        continue
-                    
-                    try:
-                        if(device.localId == pAddress or device.serialNumber == pAddress or \
-                                                                    device.ipAddress == pAddress):
-                            return device
-                    except:
-                        pass
-                    
-                    device.close()
-                
-            raise LabJackException(LJE_LABJACK_NOT_FOUND)
-
-    if(connectionType == LJ_ctETHERNET):
-        if deviceType == LJ_dtUE9:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            s.settimeout(BROADCAST_SOCKET_TIMEOUT)
-
-            sndDataBuff = [0] * 6
-            sndDataBuff[0] = 0x22
-            sndDataBuff[1] = 0x78
-            sndDataBuff[3] = 0xa9
-
-            outBuff = ""
-            for item in sndDataBuff:
-                outBuff += chr(item)
-            s.sendto(outBuff, ("255.255.255.255", 52362))
-
-            try:
-                while True:
-                    rcvDataBuff = s.recv(128)
-                    try:
-                        rcvDataBuff = [ord(val) for val in rcvDataBuff]
-                        if verifyChecksum(rcvDataBuff):
-                            #Parse the packet
-                            macAddress = rcvDataBuff[28:34]
-                            macAddress.reverse()
-
-                            # The serial number is four bytes:
-                            # 0x10 and the last three bytes of the MAC address
-                            serialBytes = chr(0x10)
-                            for j in macAddress[3:]:
-                                serialBytes += chr(j)
-                            serialNumber = struct.unpack(">I", serialBytes)[0]
-
-                            #Parse out the IP address
-                            ipAddress = ""
-                            for j in range(13, 9, -1):
-                                ipAddress += str(int(rcvDataBuff[j]))
-                                ipAddress += "." 
-                            ipAddress = ipAddress[0:-1]
-
-                            #Local ID
-                            localId = rcvDataBuff[8] & 0xff
-
-                            try:
-                                if(localId == pAddress or serialNumber == pAddress or \
-                                                                        ipAddress == pAddress):
-                                    handle = UE9TCPHandle(ipAddress)
-                                    return Device(handle, localId, serialNumber, \
-                                                  ipAddress, deviceType)
-                            except Exception, e:
-                                print e
-                    except Exception, e:
-                        pass
-            except:
-                raise LabJackException(LJE_LABJACK_NOT_FOUND)
+    if not handleOnly:
+        return _makeDeviceFromHandle(handle, deviceType)
+    else:
+        return Device(handle, devType = deviceType)
 
 def _makeDeviceFromHandle(handle, deviceType):
     """ A helper function to get set all the info about a device from a handle"""
+    device = Device(handle, devType = deviceType)
+    device.changed = dict()
+    
     if(deviceType == LJ_dtUE9):
-        device = Device(handle, devType = 9)
-        
         sndDataBuff = [0] * 38
         sndDataBuff[0] = 0x89
         sndDataBuff[1] = 0x78
@@ -1175,14 +1253,18 @@ def _makeDeviceFromHandle(handle, deviceType):
             # Comm FW Version
             device.commFWVersion = "%s.%02d" % (rcvDataBuff[37], rcvDataBuff[36])
             
+            device.changed['localId'] = device.localID
+            device.changed['macAddress'] = device.macAddress
+            device.changed['serialNumber'] = device.serialNumber
+            device.changed['ipAddress'] = device.ipAddress
+            device.changed['commFWVersion'] = device.commFWVersion
+            
             
         except Exception, e:
             device.close()
-            raise e
+            raise e  
         
-        
-    if deviceType == LJ_dtU3:
-        device = Device(handle, devType = 3)
+    elif deviceType == LJ_dtU3:
         sndDataBuff = [0] * 26
         sndDataBuff[0] = 0x0b
         sndDataBuff[1] = 0xf8
@@ -1211,8 +1293,15 @@ def _makeDeviceFromHandle(handle, deviceType):
         elif device.versionInfo == 18:
             device.deviceName += '-HV'
         
-    if deviceType == 6:
-        device = Device(handle, devType = 6)
+        device.changed['localId'] = device.localID
+        device.changed['serialNumber'] = device.serialNumber
+        device.changed['ipAddress'] = device.ipAddress
+        device.changed['firmwareVersion'] = device.firmwareVersion
+        device.changed['versionInfo'] = device.versionInfo
+        device.changed['deviceName'] = device.deviceName
+        device.changed['hardwareVersion'] = device.hardwareVersion
+        
+    elif deviceType == 6:
         command = [ 0 ] * 26
         command[1] = 0xF8
         command[2] = 0x0A
@@ -1236,7 +1325,16 @@ def _makeDeviceFromHandle(handle, deviceType):
         device.deviceName = 'U6'
         if device.versionInfo == 12:
             device.deviceName = 'U6-Pro'
-    
+            
+        device.changed['localId'] = device.localID
+        device.changed['serialNumber'] = device.serialNumber
+        device.changed['ipAddress'] = device.ipAddress
+        device.changed['firmwareVersion'] = device.firmwareVersion
+        device.changed['versionInfo'] = device.versionInfo
+        device.changed['deviceName'] = device.deviceName
+        device.changed['hardwareVersion'] = device.hardwareVersion
+        device.changed['bootloaderVersion'] = device.bootloaderVersion
+            
     return device
 
 def AddRequest(handle, IOType, Channel, Value, x1, UserData):
@@ -1524,7 +1622,7 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
             if IOType == LJ_ioRAW_IN and Channel == 1:
                 # We return the raw byte string if we are streaming
                 x1 = struct.pack('b' * len(x1), *newA)
-            if IOType == LJ_ioRAW_IN and Channel == 0:
+            elif IOType == LJ_ioRAW_IN and Channel == 0:
                 x1 = [0] * int(pv.value)
                 for i in range(len(x1)):
                     x1[i] = newA[i] & 0xff
