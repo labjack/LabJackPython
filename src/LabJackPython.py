@@ -1524,7 +1524,7 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
             if IOType == LJ_ioRAW_IN and Channel == 1:
                 # We return the raw byte string if we are streaming
                 x1 = struct.pack('b' * len(x1), *newA)
-            if IOType == LJ_ioRAW_IN and Channel == 0:
+            elif IOType == LJ_ioRAW_IN and Channel == 0:
                 x1 = [0] * int(pv.value)
                 for i in range(len(x1)):
                     x1[i] = newA[i] & 0xff
