@@ -139,6 +139,11 @@ try:
 except LabJackException, e:
     print "%s: %s" % ( type(e), e )
     staticLib = None
+    
+try:
+    skymoteLib = ctypes.windll.LoadLibrary("liblabjackusb")
+except:
+    skymoteLib = None
 
 class Device(object):
     """Device(handle, localId = None, serialNumber = None, ipAddress = "", type = None)
@@ -179,6 +184,8 @@ class Device(object):
         tempString = struct.pack(packFormat, *writeBuffer)
         
         self.handle.socket.send(tempString)
+        
+        return writeBuffer
 
     def _writeToUE9TCPHandle(self, writeBuffer, modbus):
         packFormat = "B" * len(writeBuffer)
@@ -188,6 +195,8 @@ class Device(object):
             self.handle.modbus.send(tempString)
         else:
             self.handle.data.send(tempString)
+        
+        return writeBuffer
 
     def _writeToExodriver(self, writeBuffer, modbus):
         if modbus is True and self.modbusPrependZeros:
@@ -202,10 +211,15 @@ class Device(object):
         if(writeBytes != len(writeBuffer)):
             raise LabJackException( "Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
             
+        return writeBuffer
+            
     def _writeToUDDriver(self, writeBuffer, modbus):
         if modbus is True and self.modbusPrependZeros:
             writeBuffer = [ 0, 0 ] + writeBuffer
+        
         eGetRaw(handle, LJ_ioRAW_OUT, 0, len(writeBuffer), writeBuffer)
+        
+        return writeBuffer
 
     def write(self, writeBuffer, modbus = False, checksum = True):
         """write([writeBuffer], modbus = False)
@@ -222,14 +236,16 @@ class Device(object):
         handle = self.handle
 
         if(isinstance(handle, LJSocketHandle)):
-            self._writeToLJSocketHandle(writeBuffer, modbus)
+            wb = self._writeToLJSocketHandle(writeBuffer, modbus)
         elif(isinstance(handle, UE9TCPHandle)):
-            self._writeToUE9TCPHandle(writeBuffer, modbus)
+            wb = self._writeToUE9TCPHandle(writeBuffer, modbus)
         else:
             if os.name == 'posix':
-                self._writeToExodriver(writeBuffer, modbus)
+                wb = self._writeToExodriver(writeBuffer, modbus)
             elif os.name == 'nt':
-                self._writeToUDDriver(writeBuffer, modbus)
+                wb = self._writeToUDDriver(writeBuffer, modbus)
+        
+        if self.debug: print "Sent: ", wb
     
     def read(self, numBytes, stream = False, modbus = False):
         """read(numBytes, stream = False, modbus = False)
@@ -958,6 +974,16 @@ def listAll(deviceType, connectionType = 1):
         
     
     if(os.name == 'nt'):
+        if deviceType == 0x501:
+            if skymoteLib is None:
+                raise ImportError("Couldn't load liblabjackusb.dll. Please install, and try again.")
+            
+            num = skymoteLib.LJUSB_GetDevCount(0x501)
+            
+            # Things are expecting a list, so we're going to give them one.
+            return range(num)
+            
+            
         pNumFound = ctypes.c_long()
         pSerialNumbers = (ctypes.c_long * 128)()
         pIDs = (ctypes.c_long * 128)()
@@ -1010,6 +1036,8 @@ def deviceCount(devType = None):
             numdev = len(listAll(3))
             numdev += len(listAll(9))
             numdev += len(listAll(6))
+            if skymoteLib is not None:
+                numdev += len(listAll(0x501))
             return numdev
         else:
             return len(listAll(devType))
@@ -1018,6 +1046,7 @@ def deviceCount(devType = None):
             numdev = staticLib.LJUSB_GetDevCount(3)
             numdev += staticLib.LJUSB_GetDevCount(9)
             numdev += staticLib.LJUSB_GetDevCount(6)
+            numdev += staticLib.LJUSB_GetDevCount(0x501)
             return numdev
         else:
             return staticLib.LJUSB_GetDevCount(devType)
@@ -1061,6 +1090,7 @@ def _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber):
     elif(firstFound):
         handle = openDev(1, 0, devType)
         if handle <= 0:
+            print "handle: %s" % handle 
             raise NullHandleException()
         return handle
     else:
@@ -1145,9 +1175,7 @@ def _openUE9OverEthernet(firstFound, pAddress, devNumber):
         raise LabJackException(LJE_LABJACK_NOT_FOUND)
 
 def _openWirelessBridgeOnWindows(firstFound, pAddress, devNumber):
-    try:
-        skymoteLib = ctypes.windll.LoadLibrary("liblabjackusb")
-    except:
+    if skymoteLib is None:
         raise ImportError("Couldn't load liblabjackusb.dll. Please install, and try again.")
         
     devType = ctypes.c_ulong(0x501)
@@ -1326,7 +1354,7 @@ def _makeDeviceFromHandle(handle, deviceType):
         if device.versionInfo == 12:
             device.deviceName = 'U6-Pro'
             
-        device.changed['localId'] = device.localID
+        device.changed['localId'] = device.localId
         device.changed['serialNumber'] = device.serialNumber
         device.changed['ipAddress'] = device.ipAddress
         device.changed['firmwareVersion'] = device.firmwareVersion

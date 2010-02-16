@@ -235,4 +235,4 @@ def getRequestType(packet):
     
 def getTransactionId(packet):
     """Pulls out the transaction id of the packet"""
-    return struct.unpack(">H", packet[:2])
+    return unpack(">H", packet[:2])

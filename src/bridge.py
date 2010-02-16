@@ -5,9 +5,7 @@ Desc: Defines a class for working with the wireless bridge
 from LabJackPython import *
 
 if os.name == "nt":
-    try:
-        skymoteLib = ctypes.windll.LoadLibrary("liblabjackusb")
-    except:
+    if skymoteLib is None:
         raise ImportError("Couldn't load liblabjackusb.dll. Please install, and try again.")
         
     
