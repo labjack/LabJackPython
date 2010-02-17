@@ -1321,7 +1321,7 @@ def _makeDeviceFromHandle(handle, deviceType):
         elif device.versionInfo == 18:
             device.deviceName += '-HV'
         
-        device.changed['localId'] = device.localID
+        device.changed['localId'] = device.localId
         device.changed['serialNumber'] = device.serialNumber
         device.changed['ipAddress'] = device.ipAddress
         device.changed['firmwareVersion'] = device.firmwareVersion
