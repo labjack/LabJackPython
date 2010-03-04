@@ -116,16 +116,27 @@ class NullHandleException(LabJackException):
     def __init__(self):
         self.errorString = "Couldn't open device. Please check that the device you are trying to open is connected."
 
+def errcheck(ret, func, args):
+    if ret == -1:
+        ec = ctypes.get_errno()
+        raise LabJackException(ec)
+
 def _loadLibrary():
     """_loadLibrary()
     Returns a ctypes dll pointer to the library.
     """
     if(os.name == 'posix'):
             try:
-                return ctypes.cdll.LoadLibrary("liblabjackusb.so")
+                l = ctypes.CDLL("liblabjackusb.so", use_errno=True)
+                l.LJUSB_Stream.errcheck = errcheck
+                l.LJUSB_Read.errcheck = errcheck
+                return l
             except:
                 try:
-                    return ctypes.cdll.LoadLibrary("liblabjackusb.dylib")
+                    l = ctypes.CDLL("liblabjackusb.dylib", use_errno=True)
+                    l.LJUSB_Stream.errcheck = errcheck
+                    l.LJUSB_Read.errcheck = errcheck
+                    return l
                 except:
                     raise LabJackException("Could not load labjackusb driver. Ethernet connectivity availability only.")
     if(os.name == 'nt'):
@@ -697,7 +708,19 @@ class Device(object):
                        set to False to get much faster speeds, but you will 
                        have to process the results later.
         Desc: Reads stream data from a LabJack device. See our stream example
-              to get an idea of how this function should be called.
+              to get an idea of how this function should be called. The return
+              value of streamData is a dictionary with the following keys:
+              * errors: The number of errors in this block.
+              * numPackets: The number of USB packets collected to return this
+                            block.
+              * missed: The number of readings that were missed because of
+                        buffer overflow on the LabJack.
+              * firstPacket: The PacketCounter value in the first USB packet.
+              * result: The raw bytes returned from read(). The only way to get
+                        data if called with convert = False.
+              * AINi, where i is an entry in the passed in PChannels. If called
+                        with convert = True, this is a list of all the readings
+                        in this block.
         Note: You must start the stream by calling streamStart() before calling
               this function.
         """
@@ -2175,6 +2198,70 @@ def StringToConstant(pString):
         return staticLib.StringToConstant(a)
     else:
        raise LabJackException(0, "Function only supported for Windows")
+
+
+# To hold all the error codes and what they mean:
+ERROR_TO_STRING_DICT = dict()
+ERROR_TO_STRING_DICT['1'] = ("SCRATCH_WRT_FAIL", "")
+ERROR_TO_STRING_DICT['2'] = ("SCRATCH_ERASE_FAIL", "")
+ERROR_TO_STRING_DICT['3'] = ("DATA_BUFFER_OVERFLOW", "")
+ERROR_TO_STRING_DICT['4'] = ("ADC0_BUFFER_OVERFLOW", "")
+ERROR_TO_STRING_DICT['5'] = ("FUNCTION_INVALID", "")
+ERROR_TO_STRING_DICT['6'] = ("SWDT_TIME_INVALID", "This error is caused when an invalid time was passed to the watchdog.")
+ERROR_TO_STRING_DICT['7'] = ("XBR_CONFIG_ERROR", "")
+ERROR_TO_STRING_DICT['16'] = ("FLASH_WRITE_FAIL", "For some reason, the LabJack was unable to write the specified page of its internal flash.")
+ERROR_TO_STRING_DICT['17'] = ("FLASH_ERASE_FAIL", "For some reason, the LabJack was unable to erase the specified page of its internal flash.")
+ERROR_TO_STRING_DICT['18'] = ("FLASH_JMP_FAIL", "For some reason, the LabJack was unable to jump to a different section of flash. This may be an indication the flash is corrupted.")
+ERROR_TO_STRING_DICT['19'] = ("FLASH_PSP_TIMEOUT", "")
+ERROR_TO_STRING_DICT['20'] = ("FLASH_ABORT_RECEIVED", "")
+ERROR_TO_STRING_DICT['21'] = ("FLASH_PAGE_MISMATCH", "")
+ERROR_TO_STRING_DICT['22'] = ("FLASH_BLOCK_MISMATCH", "")
+ERROR_TO_STRING_DICT['23'] = ("FLASH_PAGE_NOT_IN_CODE_AREA", "Usually, this error is raised when you try to write new firmware before upgrading the bootloader.")
+ERROR_TO_STRING_DICT['24'] = ("MEM_ILLEGAL_ADDRESS", "")
+ERROR_TO_STRING_DICT['25'] = ("FLASH_LOCKED", "Tried to write to flash before unlocking it.")
+ERROR_TO_STRING_DICT['26'] = ("INVALID_BLOCK", "")
+ERROR_TO_STRING_DICT['27'] = ("FLASH_ILLEGAL_PAGE", "")
+ERROR_TO_STRING_DICT['28'] = ("FLASH_TOO_MANY_BYTES", "")
+ERROR_TO_STRING_DICT['29'] = ("FLASH_INVALID_STRING_NUM", "")
+ERROR_TO_STRING_DICT['40'] = ("SHT1x_COMM_TIME_OUT", "LabJack never received the ACK it was expecting from the SHT. This is usually due to incorrect wiring. Double check that all wires are securely connected to the correct pins.")
+ERROR_TO_STRING_DICT['41'] = ("SHT1x_NO_ACK", "")
+ERROR_TO_STRING_DICT['42'] = ("SHT1x_CRC_FAILED", "")
+ERROR_TO_STRING_DICT['43'] = ("SHT1x_TOO_MANY_W_BYTES", "")
+ERROR_TO_STRING_DICT['44'] = ("SHT1x_TOO_MANY_R_BYTES", "")
+ERROR_TO_STRING_DICT['45'] = ("SHT1x_INVALID_MODE", "")
+ERROR_TO_STRING_DICT['46'] = ("SHT1x_INVALID_LINE", "")
+ERROR_TO_STRING_DICT['48'] = ("STREAM_IS_ACTIVE", "This error is raised when you call StreamStart after the stream has already been started.")
+ERROR_TO_STRING_DICT['49'] = ("STREAM_TABLE_INVALID", "")
+ERROR_TO_STRING_DICT['50'] = ("STREAM_CONFIG_INVALID", "")
+ERROR_TO_STRING_DICT['52'] = ("STREAM_NOT_RUNNING", "This error is raised when you call StopStream after the stream has already been stopped.")
+ERROR_TO_STRING_DICT['53'] = ("STREAM_INVALID_TRIGGER", "")
+ERROR_TO_STRING_DICT['54'] = ("STREAM_ADC0_BUFFER_OVERFLOW", "")
+ERROR_TO_STRING_DICT['55'] = ("STREAM_SCAN_OVERLAP", "This error is raised when a scan interrupt is fired before the LabJack has completed the previous scan. The most common cause of this error is a configuration with a high sampling rate and a large number of channels.")
+ERROR_TO_STRING_DICT['56'] = ("STREAM_SAMPLE_NUM_INVALID", "")
+ERROR_TO_STRING_DICT['57'] = ("STREAM_BIPOLAR_GAIN_INVALID", "")
+ERROR_TO_STRING_DICT['58'] = ("STREAM_SCAN_RATE_INVALID", "")
+ERROR_TO_STRING_DICT['59'] = ("STREAM_AUTORECOVER_ACTIVE", "This error is to inform you that the autorecover feature has been activated. Autorecovery is usually triggered by not reading data fast enough from the LabJack.")
+ERROR_TO_STRING_DICT['60'] = ("STREAM_AUTORECOVER_REPORT", "This error marks the packet as an autorecovery report packet which contains how many packets were lost.")
+ERROR_TO_STRING_DICT['63'] = ("STREAM_AUTORECOVER_OVERFLOW", "")
+ERROR_TO_STRING_DICT['64'] = ("TIMER_INVALID_MODE", "")
+ERROR_TO_STRING_DICT['65'] = ("TIMER_QUADRATURE_AB_ERROR", "")
+ERROR_TO_STRING_DICT['66'] = ("TIMER_QUAD_PULSE_SEQUENCE", "")
+ERROR_TO_STRING_DICT['67'] = ("TIMER_BAD_CLOCK_SOURCE", "")
+ERROR_TO_STRING_DICT['68'] = ("TIMER_STREAM_ACTIVE", "")
+ERROR_TO_STRING_DICT['69'] = ("TIMER_PWMSTOP_MODULE_ERROR", "")
+ERROR_TO_STRING_DICT['70'] = ("TIMER_SEQUENCE_ERROR", "")
+ERROR_TO_STRING_DICT['71'] = ("TIMER_LINE_SEQUENCE_ERROR", "")
+ERROR_TO_STRING_DICT['72'] = ("TIMER_SHARING_ERROR", "")
+ERROR_TO_STRING_DICT['80'] = ("EXT_OSC_NOT_STABLE", "")
+ERROR_TO_STRING_DICT['81'] = ("INVALID_POWER_SETTING", "")
+ERROR_TO_STRING_DICT['82'] = ("PLL_NOT_LOCKED", "")
+ERROR_TO_STRING_DICT['96'] = ("INVALID_PIN", "")
+ERROR_TO_STRING_DICT['97'] = ("PIN_CONFIGURED_FOR_ANALOG", "This error is raised when you try to do a digital operation on a pin that's configured for analog. Use a command like ConfigIO to set the pin to digital.")
+ERROR_TO_STRING_DICT['98'] = ("PIN_CONFIGURED_FOR_DIGITAL", "This error is raised when you try to do an analog operation on a pin which is configured for digital. Use a command like ConfigIO to set the pin to analog.")
+ERROR_TO_STRING_DICT['99'] = ("IOTYPE_SYNCH_ERROR", "")
+ERROR_TO_STRING_DICT['100'] = ("INVALID_OFFSET", "")
+ERROR_TO_STRING_DICT['101'] = ("IOTYPE_NOT_VALID", "")
+ERROR_TO_STRING_DICT['102'] = ("TC_PIN_OFFSET_MUST_BE_4-8", "This error is raised when you try to configure the Timer/Counter pin offset to be 0-3.")
 
 #Windows
 def ErrorToString(ErrorCode):
