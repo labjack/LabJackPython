@@ -244,11 +244,11 @@ class Device(object):
         if checksum:
             setChecksum(writeBuffer)
 
-        handle = self.handle
+        
 
-        if(isinstance(handle, LJSocketHandle)):
+        if(isinstance(self.handle, LJSocketHandle)):
             wb = self._writeToLJSocketHandle(writeBuffer, modbus)
-        elif(isinstance(handle, UE9TCPHandle)):
+        elif(isinstance(self.handle, UE9TCPHandle)):
             wb = self._writeToUE9TCPHandle(writeBuffer, modbus)
         else:
             if os.name == 'posix':
@@ -267,12 +267,11 @@ class Device(object):
         
         if self.handle is None:
             raise LabJackException("The device handle is None.")
-        handle = self.handle
         
-        if(isinstance(handle, LJSocketHandle)):
+        if(isinstance(self.handle, LJSocketHandle)):
             return self._readFromLJSocketHandle(numBytes)
             
-        elif(isinstance(handle, UE9TCPHandle)):
+        elif(isinstance(self.handle, UE9TCPHandle)):
             return self._readFromUE9TCPHandle(numBytes, stream, modbus)
         else:
             if(os.name == 'posix'):
@@ -1034,8 +1033,7 @@ def listAll(deviceType, connectionType = 1):
         return deviceList
 
     if(os.name == 'posix'):
-        handle = None
-    
+
         if deviceType == LJ_dtUE9:
             return __listAllUE9Unix(connectionType)
     
