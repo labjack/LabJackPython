@@ -217,7 +217,7 @@ class Device(object):
         if modbus is True and self.modbusPrependZeros:
             writeBuffer = [ 0, 0 ] + writeBuffer
         
-        eGetRaw(handle, LJ_ioRAW_OUT, 0, len(writeBuffer), writeBuffer)
+        eGetRaw(self.handle, LJ_ioRAW_OUT, 0, len(writeBuffer), writeBuffer)
         
         return writeBuffer
 
@@ -273,7 +273,7 @@ class Device(object):
         """
         Reads from LJSocket. Returns the result as a list.
         """
-        rcvString = handle.socket.recv(numBytes)
+        rcvString = self.handle.socket.recv(numBytes)
         readBytes = len(rcvString)
         packFormat = "B" * readBytes
         rcvDataBuff = struct.unpack(packFormat, rcvString)
