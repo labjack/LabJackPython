@@ -120,6 +120,8 @@ def errcheck(ret, func, args):
     if ret == -1:
         ec = ctypes.get_errno()
         raise LabJackException(ec)
+    else:
+        return ret
 
 def _loadLibrary():
     """_loadLibrary()
