@@ -235,4 +235,7 @@ def getRequestType(packet):
     
 def getTransactionId(packet):
     """Pulls out the transaction id of the packet"""
-    return unpack(">H", packet[:2])
+    if isinstance(packet, list):
+        return unpack(">H", pack("BB", *packet[:2]) )
+    else:
+        return unpack(">H", packet[:2])
