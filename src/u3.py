@@ -298,11 +298,11 @@ class U3(Device):
         Desc: A convenience function to read an AIN.
         """
         try:
-            if self.firmwareVersion >= 1.18:
+            if self.firmwareVersion >= 1.18 and negChannel == 31:
                 # AIN0 => Register 0, AIN1 => Register 2, AIN2 => Register 4
                 return self.readRegister(posChannel * 2)
             else:
-                self._getAINLowLevel(posChannel, negChannel, longSettle, quickSample)
+                return self._getAINLowLevel(posChannel, negChannel, longSettle, quickSample)
         except AttributeError:
             return self._getAINLowLevel(posChannel, negChannel, longSettle, quickSample)
 
@@ -311,6 +311,12 @@ class U3(Device):
         """
         For reading the AIN using low-level commands
         """
+        isSpecial = False
+        
+        if negChannel == 32:
+            isSpecial = True
+            negChannel = 30
+        
         bits = self.getFeedback(AIN(posChannel, negChannel, longSettle, quickSample))[0]
         
         singleEnded = True
@@ -325,7 +331,10 @@ class U3(Device):
         except AttributeError:
             pass
         
-        return self.binaryToCalibratedAnalogVoltage(bits, isLowVoltage = lvChannel, isSingleEnded = singleEnded)
+        if isSpecial:
+            negChannel = 32
+        
+        return self.binaryToCalibratedAnalogVoltage(bits, isLowVoltage = lvChannel, isSingleEnded = singleEnded, isSpecialSetting = isSpecial)
 
     def _buildBuffer(self, sendBuffer, readLen, commandlist):
         for cmd in commandlist:
@@ -1121,8 +1130,11 @@ class U3(Device):
                     return ( bits * self.calData['lvSESlope'] ) + self.calData['lvSEOffset']
                 else:
                     return ( bits * 0.000037231 ) + 0
-            elif isSingleEnded and isSpecialSetting:
-                return (float(bits)/65536)*3.6
+            elif isSpecialSetting:
+                if hasCal:
+                    return ( bits * self.calData['lvDiffSlope'] ) + self.calData['lvDiffOffset'] + self.calData['vRefAtCAl']
+                else:
+                    return (float(bits)/65536)*4.88
             else:
                 if hasCal:
                     return ( bits * self.calData['lvDiffSlope'] ) + self.calData['lvDiffOffset']
@@ -1134,8 +1146,16 @@ class U3(Device):
                     return ( bits * self.calData['hvAIN%sSlope' % channelNumber] ) + self.calData['hvAIN%sOffset' % channelNumber]
                 else:
                     return ( bits * 0.000314 ) + -10.3
-            elif isSingleEnded and isSpecialSetting:
-                return (float(bits)/65536)*30.4
+            elif isSpecialSetting:
+                if hasCal:
+                    hvSlope = self.calData['hvAIN%sSlope' % channelNumber]
+                    hvOffset = self.calData['hvAIN%sOffset' % channelNumber]
+                    
+                    diffR = ( bits * self.calData['lvDiffSlope'] ) + self.calData['lvDiffOffset'] + self.calData['vRefAtCAl']
+                    reading = diffR * hvSlope / self.calData['lvSESlope'] + hvOffset
+                    return reading
+                else:
+                    return (float(bits)/65536)*30.4
             else:
                 raise Exception, "Can't do differential on high voltage channels"
     
