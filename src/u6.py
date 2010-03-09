@@ -201,8 +201,15 @@ class U6(Device):
         #command[7] = Reserved
         
         #command[9-25] = Reserved 
+        try:
+            result = self._writeRead(command, 38, [0xF8, 0x10, 0x08])
+        except LabJackException, e:
+            if e.errorString.endswith("4"):
+                print "NOTE: ConfigU6 returned an error of 4. This probably means you are using U6 with a *really old* firmware. Please upgrade your U6's firmware as soon as possible."
+                result = self._writeRead(command, 38, [0xF8, 0x10, 0x08], checkBytes = False)
+            else:
+                raise e
         
-        result = self._writeRead(command, 38, [0xF8, 0x10, 0x08])
         
         self.firmwareVersion = "%s.%02d" % (result[10], result[9])
         self.bootloaderVersion = "%s.%02d" % (result[12], result[11]) 
