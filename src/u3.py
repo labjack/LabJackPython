@@ -391,12 +391,19 @@ class U3(Device):
         rcvBuffer = self._writeRead(sendBuffer, readLen, [], checkBytes = False, stream = False, checksum = True)
         
         # Check the response for errors
-        if rcvBuffer[1] != 0xF8 or rcvBuffer[3] != 0x00:
-            raise LabJackException("Got incorrect command bytes")
-        elif not verifyChecksum(rcvBuffer):
-            raise LabJackException("Checksum was incorrect")
-        elif rcvBuffer[6] != 0:
-            raise LabJackException("Got error number %d from labjack" % rcvBuffer[6])
+        try:
+            self._checkCommandBytes(rcvBuffer, [0xF8])
+        
+            if rcvBuffer[3] != 0x00:
+                raise LabJackException("Got incorrect command bytes")
+        except LowlevelErrorException, e:
+            if isinstance(commandlist[0], list):
+                culprit = commandlist[0][ (rcvBuffer[7] -1) ]
+            else:
+                culprit = commandlist[ (rcvBuffer[7] -1) ]
+            
+            raise LowlevelErrorException("\nThis Command\n    %s\nreturned an error:\n    %s" %  (culprit , lowlevelErrorToString(rcvBuffer[6])))
+            
         
         results = []
         i = 9
@@ -1426,6 +1433,11 @@ class AIN(FeedbackCommand):
     '''
     def __init__(self, PositiveChannel, NegativeChannel, 
             LongSettling=False, QuickSample=False):
+        self.positiveChannel = PositiveChannel
+        self.negativeChannel = NegativeChannel
+        self.longSettling = LongSettling
+        self.quickSample = QuickSample
+        
         validChannels = range(16) + [30, 31]
         if PositiveChannel not in validChannels:
             raise Exception("Invalid Positive Channel specified")
@@ -1437,6 +1449,9 @@ class AIN(FeedbackCommand):
         self.cmdBytes = [ 0x01, b, NegativeChannel ]
 
     readLen =  2
+    
+    def __repr__(self):
+        return "<u3.AIN( PositiveChannel = %s, NegativeChannel = %s, LongSettling = %s, QuickSample = %s )>" % ( self.positiveChannel, self.negativeChannel, self.longSettling, self.quickSample )
 
     def handle(self, input):
         result = (input[1] << 8) + input[0]
@@ -1452,7 +1467,11 @@ class WaitShort(FeedbackCommand):
     [ None ]
     '''
     def __init__(self, Time):
+        self.time = Time % 256
         self.cmdBytes = [ 5, Time % 256 ]
+
+    def __repr__(self):
+        return "<u3.WaitShort( Time = %s )>" % self.time
 
 class WaitLong(FeedbackCommand):
     '''
@@ -1464,7 +1483,11 @@ class WaitLong(FeedbackCommand):
     [ None ]
     '''
     def __init__(self, Time):
+        self.time = Time % 256
         self.cmdBytes = [ 6, Time % 256 ]
+        
+    def __repr__(self):
+        return "<u3.WaitLong( Time = %s )>" % self.time
 
 class LED(FeedbackCommand):
     '''
@@ -1478,7 +1501,11 @@ class LED(FeedbackCommand):
     [ None ]
     '''
     def __init__(self, State):
+        self.state = State
         self.cmdBytes = [ 9, int(bool(State)) ]
+        
+    def __repr__(self):
+        return "<u3.LED( State = %s )>" % self.state
 
 class BitStateRead(FeedbackCommand):
     '''
@@ -1494,9 +1521,13 @@ class BitStateRead(FeedbackCommand):
     [ 1 ]
     '''
     def __init__(self, IONumber):
+        self.ioNumber = IONumber
         self.cmdBytes = [ 10, IONumber % 20 ]
 
     readLen = 1
+
+    def __repr__(self):
+        return "<u3.BitStateRead( IONumber = %s )>" % self.ioNumber
 
     def handle(self, input):
         return int(bool(input[0]))
@@ -1515,7 +1546,12 @@ class BitStateWrite(FeedbackCommand):
     [ None ]
     '''
     def __init__(self, IONumber, State):
+        self.ioNumber = IONumber
+        self.state = State
         self.cmdBytes = [ 11, (IONumber % 20) + (int(bool(State)) << 7) ]
+        
+    def __repr__(self):
+        return "<u3.BitStateWrite( IONumber = %s, State = %s )>" % (self.ioNumber, self.state)
 
 class BitDirRead(FeedbackCommand):
     '''
@@ -1528,9 +1564,13 @@ class BitDirRead(FeedbackCommand):
     [ 1 ]
     '''
     def __init__(self, IONumber):
+        self.ioNumber = IONumber
         self.cmdBytes = [ 12, IONumber % 20 ]
 
     readLen = 1
+
+    def __repr__(self):
+        return "<u3.BitDirRead( IONumber = %s )>" % self.ioNumber
 
     def handle(self, input):
         return int(bool(input[0]))
@@ -1548,7 +1588,12 @@ class BitDirWrite(FeedbackCommand):
     [ None ] 
     '''
     def __init__(self, IONumber, Direction):
+        self.ioNumber = IONumber
+        self.direction = Direction
         self.cmdBytes = [ 13, (IONumber % 20) + (int(bool(Direction)) << 7) ]
+        
+    def __repr__(self):
+        return "<u3.BitDirWrite( IONumber = %s, Direction = %s )>" % (self.ioNumber, self.direction)
     
 class PortStateRead(FeedbackCommand):
     """
@@ -1565,6 +1610,9 @@ class PortStateRead(FeedbackCommand):
     
     def handle(self, input):
         return {'FIO' : input[0], 'EIO' : input[1], 'CIO' : input[2] }
+    
+    def __repr__(self):
+        return "<u3.PortStateRead()>"
 
 class PortStateWrite(FeedbackCommand):
     """
@@ -1579,7 +1627,12 @@ class PortStateWrite(FeedbackCommand):
     [ None ]
     """
     def __init__(self, State, WriteMask = [ 0xff, 0xff, 0xff]):
+        self.state = State
+        self.writeMask = WriteMask 
         self.cmdBytes = [ 27 ] + WriteMask + State
+        
+    def __repr__(self):
+        return "<u3.PortStateWrite( State = %s, WriteMask = %s )>" % (self.state, self.writeMask)
         
 class PortDirRead(FeedbackCommand):
     """
@@ -1593,6 +1646,9 @@ class PortDirRead(FeedbackCommand):
         self.cmdBytes = [ 28 ]
         
     readLen = 3
+    
+    def __repr__(self):
+        return "<u3.PortDirRead()>"
     
     def handle(self, input):
         return {'FIO' : input[0], 'EIO' : input[1], 'CIO' : input[2] }
@@ -1609,8 +1665,12 @@ class PortDirWrite(FeedbackCommand):
     [ None ]
     """
     def __init__(self, Direction, WriteMask = [ 0xff, 0xff, 0xff]):
+        self.direction = Direction
+        self.writeMask = WriteMask
         self.cmdBytes = [ 29 ] + WriteMask + Direction
 
+    def __repr__(self):
+        return "<u3.PortDirWrite( Direction = %s, WriteMask = %s )>" % (self.direction, self.writeMask)
 
 class DAC8(FeedbackCommand):
     '''
@@ -1625,7 +1685,12 @@ class DAC8(FeedbackCommand):
     [ None ]
     '''
     def __init__(self, Dac, Value):
+        self.dac = Dac
+        self.value = Value % 256 
         self.cmdBytes = [ 34 + (Dac % 2), Value % 256 ]
+    
+    def __repr__(self):
+        return "<u3.DAC8( Dac = %s, Value = %s )>" % (self.dac, self.value)
         
 class DAC0_8(DAC8):
     """
@@ -1640,6 +1705,9 @@ class DAC0_8(DAC8):
     """
     def __init__(self, Value):
         DAC8.__init__(self, 0, Value)
+        
+    def __repr__(self):
+        return "<u3.DAC0_8( Value = %s )>" % self.value
 
 class DAC1_8(DAC8):
     """
@@ -1654,6 +1722,9 @@ class DAC1_8(DAC8):
     """
     def __init__(self, Value):
         DAC8.__init__(self, 1, Value)
+        
+    def __repr__(self):
+        return "<u3.DAC1_8( Value = %s )>" % self.value
 
 class DAC16(FeedbackCommand):
     '''
@@ -1668,7 +1739,12 @@ class DAC16(FeedbackCommand):
     [ None ]
     '''
     def __init__(self, Dac, Value):
+        self.dac = Dac
+        self.value = Value
         self.cmdBytes = [ 38 + (Dac % 2), Value % 256, Value >> 8 ]
+        
+    def __repr__(self):
+        return "<u3.DAC16( Dac = %s, Value = %s )>" % (self.dac, self.value)
 
 class DAC0_16(DAC16):
     """
@@ -1683,6 +1759,9 @@ class DAC0_16(DAC16):
     """
     def __init__(self, Value):
         DAC16.__init__(self, 0, Value)
+        
+    def __repr__(self):
+        return "<u3.DAC0_16( Value = %s )>" % self.value
 
 class DAC1_16(DAC16):
     """
@@ -1697,6 +1776,9 @@ class DAC1_16(DAC16):
     """
     def __init__(self, Value):
         DAC16.__init__(self, 1, Value)
+    
+    def __repr__(self):
+        return "<u3.DAC1_16( Value = %s )>" % self.value
 
 class Timer(FeedbackCommand):
     """
@@ -1723,7 +1805,10 @@ class Timer(FeedbackCommand):
     [ 12314 ]
     """
     def __init__(self, timer, UpdateReset = False, Value=0, Mode = None):
-        self.Mode = Mode
+        self.timer = timer
+        self.updateReset = UpdateReset
+        self.value = Value
+        self.mode = Mode
         if timer != 0 and timer != 1:
             raise LabJackException("Timer should be either 0 or 1.")
         if UpdateReset and Value == None:
@@ -1734,13 +1819,16 @@ class Timer(FeedbackCommand):
     
     readLen = 4
     
+    def __repr__(self):
+        return "<u3.Timer( timer = %s, UpdateReset = %s, Value = %s, Mode = %s )>" % (self.timer, self.updateReset, self.value, self.mode)
+    
     def handle(self, input):
         inStr = struct.pack('B' * len(input), *input)
-        if self.Mode == 8:
+        if self.mode == 8:
             return struct.unpack('<i', inStr )[0]
-        elif self.Mode == 9:
-            max, current = struct.unpack('<HH', inStr )
-            return current, max
+        elif self.mode == 9:
+            maxCount, current = struct.unpack('<HH', inStr )
+            return current, maxCount
         else:
             return struct.unpack('<I', inStr )[0]
 
@@ -1764,6 +1852,9 @@ class Timer0(Timer):
     """
     def __init__(self, UpdateReset = False, Value = 0, Mode = None):
         Timer.__init__(self, 0, UpdateReset, Value, Mode)
+        
+    def __repr__(self):
+        return "<u3.Timer0( UpdateReset = %s, Value = %s, Mode = %s )>" % (self.updateReset, self.value, self.mode)
 
 class Timer1(Timer):
     """
@@ -1785,6 +1876,9 @@ class Timer1(Timer):
     """
     def __init__(self, UpdateReset = False, Value = 0, Mode = None):
         Timer.__init__(self, 1, UpdateReset, Value, Mode)
+        
+    def __repr__(self):
+        return "<u3.Timer1( UpdateReset = %s, Value = %s, Mode = %s )>" % (self.updateReset, self.value, self.mode)
 
 class QuadratureInputTimer(Timer):
     """
@@ -1809,6 +1903,9 @@ class QuadratureInputTimer(Timer):
     """
     def __init__(self, UpdateReset = False, Value = 0):
         Timer.__init__(self, 0, UpdateReset, Value, Mode = 8)
+        
+    def __repr__(self):
+        return "<u3.QuadratureInputTimer( UpdateReset = %s, Value = %s )>" % (self.updateReset, self.value)
 
 class TimerStopInput1(Timer1):
     """
@@ -1835,6 +1932,8 @@ class TimerStopInput1(Timer1):
     def __init__(self, UpdateReset = False, Value = 0):
         Timer.__init__(self, 1, UpdateReset, Value, Mode = 9)
 
+    def __repr__(self):
+        return "<u3.TimerStopInput1( UpdateReset = %s, Value = %s )>" % (self.updateReset, self.value)
 
 class TimerConfig(FeedbackCommand):
     """
@@ -1858,7 +1957,14 @@ class TimerConfig(FeedbackCommand):
         if TimerMode > 13 or TimerMode < 0:
             raise LabJackException("Invalid Timer Mode.")
         
+        self.timer = timer
+        self.timerMode = TimerMode
+        self.value = Value
+        
         self.cmdBytes = [43 + (timer * 2), TimerMode, Value % 256, Value >> 8]
+        
+    def __repr__(self):
+        return "<u3.TimerConfig( timer = %s, TimerMode = %s, Value = %s )>" % (self.timer, self.timerMode, self.value)
 
 class Timer0Config(TimerConfig):
     """
@@ -1873,6 +1979,9 @@ class Timer0Config(TimerConfig):
     """
     def __init__(self, TimerMode, Value = 0):
         TimerConfig.__init__(self, 0, TimerMode, Value)
+        
+    def __repr__(self):
+        return "<u3.Timer0Config( TimerMode = %s, Value = %s )>" % (self.timerMode, self.value)
 
 class Timer1Config(TimerConfig):
     """
@@ -1887,6 +1996,9 @@ class Timer1Config(TimerConfig):
     """
     def __init__(self, TimerMode, Value = 0):
         TimerConfig.__init__(self, 1, TimerMode, Value)
+    
+    def __repr__(self):
+        return "<u3.Timer1Config( TimerMode = %s, Value = %s )>" % (self.timerMode, self.value)
 
 class Counter(FeedbackCommand):
     '''
@@ -1904,9 +2016,14 @@ class Counter(FeedbackCommand):
     [ 2183 ]
     '''
     def __init__(self, counter, Reset = False):
+        self.counter = counter
+        self.reset = Reset
         self.cmdBytes = [ 54 + (counter % 2), int(bool(Reset))]
 
     readLen = 4
+
+    def __repr__(self):
+        return "<u3.Counter( counter = %s, Reset = %s )>" % (self.counter, self.reset)
 
     def handle(self, input):
         inStr = ''.join([chr(x) for x in input])
@@ -1928,6 +2045,9 @@ class Counter0(Counter):
     '''
     def __init__(self, Reset = False):
         Counter.__init__(self, 0, Reset)
+        
+    def __repr__(self):
+        return "<u3.Counter0( Reset = %s )>" % self.reset
 
 class Counter1(Counter):
     '''
@@ -1945,3 +2065,6 @@ class Counter1(Counter):
     '''
     def __init__(self, Reset = False):
         Counter.__init__(self, 1, Reset)
+        
+    def __repr__(self):
+        return "<u3.Counter0( Reset = %s )>" % self.reset

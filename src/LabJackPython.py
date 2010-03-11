@@ -115,6 +115,9 @@ class LabJackException(Exception):
     def __str__(self):
           return self.errorString
 
+# Raised when a low-level command raises an error.
+class LowlevelErrorException(LabJackException): pass
+
 # Raised when the return value of OpenDevice is null.
 class NullHandleException(LabJackException):
     def __init__(self):
@@ -191,6 +194,7 @@ class Device(object):
         self._autoCloseSetup = False
         self.modbusPrependZeros = True
         self.deviceLock = threading.Lock()
+        self.deviceName = "LabJack"
         
 
     def _writeToLJSocketHandle(self, writeBuffer, modbus):
@@ -498,7 +502,7 @@ class Device(object):
         elif not verifyChecksum(results):
             raise LabJackException("Checksum was incorrect.")
         elif results[6] != 0:
-            raise LabJackException("Command returned with error number %s" % results[6])
+            raise LowlevelErrorException("\nThe %s returned an error:\n    %s" % (self.deviceName , lowlevelErrorToString(results[6])) )
             
     def _writeRead(self, command, readLen, commandBytes, checkBytes = True, stream=False, checksum = True):
     
@@ -2266,6 +2270,22 @@ ERROR_TO_STRING_DICT['99'] = ("IOTYPE_SYNCH_ERROR", "")
 ERROR_TO_STRING_DICT['100'] = ("INVALID_OFFSET", "")
 ERROR_TO_STRING_DICT['101'] = ("IOTYPE_NOT_VALID", "")
 ERROR_TO_STRING_DICT['102'] = ("TC_PIN_OFFSET_MUST_BE_4-8", "This error is raised when you try to configure the Timer/Counter pin offset to be 0-3.")
+
+def lowlevelErrorToString( errorcode ):
+    """Converts a low-level errorcode into a string.
+    """
+    try:
+        name, advice = ERROR_TO_STRING_DICT[str(errorcode)]
+    except KeyError:
+        name = "UNKNOWN_ERROR"
+        advice = "Unrecognized error code (%s)" % errorcode
+    
+    if advice is not "":
+        msg = "%s (%s)\n%s" % (name, errorcode, advice)
+    else:
+        msg = "%s (%s)" % (name, errorcode)
+        
+    return msg
 
 #Windows
 def ErrorToString(ErrorCode):
