@@ -4,7 +4,7 @@ Windows UD Driver, and the LabJack Linux and Mac drivers.
 
 Author LabJack Corporation
 
-Version 0.8.1
+Version 3-11-2010
 
 For use with drivers:
     - UD Driver or Mac/Linux Exodriver
@@ -56,7 +56,7 @@ Version History
         - All changes made on GitHub up to this point.
         - Added LJSocket support
         - U3/U6/UE9 now all auto-open on construction
-    - 0.8.1 February 15, 2009
+    - 0.8.1 February 15, 2010
         - All bug fixes and changes made on GitHub to date.
         - Re-worked open, write, and read to be broken out into several 
           functions.
@@ -66,6 +66,10 @@ Version History
               UE9 over Ethernet without the UD Driver installed.
         - Added better support for up-and-coming devices, including adding
           bridge.py to the list of installed modules.
+    - March 11, 2010
+        - All bug fixes and changes made on GitHub to date.
+        - Trying a new system of making regular tagged releases
+        - Version numbers of LabJackPython are now dates.
 """
 # We use the 'with' keyword to manage the thread-safe device lock. It's built-in on 2.6; 2.5 requires an import.
 from __future__ import with_statement
@@ -80,7 +84,7 @@ import Modbus
 import atexit # For auto-closing devices
 import threading # For a thread-save device lock
 
-__version = "0.8.1"
+__version = "3-11-1010"
 
 SOCKET_TIMEOUT = 10
 BROADCAST_SOCKET_TIMEOUT = 1
