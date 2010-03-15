@@ -502,7 +502,7 @@ class Device(object):
         elif not verifyChecksum(results):
             raise LabJackException("Checksum was incorrect.")
         elif results[6] != 0:
-            raise LowlevelErrorException("\nThe %s returned an error:\n    %s" % (self.deviceName , lowlevelErrorToString(results[6])) )
+            raise LowlevelErrorException(results[6], "\nThe %s returned an error:\n    %s" % (self.deviceName , lowlevelErrorToString(results[6])) )
             
     def _writeRead(self, command, readLen, commandBytes, checkBytes = True, stream=False, checksum = True):
     
