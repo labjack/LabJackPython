@@ -1202,8 +1202,10 @@ def _openUE9OverEthernet(firstFound, pAddress, devNumber):
             else:
                 # Got a bad checksum.
                 pass
+    except LabJackException, e:
+        raise LabJackException(LJE_LABJACK_NOT_FOUND, "%s" % e)
     except:
-        raise LabJackException(LJE_LABJACK_NOT_FOUND)
+        raise LabJackException("LJE_LABJACK_NOT_FOUND: Couldn't find the specified LabJack.")
 
 def _openWirelessBridgeOnWindows(firstFound, pAddress, devNumber):
     if skymoteLib is None:
@@ -2690,17 +2692,23 @@ class UE9TCPHandle(object):
             self.data = socket.socket()
             self.data.connect((ipAddress, 52360))
             self.data.settimeout(timeout)
-
+        
             self.stream = socket.socket()
             self.stream.connect((ipAddress, 52361))
             self.stream.settimeout(timeout)
             
-            self.modbus = socket.socket()
-            self.modbus.connect((ipAddress, 502))
-            self.modbus.settimeout(timeout)
+            try:
+                self.modbus = socket.socket()
+                self.modbus.connect((ipAddress, 502))
+                self.modbus.settimeout(timeout)
+            except socket.error, e:
+                raise LabJackException("Couldn't connect to the Modbus port on the UE9. Please upgrade to UE9 Comm firmware to 1.43 or higher.")
+        except LabJackException, e:
+            raise e
         except Exception, e:
             print e
-            raise LabJackException("Could not connect to labjack at address: " + str(ipAddress))
+            raise LabJackException("Couldn't open sockets to the UE9 at IP Address %s. Error was: %s" % (ipAddress, e))
+        
 
     def close(self):
         try:
