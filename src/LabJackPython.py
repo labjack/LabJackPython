@@ -125,29 +125,51 @@ class NullHandleException(LabJackException):
 
 def errcheck(ret, func, args):
     if ret == -1:
-        ec = ctypes.get_errno()
-        raise LabJackException(ec)
+        try:
+            ec = ctypes.get_errno()
+            raise LabJackException(ec, "Exodriver returned error number %s" % ec)
+        except AttributeError:
+            raise LabJackException(-1, "Exodriver returned an error, but LabJackPython is unable to read the error code. Upgrade to Python 2.6 for this functionality.")
     else:
         return ret
+
+def _loadLinuxSo():
+    try:
+        l = ctypes.CDLL("liblabjackusb.so", use_errno=True)
+    except TypeError:
+        l = ctypes.CDLL("liblabjackusb.so")
+    l.LJUSB_Stream.errcheck = errcheck
+    l.LJUSB_Read.errcheck = errcheck
+    return l 
+
+def _loadMacDylib():
+    try:
+        l = ctypes.CDLL("liblabjackusb.dylib", use_errno=True)
+    except TypeError:
+        l = ctypes.CDLL("liblabjackusb.dylib")
+    l.LJUSB_Stream.errcheck = errcheck
+    l.LJUSB_Read.errcheck = errcheck
+    return l
 
 def _loadLibrary():
     """_loadLibrary()
     Returns a ctypes dll pointer to the library.
     """
     if(os.name == 'posix'):
-            try:
-                l = ctypes.CDLL("liblabjackusb.so", use_errno=True)
-                l.LJUSB_Stream.errcheck = errcheck
-                l.LJUSB_Read.errcheck = errcheck
-                return l
-            except:
-                try:
-                    l = ctypes.CDLL("liblabjackusb.dylib", use_errno=True)
-                    l.LJUSB_Stream.errcheck = errcheck
-                    l.LJUSB_Read.errcheck = errcheck
-                    return l
-                except:
-                    raise LabJackException("Could not load labjackusb driver. Ethernet connectivity availability only.")
+        try:
+            return _loadLinuxSo()
+        except OSError, e:
+            pass # We may be on Mac.
+        except Exception, e:
+            raise LabJackException("Could not load the Linux SO for some reason other than it not being installed. Ethernet connectivity only.\n\n    The error was: %s" % e)
+        
+        try:
+            return _loadMacDylib()
+        except OSError, e:
+            raise LabJackException("Could not load the Exodriver driver. Ethernet connectivity only.\n\nCheck that the Exodriver is installed, and the permissions are set correctly.\nThe error message was: %s" % e)
+        except Exception, e:
+            raise LabJackException("Could not load the Mac Dylib for some reason other than it not being installed. Ethernet connectivity only.\n\n    The error was: %s" % e)
+                    
     if(os.name == 'nt'):
         try:
             return ctypes.windll.LoadLibrary("labjackud")
