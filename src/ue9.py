@@ -711,6 +711,38 @@ class UE9(Device):
         
         self._writeRead(command, 8, [0xF8, 0x01, command[3]])
 
+
+    def setDefaults(self, SetToFactoryDefaults = False):
+        """
+        Name: UE9.setDefaults(SetToFactoryDefaults = False)
+        Args: SetToFactoryDefaults, set to True reset to factory defaults.
+        Desc: Executing this function causes the current or last used values
+              (or the factory defaults) to be stored in flash as the power-up
+              defaults.
+        
+        >>> myUE9 = UE9()
+        >>> myUE9.setDefaults()
+        """
+        command = [ 0 ] * 8
+        
+        #command[0] = Checksum8
+        command[1] = 0xF8
+        command[2] = 0x01
+        command[3] = 0x0E
+        #command[4] = Checksum16 (LSB)
+        #command[5] = Checksum16 (MSB)
+        command[6] = 0xBA
+        command[7] = 0x26
+        
+        if SetToFactoryDefaults:
+            command[6] = 0x82
+            command[7] = 0xC7
+        
+        self._writeRead(command, 8, [ 0xF8, 0x01, 0x0E ] )
+        
+    def setToFactoryDefaults(self):
+        return self.setDefaults(SetToFactoryDefaults = True)
+
     def watchdogConfig(self, ResetCommonTimeout = False, ResetControlonTimeout = False, UpdateDigitalIOB = False, UpdateDigitalIOA = False, UpdateDAC1onTimeout = False, UpdateDAC0onTimeout = False, TimeoutPeriod = 60, DIOConfigA = 0, DIOConfigB = 0, DAC0Enabled = False, DAC0 = 0, DAC1Enabled = False, DAC1 = 0):
         command = [ 0 ] * 16
         
