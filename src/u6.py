@@ -1204,7 +1204,7 @@ class U6(Device):
         results['CIOState'] = defaults[13]
         
         results['ConfigWriteMask'] = defaults[16]
-        results['#OfTimersEnable'] = defaults[17]
+        results['NumOfTimersEnable'] = defaults[17]
         results['CounterMask'] = defaults[18]
         results['PinOffset'] = defaults[19]
         

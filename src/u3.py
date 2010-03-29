@@ -1239,12 +1239,12 @@ class U3(Device):
         
         results['EIODirection'] = defaults[8]
         results['EIOState'] = defaults[9]
-        results['FIOAnalog'] = defaults[10]
+        results['EIOAnalog'] = defaults[10]
         
         results['CIODirection'] = defaults[12]
         results['CIOState'] = defaults[13]
         
-        results['#OfTimersEnable'] = defaults[17]
+        results['NumOfTimersEnable'] = defaults[17]
         results['CounterMask'] = defaults[18]
         results['PinOffset'] = defaults[19]
         results['Options'] = defaults[20]

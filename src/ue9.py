@@ -1172,7 +1172,7 @@ class UE9(Device):
         results['MIOState'] = defaults[11]
         
         results['ConfigWriteMask'] = defaults[16]
-        results['#OfTimersEnable'] = defaults[17]
+        results['NumOfTimersEnable'] = defaults[17]
         results['CounterMask'] = defaults[18]
         results['PinOffset'] = defaults[19]
         
@@ -1202,9 +1202,9 @@ class UE9(Device):
         results['TMR4ValueL'] = defaults[1]
         results['TMR4ValueH'] = defaults[2]
         
-        results['TMR4Mode'] = defaults[4]
-        results['TMR4ValueL'] = defaults[5]
-        results['TMR4ValueH'] = defaults[6]
+        results['TMR5Mode'] = defaults[4]
+        results['TMR5ValueL'] = defaults[5]
+        results['TMR5ValueH'] = defaults[6]
         
         results['DAC0'] = struct.unpack( ">H", struct.pack("BB", *defaults[16:18]) )[0]
         
