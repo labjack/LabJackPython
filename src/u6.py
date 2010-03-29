@@ -499,57 +499,6 @@ class U6(Device):
     def eraseCal(self):
         return self.eraseMem(EraseCal=True)
     
-    def setDefaults(self, SetToFactoryDefaults = False):
-        """
-        Name: U6.setDefaults(SetToFactoryDefaults = False)
-        Args: SetToFactoryDefaults, set to True reset to factory defaults.
-        Desc: Executing this function causes the current or last used values
-              (or the factory defaults) to be stored in flash as the power-up
-              defaults.
-        
-        >>> myU6 = U6()
-        >>> myU6.setDefaults()
-        """
-        command = [ 0 ] * 8
-        
-        #command[0] = Checksum8
-        command[1] = 0xF8
-        command[2] = 0x01
-        command[3] = 0x0E
-        #command[4] = Checksum16 (LSB)
-        #command[5] = Checksum16 (MSB)
-        command[6] = 0xBA
-        command[7] = 0x26
-        
-        if SetToFactoryDefaults:
-            command[6] = 0x82
-            command[7] = 0xC7
-        
-        self._writeRead(command, 8, [ 0xF8, 0x01, 0x0E ] )
-        
-    def setToFactoryDefaults(self):
-        return self.setDefaults(SetToFactoryDefaults = True)
-    
-    validDefaultBlocks = range(8)
-    def readDefaults(self, BlockNum):
-        """
-        Name: U6.readDefaults(BlockNum)
-        Args: BlockNum, which block to read. Must be 0-7.
-        Desc: Reads the power-up defaults from flash.
-        
-        >>> myU6 = U6()
-        >>> myU6.readDefaults(0)
-        [ 0, 0, ... , 0]        
-        """
-        if BlockNum not in validDefaultBlocks:
-            raise LabJackException("Defaults must be in range 0-7")
-        
-        command = [ 0, 0xF8, 0x01, 0x0E, 0, 0, 0, BlockNum ]
-        
-        result = self._writeRead(command, 40, [ 0xF8, 0x11, 0x0E ])
-        
-        return result[8:]
-    
     def streamConfig(self, NumChannels = 1, ResolutionIndex = 0, SamplesPerPacket = 25, SettlingFactor = 0, InternalStreamClockFrequency = 0, DivideClockBy256 = False, ScanInterval = 1, ChannelNumbers = [0], ChannelOptions = [0], SampleFrequency = None):
         """
         Name: U6.streamConfig(
@@ -1235,6 +1184,64 @@ class U6(Device):
         result = self.getFeedback(AIN24AR(positiveChannel, resolutionIndex, gainIndex, settlingFactor, differential))
         
         return self.binaryToCalibratedAnalogVoltage(result[0]['GainIndex'], result[0]['AIN'])
+
+    def readDefaultsConfig(self):
+        """
+        Name: U6.readDefaultsConfig( ) 
+        Args: None
+        Desc: Reads the power-up defaults stored in flash.
+        """
+        results = dict()
+        defaults = self.readDefaults(0)
+        
+        results['FIODirection'] = defaults[4]
+        results['FIOState'] = defaults[5]
+        
+        results['EIODirection'] = defaults[8]
+        results['EIOState'] = defaults[9]
+        
+        results['CIODirection'] = defaults[12]
+        results['CIOState'] = defaults[13]
+        
+        results['ConfigWriteMask'] = defaults[16]
+        results['#OfTimersEnable'] = defaults[17]
+        results['CounterMask'] = defaults[18]
+        results['PinOffset'] = defaults[19]
+        
+        defaults = self.readDefaults(1)
+        results['ClockSource'] = defaults[0]
+        results['Divisor'] = defaults[1]
+        
+        results['TMR0Mode'] = defaults[16]
+        results['TMR0ValueL'] = defaults[17]
+        results['TMR0ValueH'] = defaults[18]
+        
+        results['TMR1Mode'] = defaults[20]
+        results['TMR1ValueL'] = defaults[21]
+        results['TMR1ValueH'] = defaults[22]
+        
+        results['TMR2Mode'] = defaults[24]
+        results['TMR2ValueL'] = defaults[25]
+        results['TMR2ValueH'] = defaults[26]
+        
+        results['TMR3Mode'] = defaults[28]
+        results['TMR3ValueL'] = defaults[29]
+        results['TMR3ValueH'] = defaults[30]
+        
+        defaults = self.readDefaults(2)
+        
+        results['DAC0'] = struct.unpack( ">H", struct.pack("BB", *defaults[16:18]) )[0]
+        
+        results['DAC1'] = struct.unpack( ">H", struct.pack("BB", *defaults[20:22]) )[0]
+        
+        defaults = self.readDefaults(3)
+        
+        for i in range(14):
+            results["AIN%sGainRes" % i] = defaults[i]
+            results["AIN%sOptions" % i] = defaults[i+16]
+        
+        return results
+        
 
     def exportConfig(self):
         """
@@ -2191,7 +2198,7 @@ class DSP(FeedbackCommand):
     Differential: True, do differential readings; False, single-ended readings
 
     See section 5.2.5.20 of the U3 User's Guide 
-    (http://labjack.com/u6/users-guide/5.2.5.20)
+    (http://labjack.com/support/u6/users-guide/5.2.5.20)
     
     >>> d.getFeedback( u6.DSP( PLine, Resolution = 0, Gain = 0,
                                SettlingFactor = 0,  Differential = False,

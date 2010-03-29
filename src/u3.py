@@ -1125,6 +1125,7 @@ class U3(Device):
         
         return { 'StatusReg' : result[8], 'StatusRegCRC' : result[9], 'Temperature' : temp, 'TemperatureCRC' : result[12] , 'Humidity' : humid, 'HumidityCRC' : result[15] }
         
+    
     def binaryToCalibratedAnalogVoltage(self, bits, isLowVoltage = True, isSingleEnded = False, isSpecialSetting = False, channelNumber = 0):
         """
         Converts the bits returned from AIN functions into a calibrated voltage.
@@ -1222,7 +1223,56 @@ class U3(Device):
         self.calData['hvAIN3Offset'] = toDouble(calData[24:32])
         
         return self.calData
+    
+    def readDefaultsConfig(self):
+        """
+        Name: U3.readDefaultsConfig( ) 
+        Args: None
+        Desc: Reads the power-up defaults stored in flash.
+        """
+        results = dict()
+        defaults = self.readDefaults(0)
         
+        results['FIODirection'] = defaults[4]
+        results['FIOState'] = defaults[5]
+        results['FIOAnalog'] = defaults[6]
+        
+        results['EIODirection'] = defaults[8]
+        results['EIOState'] = defaults[9]
+        results['FIOAnalog'] = defaults[10]
+        
+        results['CIODirection'] = defaults[12]
+        results['CIOState'] = defaults[13]
+        
+        results['#OfTimersEnable'] = defaults[17]
+        results['CounterMask'] = defaults[18]
+        results['PinOffset'] = defaults[19]
+        results['Options'] = defaults[20]
+        
+        defaults = self.readDefaults(1)
+        results['ClockSource'] = defaults[0]
+        results['Divisor'] = defaults[1]
+        
+        results['TMR0Mode'] = defaults[16]
+        results['TMR0ValueL'] = defaults[17]
+        results['TMR0ValueH'] = defaults[18]
+        
+        results['TMR1Mode'] = defaults[20]
+        results['TMR1ValueL'] = defaults[21]
+        results['TMR1ValueH'] = defaults[22]
+        
+        defaults = self.readDefaults(2)
+        
+        results['DAC0'] = struct.unpack( ">H", struct.pack("BB", *defaults[16:18]) )[0]
+        
+        results['DAC1'] = struct.unpack( ">H", struct.pack("BB", *defaults[20:22]) )[0]
+        
+        defaults = self.readDefaults(3)
+        
+        for i in range(16):
+            results["AIN%sNegChannel" % i] = defaults[i]
+        
+        return results 
 
     def exportConfig(self):
         """

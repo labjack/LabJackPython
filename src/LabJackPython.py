@@ -585,15 +585,15 @@ class Device(object):
             ct = LJ_ctLJSOCKET
         
         d = None
-        if devNumber != None:
+        if devNumber:
             d = openLabJack(devType, ct, firstFound = False, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket)
-        elif serial != None:
+        elif serial:
             d = openLabJack(devType, ct, firstFound = False, pAddress = serial, handleOnly = handleOnly, LJSocket = LJSocket)
-        elif localId != None:
+        elif localId:
             d = openLabJack(devType, ct, firstFound = False, pAddress = localId, handleOnly = handleOnly, LJSocket = LJSocket)
-        elif ipAddress != None:
+        elif ipAddress:
             d = openLabJack(devType, ct, firstFound = False, pAddress = ipAddress, handleOnly = handleOnly, LJSocket = LJSocket)
-        elif LJSocket is not None:
+        elif LJSocket:
             d = openLabJack(devType, ct, handleOnly = handleOnly, LJSocket = LJSocket)
         elif firstFound:
             d = openLabJack(devType, ct, firstFound = True, handleOnly = handleOnly, LJSocket = LJSocket)
@@ -881,6 +881,63 @@ class Device(object):
             packet2 = struct.unpack('<'+'H'*(remainder), struct.pack('BB'*(remainder), *packet2))
             self.writeRegister(58024, list(packet2))
 
+    def setDefaults(self, SetToFactoryDefaults = False):
+        """
+        Name: Device.setDefaults(SetToFactoryDefaults = False)
+        Args: SetToFactoryDefaults, set to True reset to factory defaults.
+        Desc: Executing this function causes the current or last used values
+              (or the factory defaults) to be stored in flash as the power-up
+              defaults.
+        
+        >>> myU6 = U6()
+        >>> myU6.setDefaults()
+        """
+        command = [ 0 ] * 8
+        
+        #command[0] = Checksum8
+        command[1] = 0xF8
+        command[2] = 0x01
+        command[3] = 0x0E
+        #command[4] = Checksum16 (LSB)
+        #command[5] = Checksum16 (MSB)
+        command[6] = 0xBA
+        command[7] = 0x26
+        
+        if SetToFactoryDefaults:
+            command[6] = 0x82
+            command[7] = 0xC7
+        
+        self._writeRead(command, 8, [ 0xF8, 0x01, 0x0E ] )
+        
+    def setToFactoryDefaults(self):
+        return self.setDefaults(SetToFactoryDefaults = True)
+    
+    validDefaultBlocks = range(8)
+    def readDefaults(self, BlockNum, ReadCurrent = False):
+        """
+        Name: Device.readDefaults(BlockNum)
+        Args: BlockNum, which block to read. Must be 0-7.
+              ReadCurrent, True = read current configuration
+        Desc: Reads the power-up defaults from flash.
+        
+        >>> myU6 = U6()
+        >>> myU6.readDefaults(0)
+        [ 0, 0, ... , 0]        
+        """
+        if BlockNum not in self.validDefaultBlocks:
+            raise LabJackException("Defaults must be in range 0-7")
+        
+        byte7 = (int(bool(ReadCurrent)) << 7) + BlockNum
+        
+        command = [ 0, 0xF8, 0x01, 0x0E, 0, 0, 0, byte7 ]
+        
+        result = self._writeRead(command, 40, [ 0xF8, 0x11, 0x0E ])
+        
+        return result[8:]
+        
+    def readCurrent(self, BlockNum):
+        self.readDefaults(BlockNum, ReadCurrent = True)
+
 # --------------------- BEGIN LabJackPython ---------------------------------
 
 def setChecksum(command):
@@ -1146,10 +1203,7 @@ def _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber):
             print "handle: %s" % handle 
             raise NullHandleException()
         return handle
-    else:
-        if handleOnly:
-            raise LabjackException("Can't use handleOnly with an id.")
-               
+    else:      
         numDevices = staticLib.LJUSB_GetDevCount(deviceType)
         
         for i in range(numDevices):

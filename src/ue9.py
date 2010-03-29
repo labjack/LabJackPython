@@ -1152,3 +1152,72 @@ class UE9(Device):
         self.calData = { "AINSlopes" : ainslopes, "AINOffsets" : ainoffsets }
         
         return self.calData
+    
+    def readDefaultsConfig(self):
+        """
+        Name: UE9.readDefaultsConfig( ) 
+        Args: None
+        Desc: Reads the power-up defaults stored in flash.
+        """
+        results = dict()
+        defaults = self.readDefaults(0)
+        
+        results['FIODirection'] = defaults[4]
+        results['FIOState'] = defaults[5]
+        results['EIODirection'] = defaults[6]
+        results['EIOState'] = defaults[7]
+        results['CIODirection'] = defaults[8]
+        results['CIOState'] = defaults[9]
+        results['MIODirection'] = defaults[10]
+        results['MIOState'] = defaults[11]
+        
+        results['ConfigWriteMask'] = defaults[16]
+        results['#OfTimersEnable'] = defaults[17]
+        results['CounterMask'] = defaults[18]
+        results['PinOffset'] = defaults[19]
+        
+        defaults = self.readDefaults(1)
+        results['ClockSource'] = defaults[0]
+        results['Divisor'] = defaults[1]
+        
+        results['TMR0Mode'] = defaults[16]
+        results['TMR0ValueL'] = defaults[17]
+        results['TMR0ValueH'] = defaults[18]
+        
+        results['TMR1Mode'] = defaults[20]
+        results['TMR1ValueL'] = defaults[21]
+        results['TMR1ValueH'] = defaults[22]
+        
+        results['TMR2Mode'] = defaults[24]
+        results['TMR2ValueL'] = defaults[25]
+        results['TMR2ValueH'] = defaults[26]
+        
+        results['TMR3Mode'] = defaults[28]
+        results['TMR3ValueL'] = defaults[29]
+        results['TMR3ValueH'] = defaults[30]
+        
+        defaults = self.readDefaults(2)
+        
+        results['TMR4Mode'] = defaults[0]
+        results['TMR4ValueL'] = defaults[1]
+        results['TMR4ValueH'] = defaults[2]
+        
+        results['TMR4Mode'] = defaults[4]
+        results['TMR4ValueL'] = defaults[5]
+        results['TMR4ValueH'] = defaults[6]
+        
+        results['DAC0'] = struct.unpack( ">H", struct.pack("BB", *defaults[16:18]) )[0]
+        
+        results['DAC1'] = struct.unpack( ">H", struct.pack("BB", *defaults[20:22]) )[0]
+        
+        defaults = self.readDefaults(3)
+        
+        for i in range(14):
+            results["AIN%sRes" % i] = defaults[i]
+            results["AIN%sBPGain" % i] = defaults[i+16]
+        
+        defaults = self.readDefaults(4)
+        for i in range(14):
+            results["AIN%sSettling" % i] = defaults[i]
+        
+        return results
