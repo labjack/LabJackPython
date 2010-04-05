@@ -88,6 +88,7 @@ __version = "3-11-1010"
 
 SOCKET_TIMEOUT = 10
 BROADCAST_SOCKET_TIMEOUT = 1
+MAX_USB_PACKET_LENGTH = 64
 
 class LabJackException(Exception):
     """Custom Exception meant for dealing specifically with LabJack Exceptions.

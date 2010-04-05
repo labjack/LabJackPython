@@ -388,6 +388,13 @@ class U3(Device):
         if readLen % 2:
             readLen += 1
             
+        
+        if len(sendBuffer) > MAX_USB_PACKET_LENGTH:
+            raise LabJackException("ERROR: The feedback command you are attempting to send is bigger than 64 bytes ( %s bytes ). Break your commands up into separate calls to getFeedback()." % len(sendBuffer))
+        
+        if readLen > MAX_USB_PACKET_LENGTH:
+            raise LabJackException("ERROR: The feedback command you are attempting to send would yield a response that is greater than 64 bytes ( %s bytes ). Break your commands up into separate calls to getFeedback()." % readLen)
+        
         rcvBuffer = self._writeRead(sendBuffer, readLen, [], checkBytes = False, stream = False, checksum = True)
         
         # Check the response for errors
