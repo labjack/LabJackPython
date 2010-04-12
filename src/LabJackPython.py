@@ -364,14 +364,14 @@ class Device(object):
         numReg: Number of consecutive addresses you would like to read
         format: the unpack format of the returned value ( '>f' or '>I')
         
-        Modbus is not supported for UE9s over USB. If you try it, a LabJackException is raised.
+        Modbus is supported for UE9s over USB from Comm Firmware 1.49 and above.
         """
         
         pkt, numBytes = self._buildReadRegisterPacket(addr, numReg, unitId)
         
         response = self._modbusWriteRead(pkt, numBytes)
         
-        return self._parseReadRegisterResponse(response, numBytes, addr, format)
+        return self._parseReadRegisterResponse(response, numBytes, addr, format, numReg)
         
     def _buildReadRegisterPacket(self, addr, numReg, unitId):
         """
@@ -382,8 +382,9 @@ class Device(object):
         returns a tuple:
         ( < Packet as a list >, < number of bytes to read > )
         """
-        if numReg == None:
-            numReg = Modbus.calcNumberOfRegisters(addr)
+        # Calculates the number of registers for that request, or if numReg is
+        # specified, checks that it is a valid number.
+        numReg = Modbus.calcNumberOfRegisters(addr, numReg = numReg)
         
         pkt = Modbus.readHoldingRegistersRequest(addr, numReg = numReg, unitId = unitId)
         pkt = [ ord(c) for c in pkt ]
@@ -392,7 +393,7 @@ class Device(object):
         
         return (pkt, numBytes)
     
-    def _parseReadRegisterResponse(self, response, numBytes, addr, format):
+    def _parseReadRegisterResponse(self, response, numBytes, addr, format, numReg = None):
         """
         self._parseReadRegisterReponse(reponse, numBytes, addr, format)
 
@@ -408,7 +409,7 @@ class Device(object):
             response = struct.pack(packFormat, *response)
 
         if format == None:
-            format = Modbus.calcFormat(addr)
+            format = Modbus.calcFormat(addr, numReg)
 
         value = Modbus.readHoldingRegistersResponse(response, payloadFormat=format)
 

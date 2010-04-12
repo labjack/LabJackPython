@@ -4,6 +4,7 @@
 # Last Modified: 12/3/2009
 
 from struct import pack, unpack #, unpack_from  # unpack_from is new in 2.5
+from datetime import datetime
 
 AES_CHANNEL               = 64000
 IP_PART1_CHANNEL          = 64008
@@ -21,21 +22,41 @@ WRITE_PACKET              = 6
 HEADER_LENGTH             = 9
 BYTES_PER_REGISTER        = 2
 
-# See the LabJack Modbus Protocol doc.
-# 6 byte packet, which includes the 255 following the 6
-OUTGOING_HEADER_BYTES = (0, 0, 6, 0xff)
-TCP_HEADER = pack('>HHHB', *OUTGOING_HEADER_BYTES)
+def _calcBaseTransId():
+    t = datetime.now()
+    d = "%s%s%s%s" % (t.hour, t.minute, t.second, t.microsecond)
+    d = int(d) % 65536
+    return d
+
+BASE_TRANS_ID = _calcBaseTransId()
+CURRENT_TRANS_IDS = set()
+
+def _buildHeaderBytes(length = 6, unitId = None):
+    global BASE_TRANS_ID, CURRENT_TRANS_IDS
+    if unitId is None:
+        basicHeader = (BASE_TRANS_ID, 0, length, 0xff)
+    else:
+        basicHeader = (BASE_TRANS_ID, 0, length, unitId)
+    
+    CURRENT_TRANS_IDS.add(BASE_TRANS_ID)
+    
+    BASE_TRANS_ID = ( BASE_TRANS_ID + 1 ) % 65536
+    
+    return pack('>HHHB', *basicHeader)
+    
+def _checkTransId(transId):
+    global CURRENT_TRANS_IDS
+    
+    if transId in CURRENT_TRANS_IDS:
+        CURRENT_TRANS_IDS.remove(transId)
+    else:
+        raise ModbusException("Got an unexpected transaction ID.")
 
 def readHoldingRegistersRequest(addr, numReg = None, unitId = None):
     if numReg is None:
         numReg = calcNumberOfRegisters(addr)
         
-    if unitId is None:
-        packet = TCP_HEADER + pack('>BHH', 0x03, addr, numReg)
-    else:
-        bytes = list(OUTGOING_HEADER_BYTES)
-        bytes[3] = unitId
-        packet = pack('>HHHB', *bytes) + pack('>BHH', 0x03, addr, numReg)
+    packet = _buildHeaderBytes(unitId = unitId) + pack('>BHH', 0x03, addr, numReg)
 
     return packet
 
@@ -49,7 +70,8 @@ def readHoldingRegistersResponse(packet, payloadFormat=None):
     #print "header", [ c for c in header ]
     #print "header", header
     
-    #print "packet", [ c for c in packet ]
+    # Check for valid Trans ID
+    _checkTransId(header[0])
 
     #Check for exception
     if header[4] == 0x83:
@@ -91,7 +113,8 @@ def readHoldingRegistersResponse(packet, payloadFormat=None):
 def readInputRegistersRequest(addr, numReg = None):
     if numReg is None:
         numReg = calcNumberOfRegisters(addr)
-    packet = TCP_HEADER + pack('>BHH', 0x04, addr, numReg)
+    
+    packet = _buildHeaderBytes() + pack('>BHH', 0x04, addr, numReg)
     #print "making readHoldingRegistersRequest packet"
     #print [ ord(c) for c in packet ]
     return packet
@@ -106,11 +129,12 @@ def readInputRegistersResponse(packet, payloadFormat=None):
     #print "header", [ c for c in header ]
     #print "header", header
     
-    #print "packet", [ c for c in packet ]
+    # Check for valid Trans ID
+    _checkTransId(header[0])
 
     #Check for exception
     if header[4] == 0x83:
-        raise ModbusException(packet[5])
+        raise ModbusException(header[5])
 
     #Check for proper command
     if header[4] != 0x04:
@@ -145,12 +169,7 @@ def writeRegisterRequest(addr, value, unitId = None):
     if not isinstance(value, int):
         raise TypeError("Value written must be an integer.")
 
-    if unitId is None:
-        packet = TCP_HEADER + pack('>BHH', 0x06, addr, value)
-    else:
-        bytes = list(OUTGOING_HEADER_BYTES)
-        bytes[3] = unitId
-        packet = pack('>HHHB', *bytes) + pack('>BHH', 0x06, addr, value)
+    packet = _buildHeaderBytes(unitId = unitId) + pack('>BHH', 0x06, addr, value)
 
     return packet
     
@@ -164,8 +183,9 @@ def writeRegistersRequest(startAddr, values, unitId = None):
     if unitId is None:
         unitId = 0xff
     
-    header = (0, 0, 7+(numReg*2), unitId, 16, startAddr, numReg, numReg*2)
-    header = pack('>HHHBBHHB', *header)
+    header = _buildHeaderBytes(length = 7+(numReg*2), unitId = unitId)
+    
+    header += pack('>BHHB', *(16, startAddr, numReg, numReg*2) )
     
     format = '>' + 'H' * numReg
     packet = header + pack(format, *values)
@@ -191,38 +211,53 @@ class ModbusException(Exception):
         return repr(self.exceptCode)
 
 
-def calcNumberOfRegisters(addr):
-    return calcNumberOfRegistersAndFormat(addr)[0]
+def calcNumberOfRegisters(addr, numReg = None):
+    return calcNumberOfRegistersAndFormat(addr, numReg)[0]
 
-def calcFormat(addr):
-    return calcNumberOfRegistersAndFormat(addr)[1]
+def calcFormat(addr, numReg = None):
+    return calcNumberOfRegistersAndFormat(addr, numReg)[1]
 
-def calcNumberOfRegistersAndFormat(addr):
+def calcNumberOfRegistersAndFormat(addr, numReg = None):
     # TODO add special cases for channels above
     if addr < 1000:
         # Analog Inputs
-        return (2, '>f')
+        minNumReg = 2
+        format = 'f'
     elif addr >= 5000 and addr < 6000:
         # DAC Values
-        return (2, '>f')
+        minNumReg = 2
+        format = 'f'
     elif addr >= 7000 and addr < 8000:
         # Timers / Counters
-        return (2, '>I')
+        minNumReg = 2
+        format = 'I'
     elif addr in range(64008,64018) or addr == 65001:
         # Serial Number
-        return (2, '>I')
+        minNumReg = 2
+        format = 'I'
     elif addr in range(10000,10010):
         # VBatt/Temp/RH/Light/Pressure
-        return (2, '>f')
+        minNumReg = 2
+        format = 'f'
     elif addr in range(57002, 57010):
         # TX/RX Bridge stuff
-        return (2, '>I')
+        minNumReg = 2
+        format = 'I'
     elif addr in range(57050, 57056):
         # VUSB/VJack/VST
-        return (2, '>f')
+        minNumReg = 2
+        format = 'f'
     else:
-        return (1, '>H')
+        minNumReg = 1
+        format = 'H'
 
+    if numReg:
+        if (numReg%minNumReg) == 0:
+            return (numReg, '>' + ( format * (numReg/minNumReg) ))
+        else:
+            raise ModbusException("For address %s, the number of registers must be divisible by %s" % (addr, minNumReg))
+    else:
+        return ( minNumReg, '>'+format)
 
 def getStartingAddress(packet):
     """Get the address of a modbus request"""
@@ -236,6 +271,6 @@ def getRequestType(packet):
 def getTransactionId(packet):
     """Pulls out the transaction id of the packet"""
     if isinstance(packet, list):
-        return unpack(">H", pack("BB", *packet[:2]) )
+        return unpack(">H", pack("BB", *packet[:2]) )[0]
     else:
-        return unpack(">H", packet[:2])
+        return unpack(">H", packet[:2])[0]
