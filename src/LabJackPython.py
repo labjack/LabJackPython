@@ -1336,24 +1336,21 @@ def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, 
     rcvDataBuff = []
     handle = None
 
-    # LJSocket handles work indepenent of OS
     if connectionType == LJ_ctLJSOCKET:
+        # LJSocket handles work indepenent of OS
         handle = _openLabJackUsingLJSocket(deviceType, firstFound, pAddress, LJSocket, handleOnly )
-
-    # Linux/Mac need to work in the low level driver.
-    if os.name == 'posix' and connectionType == LJ_ctUSB:
+    elif os.name == 'posix' and connectionType == LJ_ctUSB:
+        # Linux/Mac need to work in the low level driver.
         handle = _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber)
         if isinstance( handle, Device ):
             return handle
-    
-    #If windows operating system then use the UD Driver
-    if os.name == 'nt':
+    elif os.name == 'nt':
+        #If windows operating system then use the UD Driver
         if deviceType == 0x501:
             handle = _openWirelessBridgeOnWindows(firstFound, pAddress, devNumber)
         elif staticLib is not None:
-            handle = _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, devNumber )
-    
-    if connectionType == LJ_ctETHERNET and deviceType == LJ_dtUE9 :
+            handle = _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, devNumber ) 
+    elif connectionType == LJ_ctETHERNET and deviceType == LJ_dtUE9 :
         handle = _openUE9OverEthernet(firstFound, pAddress, devNumber)
             
     if not handleOnly:
