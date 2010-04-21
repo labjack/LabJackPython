@@ -983,7 +983,6 @@ class U6(Device):
               as well as other calibration data
         
         >>> myU6 = U6()
-        >>> myU6.openU6()
         >>> myU6.getCalibrationData()
         >>> myU6.calInfo
         <ainDiffOffset: -2.46886488446,...>
@@ -1134,11 +1133,16 @@ class U6(Device):
         Desc: Send a soft reset.
         
         >>> myU6 = U6()
-        >>> myU6.openU6()
         >>> myU6.softReset()
         """
-        self.Write([ 0x00, 0x99, 0x00, 0x00 ])
-        self.Read(4)
+        command = [ 0x00, 0x99, 0x01, 0x00 ]
+        command = setChecksum8(command, 4)
+        
+        self.write(command, False, False)
+        results = self.read(4)
+        
+        if results[3] != 0:
+            raise LowlevelErrorException(results[3], "The softReset command returned an error:\n    %s" % lowlevelErrorToString(results[3]))
         
     def hardReset(self):
         """
@@ -1147,11 +1151,18 @@ class U6(Device):
         Desc: Send a hard reset.
         
         >>> myU6 = U6()
-        >>> myU6.openU6()
         >>> myU6.hardReset()
         """
-        self.Write([ 0x00, 0x99, 0x01, 0x00])
-        self.Read(4)
+        command = [ 0x00, 0x99, 0x02, 0x00 ]
+        command = setChecksum8(command, 4)
+        
+        self.write(command, False, False)
+        results = self.read(4)
+        
+        if results[3] != 0:
+            raise LowlevelErrorException(results[3], "The softHard command returned an error:\n    %s" % lowlevelErrorToString(results[3]))
+            
+        self.close()
 
     def setLED(self, state):
         """
@@ -1160,7 +1171,6 @@ class U6(Device):
         Desc: Sets the state of the LED. (5.2.5.4 of user's guide)
         
         >>> myU6 = U6()
-        >>> myU6.openU6()
         >>> myU6.setLED(0)
         ... (LED turns off) ...
         """
