@@ -730,7 +730,10 @@ class Device(object):
             raise LabJackException("Stream already started.")
         
         command = [ 0xA8, 0xA8 ]
-        self._writeRead(command, 4, [], False, False, False)
+        results = self._writeRead(command, 4, [], False, False, False)
+        
+        if results[2] != 0:
+            raise LowlevelErrorException(results[2], "StreamStart returned an error:\n    %s" % lowlevelErrorToString(results[2]) )
         
         self.streamStarted = True
     
@@ -797,7 +800,11 @@ class Device(object):
         Desc: Stops streaming on the device.
         """
         command = [ 0xB0, 0xB0 ]
-        self._writeRead(command, 4, [], False, False, False)
+        results = self._writeRead(command, 4, [], False, False, False)
+        
+        if results[2] != 0:
+            raise LowlevelErrorException(results[2], "StreamStop returned an error:\n    %s" % lowlevelErrorToString(results[2]) )
+        
         self.streamStarted = False
 
 
