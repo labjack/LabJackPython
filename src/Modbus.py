@@ -50,7 +50,7 @@ def _checkTransId(transId):
     if transId in CURRENT_TRANS_IDS:
         CURRENT_TRANS_IDS.remove(transId)
     else:
-        raise ModbusException("Got an unexpected transaction ID.")
+        raise ModbusException("Got an unexpected transaction ID. Id = %s, Set = %s" % (transId, CURRENT_TRANS_IDS))
 
 def readHoldingRegistersRequest(addr, numReg = None, unitId = None):
     if numReg is None:
