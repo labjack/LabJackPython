@@ -34,7 +34,7 @@ CURRENT_TRANS_IDS = set()
 def _buildHeaderBytes(length = 6, unitId = None):
     global BASE_TRANS_ID, CURRENT_TRANS_IDS
     if unitId is None:
-        basicHeader = (BASE_TRANS_ID, 0, length, 0xff)
+        basicHeader = (BASE_TRANS_ID, 0, length, 0x00)
     else:
         basicHeader = (BASE_TRANS_ID, 0, length, unitId)
     
