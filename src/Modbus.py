@@ -239,6 +239,10 @@ def calcNumberOfRegistersAndFormat(addr, numReg = None):
         # VBatt/Temp/RH/Light/Pressure
         minNumReg = 2
         format = 'f'
+    elif addr in range(12000,13000):
+        # RXLQI/TXLQI/VBatt/Temp/Light/Motion/Sound/RH/Pressure
+        minNumReg = 2
+        format = 'f'
     elif addr in range(57002, 57010):
         # TX/RX Bridge stuff
         minNumReg = 2
@@ -247,6 +251,10 @@ def calcNumberOfRegistersAndFormat(addr, numReg = None):
         # VUSB/VJack/VST
         minNumReg = 2
         format = 'f'
+    elif addr == 59200:
+        # NumberOfKnownDevices
+        minNumReg = 2
+        format = 'I'
     else:
         minNumReg = 1
         format = 'H'
