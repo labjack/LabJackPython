@@ -388,13 +388,12 @@ class U12(object):
             else:
                 raise Exception("Seriously? I'm not in the mood.")
             
-            if self.debug:print "openDev returned"
             
             if handle == 0:
                 raise Exception("No U12")
             else:
                 self.handle = ctypes.c_void_p(handle)
-                if self.debug:print "handle =", self.handle
+                
                 
                 # U12 ignores first command, so let's write some crap.
                 command = [ 0 ] * 8
@@ -405,7 +404,7 @@ class U12(object):
                     self.read()
                 except:
                     pass
-            if self.debug: print "wrote some crap"
+            
             
             if not self._autoCloseSetup:
                 # Only need to register auto-close once per device.
