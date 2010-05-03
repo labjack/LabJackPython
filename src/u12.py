@@ -397,7 +397,7 @@ class U12(object):
                 
                 # U12 ignores first command, so let's write some crap.
                 command = [ 0 ] * 8
-                command[5] = 0b01010111
+                command[5] = 0x57 # 0b01010111
                 
                 try:
                     self.write(command)
@@ -503,25 +503,25 @@ class U12(object):
         # Bits 3-0: MUX command for 1st Channel
         command[0] = int(channel0PGAMUX)
         
-        tempNum = command[0] & 0b111
+        tempNum = command[0] & 7 # 7 = 0b111
         channel0Number = tempNum if (command[0] & 0xf) > 7 else tempNum+8
         channel0Gain = (command[0] >> 4) & 7 # 7 = 0b111
         
         command[1] = int(channel1PGAMUX)
         
-        tempNum = command[1] & 0b111
+        tempNum = command[1] & 7 # 7 = 0b111
         channel1Number = tempNum if (command[1] & 0xf) > 7 else tempNum+8
         channel1Gain = (command[1] >> 4) & 7 # 7 = 0b111
         
         command[2] = int(channel2PGAMUX)
         
-        tempNum = command[2] & 0b111
+        tempNum = command[2] & 7 # 7 = 0b111
         channel2Number = tempNum if (command[2] & 0xf) > 7 else tempNum+8
         channel2Gain = (command[2] >> 4) & 7 # 7 = 0b111
         
         command[3] = int(channel3PGAMUX)
         
-        tempNum = command[3] & 0b111
+        tempNum = command[3] & 7 # 7 = 0b111
         channel3Number = tempNum if (command[3] & 0xf) > 7 else tempNum+8
         channel3Gain = (command[3] >> 4) & 7 # 7 = 0b111
         
@@ -667,7 +667,7 @@ class U12(object):
         command[4] = int(IO3toIO0DirectionsAndStates)
         
         # 01X10111 (DIO)
-        command[5] = 0b01010111
+        command[5] = 0x57 # 0b01010111
         
         # Bit 0: Update Digital
         command[6] = int(bool(UpdateDigital))
@@ -967,25 +967,25 @@ class U12(object):
         # Bits 3-0: MUX command for 1st Channel
         command[0] = int(channel0PGAMUX)
         
-        tempNum = command[0] & 0b111
+        tempNum = command[0] & 7 # 7 = 0b111
         channel0Number = tempNum if (command[0] & 0xf) > 7 else tempNum+8
         channel0Gain = (command[0] >> 4) & 7 # 7 = 0b111
         
         command[1] = int(channel1PGAMUX)
         
-        tempNum = command[1] & 0b111
+        tempNum = command[1] & 7 # 7 = 0b111
         channel1Number = tempNum if (command[1] & 0xf) > 7 else tempNum+8
         channel1Gain = (command[1] >> 4) & 7 # 7 = 0b111
         
         command[2] = int(channel2PGAMUX)
         
-        tempNum = command[2] & 0b111
+        tempNum = command[2] & 7 # 7 = 0b111
         channel2Number = tempNum if (command[2] & 0xf) > 7 else tempNum+8
         channel2Gain = (command[2] >> 4) & 7 # 7 = 0b111
         
         command[3] = int(channel3PGAMUX)
         
-        tempNum = command[3] & 0b111
+        tempNum = command[3] & 7 # 7 = 0b111
         channel3Number = tempNum if (command[3] & 0xf) > 7 else tempNum+8
         channel3Gain = (command[3] >> 4) & 7 # 7 = 0b111
 
@@ -1089,25 +1089,25 @@ class U12(object):
         # Bits 3-0: MUX command for 1st Channel
         command[0] = int(channel0PGAMUX)
         
-        tempNum = command[0] & 0b111
+        tempNum = command[0] & 7 # 7 = 0b111
         channel0Number = tempNum if (command[0] & 0xf) > 7 else tempNum+8
         channel0Gain = (command[0] >> 4) & 7 # 7 = 0b111
         
         command[1] = int(channel1PGAMUX)
         
-        tempNum = command[1] & 0b111
+        tempNum = command[1] & 7 # 7 = 0b111
         channel1Number = tempNum if (command[1] & 0xf) > 7 else tempNum+8
         channel1Gain = (command[1] >> 4) & 7 # 7 = 0b111
         
         command[2] = int(channel2PGAMUX)
         
-        tempNum = command[2] & 0b111
+        tempNum = command[2] & 7 # 7 = 0b111
         channel2Number = tempNum if (command[2] & 0xf) > 7 else tempNum+8
         channel2Gain = (command[2] >> 4) & 7 # 7 = 0b111
         
         command[3] = int(channel3PGAMUX)
         
-        tempNum = command[3] & 0b111
+        tempNum = command[3] & 7 # 7 = 0b111
         channel3Number = tempNum if (command[3] & 0xf) > 7 else tempNum+8
         channel3Gain = (command[3] >> 4) & 7 # 7 = 0b111
         
