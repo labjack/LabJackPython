@@ -332,6 +332,7 @@ def _loadMacDylib():
     l.LJUSB_Read.errcheck = errcheck
     return l
 
+staticLib = None
 if os.name == 'posix':
         try:
             staticLib = _loadLinuxSo()
@@ -341,7 +342,8 @@ if os.name == 'posix':
             raise U12Exception("Could not load the Linux SO for some reason other than it not being installed. Ethernet connectivity only.\n\n    The error was: %s" % e)
         
         try:
-            staticLib = _loadMacDylib()
+            if staticLib is None:
+                staticLib = _loadMacDylib()
         except OSError, e:
             raise U12Exception("Could not load the Exodriver driver. Ethernet connectivity only.\n\nCheck that the Exodriver is installed, and the permissions are set correctly.\nThe error message was: %s" % e)
         except Exception, e:
@@ -1454,6 +1456,29 @@ class U12(object):
         return returnDict
         
     def rawAsynch(self, Data, AddDelay = False, TimeoutActive = False, SetTransmitEnable = False, PortB = False, NumberOfBytesToWrite = 0, NumberOfBytesToRead = 0):
+        """
+        Name: U12.rawAsynch(Data, AddDelay = False, TimeoutActive = False,
+                            SetTransmitEnable = False, PortB = False,
+                            NumberOfBytesToWrite = 0, NumberOfBytesToRead = 0)
+                            
+        Args: Data, A list of bytes to write.
+              AddDelay, True to add a 1 bit delay between each transmit byte.
+              TimeoutActive, True to enable timeout for the receive phase.
+              SetTransmitEnable, True to set Transmit Enable to high during
+                                 transmit and low during receive.
+              PortB, True to use PortB instead of PortA.
+              NumberOfBytesToWrite, Number of bytes to write.
+              NumberOfBytesToRead, Number of bytes to read.
+        
+        Desc: Requires firmware V1.1 or higher. This function writes and then
+              reads half-duplex asynchronous data on 1 of two pairs of D lines.
+              See section 5.13 of the User's Guide.
+              
+        Returns:
+        
+        Example:
+        
+        """
         command = [ 0 ] * 8
         
         if not isinstance(Data, list) or len(Data) > 4:
