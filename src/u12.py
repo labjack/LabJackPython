@@ -6,6 +6,7 @@ import platform
 import ctypes
 import os, atexit
 import math
+from time import time
 
 WINDOWS = "Windows"
 ON_WINDOWS = (os.name == 'nt')
@@ -371,6 +372,10 @@ class U12(object):
         self._autoCloseSetup = False
         
         if not ON_WINDOWS:
+            # Save some variables to save state.
+            self.pwmAVoltage = 0
+            self.pwmBVoltage = 0
+            
             self.open(id, serialNumber)
 
     def open(self, id = -1, serialNumber = None):
@@ -471,8 +476,8 @@ class U12(object):
               EchoValue, Sometimes, you want what you put in.
         
         Desc: Collects readings from 4 analog inputs. It can also toggle the
-              status LED and update the state of the IOs. See Section 5.1 of the
-              User's Guide.
+              status LED and update the state of the IOs. See Section 5.1 of
+              the User's Guide.
               
               By default it will read AI0-3 (single-ended).
               
@@ -599,7 +604,7 @@ class U12(object):
               By default, it just reads the directions and states.
         
         Returns: A dictionary with the following keys:
-            D15toD8Directions, a BitField representing the directions of D15-D8.
+            D15toD8Directions, a BitField representing the directions of D15-D8
             D7toD0Directions, a BitField representing the directions of D7-D0.
             D15toD8States, a BitField representing the states of D15-D8.
             D7toD0States, a BitField representing the states of D7-D0.
@@ -1169,7 +1174,8 @@ class U12(object):
         Returns: None
         
         Example:
-        >>> # Wire D0 to CNT
+        Have a jumper wire connected from D0 to CNT.
+        
         >>> import u12
         >>> d = u12.U12()
         >>> d.rawDIO(D7toD0Directions = 0, UpdateDigital = True)
@@ -1222,7 +1228,7 @@ class U12(object):
         Name: U12.rawReset()
         
         Desc: Sits in an infinite loop until micro watchdog timeout after about
-              2 seconds.
+              2 seconds. See Section 5.8 of the User's Guide.
               
               Note: The function will close the device after it has written the 
                     command.
@@ -1253,7 +1259,8 @@ class U12(object):
         Name: U12.rawReenumerate()
         
         Desc: Detaches from the USB, reloads config parameters, and then
-              reattaches so the device can be re-enumerated.
+              reattaches so the device can be re-enumerated. See Section 5.9 of
+              the User's Guide.
               
               Note: The function will close the device after it has written the 
                     command.
@@ -1344,14 +1351,13 @@ class U12(object):
         Desc: Reads 4 bytes out of the U12's internal memory. See section 5.11
               of the User's Guide.
               
-              By default, reads 0x00 - 0x03 which are the bytes that make up 
-              the serial number.
+              By default, reads the bytes that make up the serial number.
               
         Returns: A dictionary with the following keys:
-            DataByte0, the data byte at Address + 0
-            DataByte1, the data byte at Address + 1
-            DataByte2, the data byte at Address + 2
-            DataByte3, the data byte at Address + 3
+            DataByte0, the data byte at Address - 0
+            DataByte1, the data byte at Address - 1
+            DataByte2, the data byte at Address - 2
+            DataByte3, the data byte at Address - 3
             
         Example:
         >>> import u12, struct
@@ -1406,10 +1412,10 @@ class U12(object):
               No default behavior, you must pass Data and Address.
               
         Returns: A dictionary with the following keys:
-            DataByte0, the data byte at Address + 0
-            DataByte1, the data byte at Address + 1
-            DataByte2, the data byte at Address + 2
-            DataByte3, the data byte at Address + 3
+            DataByte0, the data byte at Address - 0
+            DataByte1, the data byte at Address - 1
+            DataByte2, the data byte at Address - 2
+            DataByte3, the data byte at Address - 3
         
         Example:
         >>> import u12
@@ -1474,9 +1480,24 @@ class U12(object):
               reads half-duplex asynchronous data on 1 of two pairs of D lines.
               See section 5.13 of the User's Guide.
               
-        Returns:
+        Returns: A dictionary with the following keys,
+            DataByte0-3, the first four data bytes read over the RX line
+            ErrorFlags, a BitField representing the error flags.
         
         Example:
+        >>> import u12
+        >>> d = u12.U12()
+        >>> # Set the full and half A,B,C to 9600
+        >>> d.rawWriteRAM([0, 1, 1, 200], 0x073)
+        >>> d.rawWriteRAM([5, 1, 2, 48], 0x076)
+        >>> print d.rawAsynch([1, 2, 3, 4], NumberOfBytesToWrite = 4, NumberOfBytesToRead = 4)
+        {
+         'DataByte3': 4,
+         'DataByte2': 3,
+         'DataByte1': 2,
+         'DataByte0': 1,
+         'ErrorFlags': <BitField object: [ Timeout Error Flag = 0 (0), ... ] >
+        }
         
         """
         command = [ 0 ] * 8
@@ -1490,6 +1511,8 @@ class U12(object):
             raise U12Exception("Can only write 18 or fewer bytes at a time.")
         if NumberOfBytesToRead > 18:
             raise U12Exception("Can only read 18 or fewer bytes at a time.")
+        
+        Data.reverse()
         
         command[:len(Data)] = Data
         
@@ -1532,6 +1555,43 @@ class U12(object):
         
     SPIModes = ['A', 'B', 'C', 'D']
     def rawSPI(self, Data, AddMsDelay = False, AddHundredUsDelay = False, SPIMode = 'A', NumberOfBytesToWriteRead = 0, ControlCS = False, StateOfActiveCS = False, CSLineNumber = 0):
+        """
+        Name: U12.rawSPI( Data, AddMsDelay = False, AddHundredUsDelay = False,
+                          SPIMode = 'A', NumberOfBytesToWriteRead = 0,
+                          ControlCS = False, StateOfActiveCS = False,
+                          CSLineNumber = 0)
+        
+        Args: Data, A list of four bytes to write using SPI
+              AddMsDelay, If True, a 1 ms delay is added between each bit
+              AddHundredUsDelay, if True, 100us delay is added
+              SPIMode, 'A', 'B', 'C', or 'D'
+              NumberOfBytesToWriteRead, number of bytes to write and read.
+              ControlCS, D0-D7 is automatically controlled as CS. The state and
+                         direction of CS is only tested if control is enabled.
+              StateOfActiveCS, Active state for CS line.
+              CSLineNumber, D line to use as CS if enabled (0-7).
+        
+        Desc: This function performs SPI communication. See Section 5.14 of the
+              User's Guide.
+              
+        Returns: A dictionary with the following keys,
+            DataByte0-3, the first four data bytes read
+            ErrorFlags, a BitField representing the error flags.
+            
+        Example:
+        >>> import u12
+        >>> d = u12.U12()
+        >>> d.rawSPI([1,2,3,4], NumberOfBytesToWriteRead = 4)
+        {
+         'DataByte3': 4,
+         'DataByte2': 3,
+         'DataByte1': 2,
+         'DataByte0': 1,
+         'ErrorFlags':
+          <BitField object: [ CSStateTris Error Flag = 0 (0), ... ] >
+        }
+        
+        """
         command = [ 0 ] * 8
         
         if not isinstance(Data, list) or len(Data) > 4:
@@ -1544,7 +1604,8 @@ class U12(object):
             
         if NumberOfBytesToWriteRead > 18 or NumberOfBytesToWriteRead < 1:
             raise U12Exception("Can only read/write 1 to 18 bytes at a time.")
-            
+        
+        Data.reverse()
         command[:len(Data)] = Data
         
         bf = BitField()
@@ -1590,12 +1651,83 @@ class U12(object):
         
         return returnDict
         
-    def rawSHT1X(self, Data = None, WaitForMeasurementReady = False, IssueSerialReset = False, Add1MsDelay = False, Add300UsDelay = False, IO3State = 1, IO2State = 1, IO3Direction = 1, IO2Direction = 1, NumberOfBytesToWrite = 0, NumberOfBytesToRead = 0):
+    def rawSHT1X(self, Data = [3,0,0,0], WaitForMeasurementReady = True, IssueSerialReset = False, Add1MsDelay = False, Add300UsDelay = False, IO3State = 1, IO2State = 1, IO3Direction = 1, IO2Direction = 1, NumberOfBytesToWrite = 1, NumberOfBytesToRead = 3):
+        """
+        Name: U12.rawSHT1X( Data = [3, 0, 0, 0],
+                            WaitForMeasurementReady = True,
+                            IssueSerialReset = False, Add1MsDelay = False,
+                            Add300UsDelay = False, IO3State = 1, IO2State = 1,
+                            IO3Direction = 1, IO2Direction = 1,
+                            NumberOfBytesToWrite = 1, NumberOfBytesToRead = 3)
+        
+        Args: Data, a list of bytes to write to the SHT.
+              WaitForMeasurementReady, Wait for the measurement ready signal.
+              IssueSerialReset, perform a serial reset
+              Add1MsDelay, adds 1ms delay
+              Add300UsDelay, adds a 300us delay
+              IO3State, sets the state of IO3
+              IO2State, sets the state of IO2
+              IO3Direction, sets the direction of IO3 ( 1 = Output )
+              IO2Direction, sets the direction of IO3 ( 1 = Output )
+              NumberOfBytesToWrite, how many bytes to write
+              NumberOfBytesToRead, how may bytes to read back
+              
+        Desc: Sends and receives data from a SHT1X T/RH sensor from Sensirion.
+              See Section 5.15 of the User's Guide.
+              
+              By default, reads the temperature from the SHT.
+              
+        Returns: A dictionary with the following keys,
+            DataByte0-3, the four data bytes read
+            ErrorFlags, a BitField representing the error flags.
+        
+        Example:
+        Uses an EI-1050 Temp/Humidity probe wired as follows:
+        Data ( Green ) -> IO0
+        Clock ( White ) -> IO1
+        Ground ( Black ) -> GND
+        Power ( Red ) -> +5V
+        Enable ( Brown ) -> IO2
+        
+        >>> import u12
+        >>> d = u12.U12()
+        >>> results = d.rawSHT1X()
+        >>> print results
+        {
+         'DataByte3': 0,
+         'DataByte2': 69,
+         'DataByte1': 48,
+         'DataByte0': 25,
+         'ErrorFlags':
+          <BitField object: [ Serial Reset Error Flag = 0 (0), ... ] >
+        }
+        >>> tempC = (results['DataByte0'] * 256 ) + results['DataByte1']
+        >>> tempC = (tempC * 0.01) - 40
+        >>> print tempC
+        24.48
+        >>> results = d.rawSHT1X(Data = [5,0,0,0])
+        >>> print results
+        {
+         'DataByte3': 0,
+         'DataByte2': 200,
+         'DataByte1': 90,
+         'DataByte0': 2,
+         'ErrorFlags':
+          <BitField object: [ Serial Reset Error Flag = 0 (0), ... ] >
+        }
+        >>> sorh = (results['DataByte0'] * 256 ) + results['DataByte1']
+        >>> rhlinear = (-0.0000028*sorh*sorh)+(0.0405*sorh)-4.0
+        >>> rh = ((tempC-25.0)*(0.01+(0.00008*sorh)))+rhlinear
+        >>> print rh
+        19.3360256
+        """
         command = [ 0 ] * 8
         
         if NumberOfBytesToWrite != 0:
             if not isinstance(Data, list) or len(Data) > 4:
                 raise U12Exception("Data wasn't a list, or was too long.")
+                
+            Data.reverse()
             command[:len(Data)] = Data
         
         if max(NumberOfBytesToWrite, NumberOfBytesToRead) > 4:
@@ -1650,46 +1782,68 @@ class U12(object):
 
         >>> dev = U12()
         >>> dev.eAnalogIn(0)
-        {'overVoltage': c_long(0), 'idnum': c_long(1), 'voltage': c_float(1.435546875)}
+        {'overVoltage': 0, 'idnum': 1, 'voltage': 1.435546875}
         """
-
         if idNum is None:
             idNum = self.id
         
-        ljid = ctypes.c_long(idNum)
-        ad0 = ctypes.c_long(999)
-        ad1 = ctypes.c_float(999)
+        if ON_WINDOWS:
+            ljid = ctypes.c_long(idNum)
+            ad0 = ctypes.c_long(999)
+            ad1 = ctypes.c_float(999)
+    
+            ecode = staticLib.EAnalogIn(ctypes.byref(ljid), demo, channel, gain, ctypes.byref(ad0), ctypes.byref(ad1))
+    
+            if ecode != 0: raise U12Exception(ecode)
+    
+            return {"idnum":ljid.value, "overVoltage":ad0.value, "voltage":ad1.value}
+        else:
+            # Bits 6-4: PGA for 1st Channel
+            # Bits 3-0: MUX command for 1st Channel
+            channel0PGAMUX = ( ( gain & 7 ) << 4)
+            channel0PGAMUX += channel-8 if channel > 7 else channel+8
 
-        ecode = staticLib.EAnalogIn(ctypes.byref(ljid), demo, channel, gain, ctypes.byref(ad0), ctypes.byref(ad1))
-
-        if ecode != 0: raise U12Exception(ecode)
-
-        return {"idnum":ljid.value, "overVoltage":ad0.value, "voltage":ad1.value}
+            results = self.rawAISample(channel0PGAMUX = channel0PGAMUX)
+            
+            return {"idnum" : self.id, "overVoltage" : int(results['PGAOvervoltage']), 'voltage' : results['Channel0']}
 
     def eAnalogOut(self, analogOut0, analogOut1, idNum = None, demo=0):
         """
-        Name: U12.eAnalogIn(analogOut0, analogOut1, idNum = None, demo=0)
+        Name: U12.eAnalogOut(analogOut0, analogOut1, idNum = None, demo=0)
         Args: See section 4.2 of the User's Guide
         Desc: This is a simplified version of AOUpdate. Sets the voltage of both analog outputs.
 
         >>> dev = U12()
         >>> dev.eAnalogOut(2, 2)
-        {'idnum': c_long(1)}
+        {'idnum': 1}
         """
-
         if idNum is None:
             idNum = self.id
         
-        ljid = ctypes.c_long(idNum)
-        ecode = staticLib.EAnalogOut(ctypes.byref(ljid), demo, ctypes.c_float(analogOut0), ctypes.c_float(analogOut1))
-
-        if ecode != 0: raise U12Exception(ecode)
-
-        return {"idnum":ljid.value}
+        if ON_WINDOWS:
+            ljid = ctypes.c_long(idNum)
+            ecode = staticLib.EAnalogOut(ctypes.byref(ljid), demo, ctypes.c_float(analogOut0), ctypes.c_float(analogOut1))
+    
+            if ecode != 0: raise U12Exception(ecode)
+    
+            return {"idnum":ljid.value}
+        else:
+            if analogOut0 < 0:
+                analogOut0 = self.pwmAVoltage
+            
+            if analogOut1 < 0:
+                analogOut1 = self.pwmBVoltage
+            
+            self.rawCounterPWMDIO(PWMA = analogOut0, PWMB = analogOut1)
+            
+            self.pwmAVoltage = analogOut0
+            self.pwmBVoltage = analogOut1
+            
+            return {"idnum": self.id}
 
     def eCount(self, idNum = None, demo = 0, resetCounter = 0):
         """
-        Name: U12.eAnalogIn(idNum = None, demo = 0, resetCounter = 0)
+        Name: U12.eCount(idNum = None, demo = 0, resetCounter = 0)
         Args: See section 4.3 of the User's Guide
         Desc: This is a simplified version of Counter. Reads & resets the counter (CNT).
 
@@ -1702,21 +1856,29 @@ class U12(object):
         if idNum is None:
             idNum = self.id
         
-        ljid = ctypes.c_long(idNum)
-        count = ctypes.c_double()
-        ms = ctypes.c_double()
-
-        ecode = staticLib.ECount(ctypes.byref(ljid), demo, resetCounter, ctypes.byref(count), ctypes.byref(ms))
-
-        if ecode != 0: raise U12Exception(ecode)
-
-        return {"idnum":ljid.value, "count":count.value, "ms":ms.value}
+        if ON_WINDOWS:
+            ljid = ctypes.c_long(idNum)
+            count = ctypes.c_double()
+            ms = ctypes.c_double()
+    
+            ecode = staticLib.ECount(ctypes.byref(ljid), demo, resetCounter, ctypes.byref(count), ctypes.byref(ms))
+    
+            if ecode != 0: raise U12Exception(ecode)
+    
+            return {"idnum":ljid.value, "count":count.value, "ms":ms.value}
+        else:
+            results = self.rawCounter( ResetCounter = resetCounter)
+            
+            return {"idnum":self.id, "count":results['Counter'], "ms": (time() * 1000)}
+            
 
     def eDigitalIn(self, channel, idNum = None, demo = 0, readD=0):
         """
-        Name: U12.eAnalogIn(channel, idNum = None, demo = 0, readD=0)
+        Name: U12.eDigitalIn(channel, idNum = None, demo = 0, readD=0)
         Args: See section 4.4 of the User's Guide
-        Desc: This is a simplified version of Counter. Reads & resets the counter (CNT).
+        Desc: This is a simplified version of DigitalIO that reads the state of
+              one digital input. Also configures the requested pin to input and
+              leaves it that way.
 
         >>> dev = U12()
         >>> dev.eDigitalIn(0)
@@ -1727,20 +1889,47 @@ class U12(object):
         if idNum is None:
             idNum = self.id
         
-        ljid = ctypes.c_long(idNum)
-        state = ctypes.c_long(999)
-        
-        ecode = staticLib.EDigitalIn(ctypes.byref(ljid), demo, channel, readD, ctypes.byref(state))
-
-        if ecode != 0: raise U12Exception(ecode)
-
-        return {"idnum":ljid.value, "state":state.value}
+        if ON_WINDOWS:
+            ljid = ctypes.c_long(idNum)
+            state = ctypes.c_long(999)
+            
+            ecode = staticLib.EDigitalIn(ctypes.byref(ljid), demo, channel, readD, ctypes.byref(state))
+    
+            if ecode != 0: raise U12Exception(ecode)
+    
+            return {"idnum":ljid.value, "state":state.value}
+        else:
+            oldstate = self.rawDIO()
+            
+            if readD:
+                if channel > 7:
+                    channel = channel-7
+                    direction = BitField(rawByte = oldstate['D15toD8Directions'])
+                    direction[7-channel] = 1
+                    
+                    results = self.rawDIO(D15toD8Directions = direction, UpdateDigital = True)
+                    
+                    state = results["D15toD8States"][7-channel]
+                    
+                else:
+                    direction = BitField(rawByte = oldstate['D7toD0Directions'])
+                    direction[7-channel] = 1
+                    results = self.rawDIO(D7ToD0Directions = direction, UpdateDigital = True)
+                    
+                    state = results["D15toD8States"][7-channel]
+            else:
+                results = self.rawDIO(IO3toIO0DirectionsAndStates = 255, UpdateDigital = True)
+                state = results["IO3toIO0States"][3-channel]
+            
+            return {"idnum" : self.id, "state" : state}
 
     def eDigitalOut(self, channel, state, idNum = None, demo = 0, writeD=0):
         """
-        Name: U12.eAnalogOut(channel, state, idNum = None, demo = 0, writeD=0)
+        Name: U12.eDigitalOut(channel, state, idNum = None, demo = 0, writeD=0)
         Args: See section 4.5 of the User's Guide
-        Desc: This is a simplified version of Counter. Reads & resets the counter (CNT).
+        Desc: This is a simplified version of DigitalIO that sets/clears the
+              state of one digital output. Also configures the requested pin to
+              output and leaves it that way.
 
         >>> dev = U12()
         >>> dev.eDigitalOut(0, 1)
@@ -1751,13 +1940,44 @@ class U12(object):
         if idNum is None:
             idNum = self.id
         
-        ljid = ctypes.c_long(idNum)
-        
-        ecode = staticLib.EDigitalOut(ctypes.byref(ljid), demo, channel, writeD, state)
-
-        if ecode != 0: raise U12Exception(ecode)
-
-        return {"idnum":ljid.value}
+        if ON_WINDOWS:
+            ljid = ctypes.c_long(idNum)
+            
+            ecode = staticLib.EDigitalOut(ctypes.byref(ljid), demo, channel, writeD, state)
+    
+            if ecode != 0: raise U12Exception(ecode)
+    
+            return {"idnum":ljid.value}
+        else:
+            oldstate = self.rawDIO()
+            
+            if writeD:
+                if channel > 7:
+                    channel = channel-7
+                    direction = BitField(rawByte = oldstate['D15toD8Directions'])
+                    direction[7-channel] = 0
+                    
+                    state = BitField(rawByte = oldstate['D15toD8States'])
+                    state[7-channel] = state
+                    
+                    self.rawDIO(D15toD8Directions = direction, D15toD8States = state, UpdateDigital = True)
+                    
+                else:
+                    direction = BitField(rawByte = oldstate['D7toD0Directions'])
+                    direction[7-channel] = 0
+                    
+                    state = BitField(rawByte = oldstate['D7toD0States'])
+                    state[7-channel] = state
+                    
+                    self.rawDIO(D7ToD0Directions = direction, D8toD0States = state, UpdateDigital = True)
+                    
+            else:
+                bf = BitField()
+                bf[7-(channel+4)] = 0
+                bf[7-channel] = state
+                self.rawDIO(IO3toIO0DirectionsAndStates = bf, UpdateDigital = True)
+            
+            return {"idnum" : self.id}
 
     def aiSample(self, numChannels, channels, idNum=None, demo=0, stateIOin=0, updateIO=0, ledOn=0, gains=[0, 0, 0, 0], disableCal=0):
         """
