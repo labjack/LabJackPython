@@ -483,7 +483,7 @@ class U12(object):
             if self.handle is None:
                 raise U12Exception("The U12's handle is None. Please open a U12 with open()")
             
-            if self.debug: print "Writing:", str([hex(i) for i in writeBuffer]).replace("'", "")
+            if self.debug: print "Writing:", hexWithoutQuotes(writeBuffer)
             newA = (ctypes.c_byte*len(writeBuffer))(0) 
             for i in range(len(writeBuffer)):
                 newA[i] = ctypes.c_byte(writeBuffer[i])
@@ -505,7 +505,7 @@ class U12(object):
             readBytes = staticLib.LJUSB_Read(self.handle, ctypes.byref(newA), numBytes)
             # return a list of integers in command/response mode
             result = [(newA[i] & 0xff) for i in range(readBytes)]
-            if self.debug: print "Received:", str([hex(i) for i in result]).replace("'", "")
+            if self.debug: print "Received:", hexWithoutQuotes(result)
             return result
 
 
@@ -1342,7 +1342,8 @@ class U12(object):
         bf.bit2 = 1
         bf.bit1 = 1
         bf.bit0 = 1
-        
+
+        command[5] = int(bf)
         self.write(command)
         self.close()
         
@@ -1369,7 +1370,7 @@ class U12(object):
         # 0b01000000 (Re-Enumerate)
         bf = BitField()
         bf.bit6 = 1
-        
+        command[5] = int(bf)
         self.write(command)
         self.close()
     
@@ -2935,6 +2936,12 @@ def getErrorString(errorcode):
     staticLib.GetErrorString(errorcode, errorString)
     return errorString.value
 
-# Check os
-#if platform.system() is not WINDOWS:
-#    raise OSError("Python support for the U12 is only available for Windows")
+def hexWithoutQuotes(l):
+    """ Return a string listing hex without all the single quotes.
+    
+    >>> l = range(10)
+    >>> print hexWithoutQuotes(l)
+    [0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9]
+
+    """
+    return str([hex (i) for i in l]).replace("'", "")
