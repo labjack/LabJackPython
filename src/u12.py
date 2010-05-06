@@ -458,7 +458,9 @@ class U12(object):
                         self.write(command)
                         self.read()
                     except:
-                        pass    
+                        pass
+
+                    self.id = self.rawReadLocalId()
                 
             else:
                 raise Exception("Invalid combination of parameters.")
@@ -1873,8 +1875,9 @@ class U12(object):
         Args: See section 4.1 of the User's Guide
         Desc: This is a simplified version of AISample. Reads the voltage from 1 analog input
 
-        >>> dev = U12()
-        >>> dev.eAnalogIn(0)
+        >>> import u12
+        >>> d = u12.U12()
+        >>> d.eAnalogIn(0)
         {'overVoltage': 0, 'idnum': 1, 'voltage': 1.435546875}
         """
         if idNum is None:
@@ -1906,8 +1909,9 @@ class U12(object):
         Args: See section 4.2 of the User's Guide
         Desc: This is a simplified version of AOUpdate. Sets the voltage of both analog outputs.
 
-        >>> dev = U12()
-        >>> dev.eAnalogOut(2, 2)
+        >>> import u12
+        >>> d = u12.U12()
+        >>> d.eAnalogOut(2, 2)
         {'idnum': 1}
         """
         if idNum is None:
@@ -1940,8 +1944,9 @@ class U12(object):
         Args: See section 4.3 of the User's Guide
         Desc: This is a simplified version of Counter. Reads & resets the counter (CNT).
 
-        >>> dev = U12()
-        >>> dev.eCount()
+        >>> import u12
+        >>> d = u12.U12()
+        >>> d.eCount()
         {'count': 1383596032.0, 'ms': 251487257.0}
         """
 
@@ -1973,8 +1978,9 @@ class U12(object):
               one digital input. Also configures the requested pin to input and
               leaves it that way.
 
-        >>> dev = U12()
-        >>> dev.eDigitalIn(0)
+        >>> import u12
+        >>> d = u12.U12()
+        >>> d.eDigitalIn(0)
         {'state': 0, 'idnum': 1}
         """
 
@@ -2024,8 +2030,9 @@ class U12(object):
               state of one digital output. Also configures the requested pin to
               output and leaves it that way.
 
-        >>> dev = U12()
-        >>> dev.eDigitalOut(0, 1)
+        >>> import u12
+        >>> d = u12.U12()
+        >>> d.eDigitalOut(0, 1)
         {idnum': 1}
         """
 
