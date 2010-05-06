@@ -289,7 +289,7 @@ class Device(object):
             elif os.name == 'nt':
                 wb = self._writeToUDDriver(writeBuffer, modbus)
         
-        if self.debug: print "Sent: ", wb
+        if self.debug: print "Sent: ", hexWithoutQuotes(wb)
     
     def read(self, numBytes, stream = False, modbus = False):
         """read(numBytes, stream = False, modbus = False)
@@ -501,17 +501,15 @@ class Device(object):
     
     def _modbusWriteRead(self, request, numBytes):
         with self.deviceLock:
-            if self.debug: print "Sending: ", request
-            
             self.write(request, modbus = True, checksum = False)
             try:
                 result = self.read(numBytes, modbus = True)
-                if self.debug: print "Response: ", result
+                if self.debug: print "Response: ", hexWithoutQuotes(result)
                 return result
             except LabJackException:
                 self.write(request, modbus = True, checksum = False)
                 result = self.read(numBytes, modbus = True)
-                if self.debug: print "Response: ", result
+                if self.debug: print "Response: ", hexWithoutQuotes(result)
                 return result
     
     def _checkCommandBytes(self, results, commandBytes):
@@ -532,11 +530,10 @@ class Device(object):
     
         # Acquire the device lock.
         with self.deviceLock:
-            if self.debug: print "Write: ", command
             self.write(command, checksum = checksum)
             
             result = self.read(readLen, stream=False)
-            if self.debug: print "Result: ", result
+            if self.debug: print "Result: ", hexWithoutQuotes(result)
             if checkBytes:
                 self._checkCommandBytes(result, commandBytes)
                         
@@ -2812,6 +2809,16 @@ def toDouble(bytes):
     right, left = struct.unpack("<Ii", struct.pack("B" * 8, *bytes[0:8]))
     
     return float(left) + float(right)/(2**32)
+    
+def hexWithoutQuotes(l):
+    """ Return a string listing hex without all the single quotes.
+    
+    >>> l = range(10)
+    >>> print hexWithoutQuotes(l)
+    [0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9]
+
+    """
+    return str([hex (i) for i in l]).replace("'", "")
     
 #device types
 LJ_dtUE9 = 9
