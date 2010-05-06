@@ -7,6 +7,7 @@ import ctypes
 import os, atexit
 import math
 from time import time
+import struct
 
 WINDOWS = "Windows"
 ON_WINDOWS = (os.name == 'nt')
@@ -222,6 +223,13 @@ class BitField(object):
             byteVal += ( 1 << i ) * v
         
         return byteVal
+        
+    def asBin(self):
+        result = "0b"
+        for i in self.rawBits:
+            result += "%s" % i
+        
+        return result
     
     def __len__(self):
         return len(self.data)
@@ -390,27 +398,70 @@ class U12(object):
             openDev = staticLib.LJUSB_OpenDevice
             openDev.restype = ctypes.c_void_p
             
-            if id == -1:
+            
+            if serialNumber is not None:
+                numDevices = staticLib.LJUSB_GetDevCount(devType)
+                
+                for i in range(numDevices):
+                    handle = openDev(i+1, 0, devType)
+                    
+                    if handle != 0:
+                        self.handle = ctypes.c_void_p(handle)
+                        
+                        try:
+                            serial = self.rawReadSerial()
+                        except Exception:
+                            serial = self.rawReadSerial()
+                        
+                        if serial == int(serialNumber):
+                            break
+                        else:
+                            self.close()
+                    
+                    if self.handle is None:
+                        raise U12Exception("Couldn't find a U12 with a serial number matching %s" % serialNumber)
+                
+            elif id != -1:
+                numDevices = staticLib.LJUSB_GetDevCount(devType)
+                
+                for i in range(numDevices):
+                    handle = openDev(i+1, 0, devType)
+                    
+                    if handle != 0:
+                        self.handle = ctypes.c_void_p(handle)
+                        
+                        try:
+                            unitId = self.rawReadLocalId()
+                        except Exception:
+                            unitId = self.rawReadLocalId()
+                        
+                        if unitId == int(id):
+                            break
+                        else:
+                            self.close()
+                            
+                    if self.handle is None:
+                        raise U12Exception("Couldn't find a U12 with a local ID matching %s" % id)
+            elif id == -1:
                 handle = openDev(1, 0, devType)
+                
+                if handle == 0:
+                    raise Exception("Couldn't open a U12. Check that one is connected and try again.")
+                else:
+                    self.handle = ctypes.c_void_p(handle)
+                    
+                    # U12 ignores first command, so let's write a command.
+                    command = [ 0 ] * 8
+                    command[5] = 0x57 # 0b01010111
+                    
+                    try:
+                        self.write(command)
+                        self.read()
+                    except:
+                        pass    
+                
             else:
-                raise Exception("Seriously? I'm not in the mood.")
-            
-            
-            if handle == 0:
-                raise Exception("No U12")
-            else:
-                self.handle = ctypes.c_void_p(handle)
-                
-                
-                # U12 ignores first command, so let's write some crap.
-                command = [ 0 ] * 8
-                command[5] = 0x57 # 0b01010111
-                
-                try:
-                    self.write(command)
-                    self.read()
-                except:
-                    pass
+                raise Exception("Invalid combination of parameters.")
             
             
             if not self._autoCloseSetup:
@@ -432,7 +483,7 @@ class U12(object):
             if self.handle is None:
                 raise U12Exception("The U12's handle is None. Please open a U12 with open()")
             
-            if self.debug: print "Writing:", writeBuffer
+            if self.debug: print "Writing:", str([hex(i) for i in writeBuffer]).replace("'", "")
             newA = (ctypes.c_byte*len(writeBuffer))(0) 
             for i in range(len(writeBuffer)):
                 newA[i] = ctypes.c_byte(writeBuffer[i])
@@ -454,8 +505,49 @@ class U12(object):
             readBytes = staticLib.LJUSB_Read(self.handle, ctypes.byref(newA), numBytes)
             # return a list of integers in command/response mode
             result = [(newA[i] & 0xff) for i in range(readBytes)]
-            if self.debug: print "Received:", result
+            if self.debug: print "Received:", str([hex(i) for i in result]).replace("'", "")
             return result
+
+
+    # Low-level helpers
+    def rawReadSerial(self):
+        """
+        Name: U12.rawReadSerial()
+        
+        Args: None
+        
+        Desc: Reads the serial number from internal memory.
+        
+        Returns: The U12's serial number as an integer.
+        
+        Example:
+        >>> import u12
+        >>> d = u12.U12()
+        >>> print d.rawReadSerial()
+        10004XXXX
+        """
+        results = self.rawReadRAM()
+        return struct.unpack(">I", struct.pack("BBBB", results['DataByte3'], results['DataByte2'], results['DataByte1'], results['DataByte0']))[0]
+        
+    def rawReadLocalId(self):
+        """
+        Name: U12.rawReadLocalId()
+        
+        Args: None
+        
+        Desc: Reads the Local ID from internal memory.
+        
+        Returns: The U12's Local ID as an integer.
+        
+        Example:
+        >>> import u12
+        >>> d = u12.U12()
+        >>> print d.rawReadLocalId()
+        0
+        """
+        results = self.rawReadRAM(0x08)
+        return results['DataByte0']
+        
 
     # Begin Section 5 Functions
     
@@ -590,8 +682,8 @@ class U12(object):
                          D15toD8States = 0, D7toD0States = 0,
                          IO3toIO0DirectionsAndStates = 0, UpdateDigital = 1)
         
-        Args: D15toD8Directions, A byte where 0 = Ouput, 1 = Input for D15-8
-              D7toD0Directions, A byte where 0 = Ouput, 1 = Input for D7-0
+        Args: D15toD8Directions, A byte where 0 = Output, 1 = Input for D15-8
+              D7toD0Directions, A byte where 0 = Output, 1 = Input for D7-0
               D15toD8States, A byte where 0 = Low, 1 = High for D15-8
               D7toD0States, A byte where 0 = Low, 1 = High for D7-0
               IO3toIO0DirectionsAndStates, Bits 7-4: Direction, 3-0: State
@@ -783,8 +875,8 @@ class U12(object):
                                     ResetCounter = False, UpdateDigital = 0,
                                     PWMA = 0, PWMB = 0)
         
-        Args: D15toD8Directions, A byte where 0 = Ouput, 1 = Input for D15-8
-              D7toD0Directions, A byte where 0 = Ouput, 1 = Input for D7-0
+        Args: D15toD8Directions, A byte where 0 = Output, 1 = Input for D15-8
+              D7toD0Directions, A byte where 0 = Output, 1 = Input for D7-0
               D15toD8States, A byte where 0 = Low, 1 = High for D15-8
               D7toD0States, A byte where 0 = Low, 1 = High for D7-0
               IO3toIO0DirectionsAndStates, Bits 7-4: Direction, 3-0: State
@@ -1619,9 +1711,9 @@ class U12(object):
         
         # 01100010 (SPI)
         bf2 = BitField()
-        bf.bit6 = 1
-        bf.bit5 = 1
-        bf.bit1 = 1
+        bf2.bit6 = 1
+        bf2.bit5 = 1
+        bf2.bit1 = 1
         
         command[5] = int(bf2)
         command[6] = NumberOfBytesToWriteRead
