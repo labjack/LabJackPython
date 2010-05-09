@@ -1811,7 +1811,7 @@ class DAC0_16(DAC16):
 
     Value: 0-65535
     
-    >>> d.getFeedback( u3.DAC0_8( Value ) )
+    >>> d.getFeedback( u3.DAC0_16( Value ) )
     [ None ]
     """
     def __init__(self, Value):
@@ -1828,7 +1828,7 @@ class DAC1_16(DAC16):
 
     Value: 0-65535
     
-    >>> d.getFeedback( u3.DAC1_8( Value ) )
+    >>> d.getFeedback( u3.DAC1_16( Value ) )
     [ None ]
     """
     def __init__(self, Value):
