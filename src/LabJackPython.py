@@ -520,7 +520,7 @@ class Device(object):
         if results[0] == 0xB8 and results[1] == 0xB8:
             raise LabJackException("Device detected a bad checksum.")
         elif results[1:(size+1)] != commandBytes:
-            raise LabJackException("Got incorrect command bytes.")
+            raise LabJackException("Got incorrect command bytes.\nExpected: %s\nGot: %s\nFull packet: %s" % (commandBytes, results[1:(size+1)], results))
         elif not verifyChecksum(results):
             raise LabJackException("Checksum was incorrect.")
         elif results[6] != 0:
