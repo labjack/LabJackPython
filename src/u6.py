@@ -224,7 +224,7 @@ class U6(Device):
         
         return { 'FirmwareVersion' : self.firmwareVersion, 'BootloaderVersion' : self.bootloaderVersion, 'HardwareVersion' : self.hardwareVersion, 'SerialNumber' : self.serialNumber, 'ProductID' : self.productId, 'LocalID' : self.localId, 'VersionInfo' : self.versionInfo, 'DeviceName' : self.deviceName }
         
-    def configIO(self, NumberTimersEnabled = None, EnableCounter1 = None, EnableCounter0 = None, TimerCounterPinOffset = None):
+    def configIO(self, NumberTimersEnabled = None, EnableCounter1 = None, EnableCounter0 = None, TimerCounterPinOffset = None, EnableUART = None):
         """
         Name: U6.configIO(NumberTimersEnabled = None, EnableCounter1 = None, EnableCounter0 = None, TimerCounterPinOffset = None)
         Args: NumberTimersEnabled, Number of timers to enable
@@ -271,6 +271,10 @@ class U6(Device):
         if TimerCounterPinOffset != None:
             command[6] = 1
             command[9] = TimerCounterPinOffset
+            
+        if EnableUART is not None:
+            command[6] |= 1
+            command[6] |= (1 << 5)
         
         result = self._writeRead(command, 16, [0xf8, 0x05, 0x0B])
         
@@ -787,6 +791,10 @@ class U6(Device):
         Desc: Configures the U6 UART for asynchronous communication. See
               section 5.3.18 of the User's Guide.
         """
+        
+        if UARTEnable:
+            self.configIO(EnableUART = True)
+        
         command = [ 0 ] * 10
         
         #command[0] = Checksum8
@@ -807,6 +815,11 @@ class U6(Device):
         t = struct.pack("<H", BaudFactor)
         command[8] = ord(t[0])
         command[9] = ord(t[1])
+        
+        results = self._writeRead(command, 10, [0xF8, 0x02, 0x14])
+            
+        if command[8] != results[8] and command[9] != results[9]:
+            raise LabJackException("BaudFactor didn't stick.")
         
     def asynchTX(self, AsynchBytes):
         """
