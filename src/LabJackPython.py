@@ -174,8 +174,8 @@ def _loadLibrary():
     if(os.name == 'nt'):
         try:
             return ctypes.windll.LoadLibrary("labjackud")
-        except:
-            raise LabJackException("Could not load labjackud driver. Ethernet connectivity availability only.")
+        except Exception, e:
+            raise LabJackException("Could not load labjackud driver. Ethernet connectivity availability only.\n\n    The error was: %s" % e)
 
 try:
     staticLib = _loadLibrary()
