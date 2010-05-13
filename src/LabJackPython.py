@@ -2575,10 +2575,13 @@ def __listAllUE9Unix(connectionType):
         numDevices = staticLib.LJUSB_GetDevCount(LJ_dtUE9)
     
         for i in xrange(numDevices):
-            device = openLabJack(LJ_dtUE9, 1, firstFound = False, devNumber = i+1)
-            device.close()
+            try:
+                device = openLabJack(LJ_dtUE9, 1, firstFound = False, devNumber = i+1)
+                device.close()
             
-            deviceList[str(device.serialNumber)] = device.__dict__
+                deviceList[str(device.serialNumber)] = device.__dict__
+            except LabJackException:
+                pass
 
     elif connectionType == LJ_ctETHERNET:
         #Create a socket
@@ -2641,10 +2644,13 @@ def __listAllU3Unix():
     numDevices = staticLib.LJUSB_GetDevCount(LJ_dtU3)
 
     for i in xrange(numDevices):
-        device = openLabJack(LJ_dtU3, 1, firstFound = False, devNumber = i+1)
-        device.close()
-        
-        deviceList[str(device.serialNumber)] = device.__dict__
+        try:
+            device = openLabJack(LJ_dtU3, 1, firstFound = False, devNumber = i+1)
+            device.close()
+            
+            deviceList[str(device.serialNumber)] = device.__dict__
+        except LabJackException:
+            pass
         
 
     return deviceList
@@ -2656,10 +2662,13 @@ def __listAllU6Unix():
     numDevices = staticLib.LJUSB_GetDevCount(LJ_dtU6)
 
     for i in xrange(numDevices):
-        device = openLabJack(LJ_dtU6, 1, firstFound = False, devNumber = i+1)
-        device.close()
+        try:
+            device = openLabJack(LJ_dtU6, 1, firstFound = False, devNumber = i+1)
+            device.close()
         
-        deviceList[str(device.serialNumber)] = device.__dict__
+            deviceList[str(device.serialNumber)] = device.__dict__
+        except LabJackException:
+            pass
 
     return deviceList
 
