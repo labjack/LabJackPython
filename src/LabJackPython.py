@@ -70,6 +70,50 @@ Version History
         - All bug fixes and changes made on GitHub to date.
         - Trying a new system of making regular tagged releases
         - Version numbers of LabJackPython are now dates.
+    - May 18, 2010
+        - Added lowlevelErrorToString to aid in mapping low-level errorcodes to
+          descriptions.
+        - Added better error reporting if LabJackPython can't connect to the
+          Modbus port on the UE9.
+        - Added better error reporting for U6s with *really* old firmware.
+        - Added a PWM example.
+        - Ctype's use_errno is only on Python 2.6, so added some try except
+          blocks so LabJackPython will still work with 2.5
+        - Added support for the SetDefaults command on the UE9 in Device class.
+        - Fixed a bug where Counters would return a tuple, not the expected
+          result.
+        - Added support for the new DSP Feedback command on the U6.
+        - Added support for ReadDefaults in Device class.
+        - Added function readDefaultsConfig to read default state.
+        - The getFeedback function will now check if the packet you are trying
+          to send is too big, or if the response will be too long.
+        - Fixed a bug where the LJSocket parameter wasn't being passed along.
+        - Added code that sets the transaction ID for all Modbus packets.
+          NOTE FOR UE9s: You will need to upgrade to Comm firmware 1.50
+        - Fixed a bug where after opening a device with LJSocket, LabJackPython
+          would then try to open the device with the UD Driver. Thanks to 
+          Andres Mejias for reporting the issue.
+        - Fixed a bug in softReset() and hardReset(). Thanks to Shawkat for
+          reporting the issue.
+        - streamStart() and streamStop() will raise exceptions if there is an
+          error.
+        - Added example of how to post to CloudDot.
+        - Added K-Type Thermocouple example
+        - Added basic Linux support for the U12.
+        - Added hexWithoutQuotes function to print USB packets in a nicer way. 
+          Also updated any debug statement to use it.
+        - Removed the "Writing:" debug output.
+        - Fixed a bug where DAC0_16 was using 8 bits, not 16.
+        - Added functional UART support to the U6.
+        - Added better error messages for incorrect command bytes and when the
+          UD driver fails to load.
+        - Fixed a bug with ListAll on Unix where LabJackPython would fail 
+          trying to open devices that were already opened.
+        - Added example for working with the DCA-10
+        - Fixed a bug where transaction IDs were not being set when writing
+          floating point numbers over Modbus.
+        - Added error reporting to help people who don't upgrade their UE9s to
+          Comm Firmware 1.50.
 """
 # We use the 'with' keyword to manage the thread-safe device lock. It's built-in on 2.6; 2.5 requires an import.
 from __future__ import with_statement
@@ -364,7 +408,7 @@ class Device(object):
         numReg: Number of consecutive addresses you would like to read
         format: the unpack format of the returned value ( '>f' or '>I')
         
-        Modbus is supported for UE9s over USB from Comm Firmware 1.49 and above.
+        Modbus is supported for UE9s over USB from Comm Firmware 1.50 and above.
         """
         
         pkt, numBytes = self._buildReadRegisterPacket(addr, numReg, unitId)
@@ -462,9 +506,6 @@ class Device(object):
 
         if not isinstance(value, int) and not isinstance(value, float):
             raise TypeError("Value must be a float or int.")
-            
-        if unitId is None:
-            unitId = 0xff
 
         # Function, Address, Num Regs, Byte count, Data
         payload = struct.pack('>BHHB', 0x10, addr, 0x02, 0x04) + struct.pack(fmt, value)
@@ -487,11 +528,13 @@ class Device(object):
     def _parseWriteRegisterResponse(self, response, request, value):
         response = list(response)
 
-        if request[7] == 6 and request != response:
-            raise LabJackException(9002, "Error writing register. Make sure you're writing to an address that allows writes.")
-        elif request[7] == 16:
-            # Need smarts for checking for errors.
-            pass
+        if request[2] != 0 and request[3] != 0:
+            protoID = (request[2] << 8) + request[3]
+            raise Modbus.ModbusException("Got an unexpected protocol ID: %s (expected 0). Please make sure that you have the latest firmware. UE9s need a Comm Firmware of 1.50 or greater.\n\nThe packet you received: %s" % (protoID, hexWithoutQuotes(response)))
+        
+
+        if request[7] != response[7]:
+            raise LabJackException(9002, "Modbus error number %s raised while writing to register. Make sure you're writing to an address that allows writes.\n\nThe packet you received: %s" % (response[8], hexWithoutQuotes(response)))
 
         return value
         
