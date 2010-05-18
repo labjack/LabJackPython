@@ -468,7 +468,9 @@ class Device(object):
 
         # Function, Address, Num Regs, Byte count, Data
         payload = struct.pack('>BHHB', 0x10, addr, 0x02, 0x04) + struct.pack(fmt, value)
-        request = struct.pack('>HHHB', 0, 0, len(payload)+1, unitId) + payload
+        
+        request = Modbus._buildHeaderBytes(length = len(payload)+1, unitId = unitId)
+        request += payload
         request = [ ord(c) for c in request ]
         numBytes = 12
 
