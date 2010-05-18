@@ -70,23 +70,27 @@ def readHoldingRegistersResponse(packet, payloadFormat=None):
     #print "header", [ c for c in header ]
     #print "header", header
     
+    # Check that protocol ID is 0
+    if header[1] != 0:
+        raise ModbusException("Got an unexpected protocol ID: %s (expected 0). Please make sure that you have the latest firmware. UE9s need a Comm Firmware of 1.50 or greater.\n\nThe packet you received: %s" % (header[1], repr(packet)))
+    
     # Check for valid Trans ID
     _checkTransId(header[0])
 
     #Check for exception
     if header[4] == 0x83:
-        raise ModbusException(header[5])
+        raise ModbusException("Error reading register: A Modbus error %s was raised.\n\nThe packet you received: %s" % (header[5], repr(packet)))
 
     #Check for proper command
     if header[4] != 0x03:
-        raise ModbusException("Not a read holding registers packet.")
+        raise ModbusException("Not a read holding registers packet.\n\nGot: %s" % repr(packet))
 
     #Check for proper length
     payloadLength = header[5]
     if (payloadLength + HEADER_LENGTH) != len(packet):
         #print "packet length is", len(packet)
         #print "payload and header is", payloadLength + HEADER_LENGTH
-        raise ModbusException("Packet length not valid.")
+        raise ModbusException("Packet length not valid. Expected %s, Got %s\n\nThe packet you received: %s" % (payloadLength + HEADER_LENGTH, len(packet), repr(packet)))
 
     if payloadFormat is None:
         payloadFormat = '>' + 'H' * (payloadLength/2)
