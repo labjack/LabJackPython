@@ -1,6 +1,13 @@
 """
 Name: u3.py
 Desc: Defines a much better U3 class.
+
+Section Number Mapping:
+1 = Object Functions
+2 = User's Guide Functions
+3 = Convenience Functions
+4 = Private Helper Functions
+
 """
 from LabJackPython import *
 import struct, ConfigParser
@@ -12,7 +19,30 @@ class U3(Device):
     u3 = U3()
     
     """
-    def __init__(self, debug = False, autoOpen = True, **kargs):        
+    def __init__(self, debug = False, autoOpen = True, **kargs):
+        """
+        Name: U3.__init__(debug = False, autoOpen = True, **openArgs)
+        
+        Args: debug, enables debug output
+              autoOpen, if true, the class will try to open a U3 using openArgs
+              **openArgs, the arguments to pass to the open call. See U3.open()
+        
+        Desc: Instantiates a new U3 object. If autoOpen == True, then it will
+              also open a U3.
+              
+        Examples:
+        Simplest:
+        >>> import u3
+        >>> d = u3.U3()
+        
+        For debug output:
+        >>> import u3
+        >>> d = u3.U3(debug = True)
+        
+        To open a U3 with Local ID = 2:
+        >>> import u3
+        >>> d = u3.U3(localId = 2)
+        """
         Device.__init__(self, None, devType = 3)
         self.debug = debug
         self.calData = None
@@ -20,29 +50,77 @@ class U3(Device):
         
         if autoOpen:
             self.open(**kargs)
+    __init__.section = 1 
         
     def open(self, firstFound = True, serial = None, localId = None, devNumber = None, handleOnly = False, LJSocket = None):
         """
         Name: U3.open(firstFound = True, localId = None, devNumber = None,
                       handleOnly = False, LJSocket = None)
+        
         Args: firstFound, If True, use the first found U3
               serial, open a U3 with the given serial number
               localId, open a U3 with the given local id.
               devNumber, open a U3 with the given devNumber
               handleOnly, if True, LabJackPython will only open a handle
               LJSocket, set to "<ip>:<port>" to connect to LJSocket
-        Desc: Use to open a U3.
         
-        >>> myU3 = u3.U3(autoOpen = False)
-        >>> myU3.open()
+        Desc: Use to open a U3. If handleOnly is false, it will call configU3
+              and save the resulting information to the object. This allows the
+              use of d.serialNumber, d.firmwareVersion, etc.
+        
+        Examples:
+        Simplest:
+        >>> import u3
+        >>> d = u3.U3(autoOpen = False)
+        >>> d.open()
+        
+        Handle-only, with a serial number = 320095789:
+        >>> import u3
+        >>> d = u3.U3(autoOpen = False)
+        >>> d.open(handleOnly = True, serial = 320095789)
+        
+        Using LJSocket:
+        >>> import u3
+        >>> d = u3.U3(autoOpen = False)
+        >>> d.open(LJSocket = "localhost:6000")
         """
         Device.open(self, 3, firstFound = firstFound, serial = serial, localId = localId, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket )
+    open.section = 1
     
     def configU3(self, LocalID = None, TimerCounterConfig = None, FIOAnalog = None, FIODirection = None, FIOState = None, EIOAnalog = None, EIODirection = None, EIOState = None, CIODirection = None, CIOState = None, DAC1Enable = None, DAC0 = None, DAC1 = None, TimerClockConfig = None, TimerClockDivisor = None, CompatibilityOptions = None ):
         """
         Name: U3.configU3(LocalID = None, TimerCounterConfig = None, FIOAnalog = None, FIODirection = None, FIOState = None, EIOAnalog = None, EIODirection = None, EIOState = None, CIODirection = None, CIOState = None, DAC1Enable = None, DAC0 = None, DAC1 = None, TimerClockConfig = None, TimerClockDivisor = None, CompatibilityOptions = None)
+        
         Args: See section 5.2.2 of the users guide.
-        Desc: Sends the low-level configU3 command.
+        
+        Desc: Sends the low-level configU3 command. Also saves relevant 
+              information to the U3 object for later use.
+              
+        Example:
+        Simplest:
+        >>> import u3
+        >>> d = u3.U3()
+        >>> print d.configU3()
+        {
+         'LocalID': 1, 
+         'SerialNumber': 320035782, 
+         'DeviceName': 'U3-LV', 
+         'FIODirection': 0, 
+         'FirmwareVersion': '1.24', 
+         ... , 
+         'ProductID': 3
+        }
+
+        Configure all FIOs and EI0s to analog on boot:
+        >>> import u3
+        >>> d = u3.U3()
+        >>> print d.configU3( FIOAnalog = 255, EIOAnalog = 255)
+        {
+         'FIOAnalog': 255,
+         'EIOAnalog': 255,
+         ... , 
+         'ProductID': 3
+        }
         """
         
         writeMask = 0
@@ -153,12 +231,47 @@ class U3(Device):
             self.deviceName += '-HV'
         
         return { 'FirmwareVersion' : self.firmwareVersion, 'BootloaderVersion' : self.bootloaderVersion, 'HardwareVersion' : self.hardwareVersion, 'SerialNumber' : self.serialNumber, 'ProductID' : self.productId, 'LocalID' : self.localId, 'TimerCounterMask' : self.timerCounterMask, 'FIOAnalog' : self.fioAnalog, 'FIODirection' : self.fioDirection, 'FIOState' : self.fioState, 'EIOAnalog' : self.eioAnalog, 'EIODirection' : self.eioDirection, 'EIOState' : self.eioState, 'CIODirection' : self.cioDirection, 'CIOState' : self.cioState, 'DAC1Enable' : self.dac1Enable, 'DAC0' : self.dac0, 'DAC1' : self.dac1, 'TimerClockConfig' : self.timerClockConfig, 'TimerClockDivisor' : self.timerClockDivisor, 'CompatibilityOptions' : self.compatibilityOptions, 'VersionInfo' : self.versionInfo, 'DeviceName' : self.deviceName }
-
+    configU3.section = 2
+    
     def configIO(self, TimerCounterPinOffset = None, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None):
         """
         Name: U3.configIO(TimerCounterPinOffset = 4, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None)
+        
         Args: See section 5.2.3 of the user's guide.
+        
         Desc: The configIO command.
+        
+        Examples:
+        Simplest:
+        >>> import u3
+        >>> d = u3.U3()
+        >>> print d.configIO()
+        {
+         'NumberOfTimersEnabled': 0,
+         'TimerCounterPinOffset': 4,
+         'DAC1Enable': 0,
+         'FIOAnalog': 239,
+         'EIOAnalog': 0,
+         'TimerCounterConfig': 64,
+         'EnableCounter1': False,
+         'EnableCounter0': False
+        }
+        
+        Set all FIOs and EIOs to digital (until power cycle):
+        >>> import u3
+        >>> d = u3.U3()
+        >>> print d.configIO(FIOAnalog = 0, EIOAnalog = 0)
+        {
+         'NumberOfTimersEnabled': 0,
+         'TimerCounterPinOffset': 4,
+         'DAC1Enable': 0,
+         'FIOAnalog': 0,
+         'EIOAnalog': 0,
+         'TimerCounterConfig': 64,
+         'EnableCounter1': False,
+         'EnableCounter0': False
+        }
+
         """
         
         writeMask = 0
@@ -226,6 +339,7 @@ class U3(Device):
         self.eioAnalog = result[11]
         
         return { 'TimerCounterConfig' : self.timerCounterConfig, 'DAC1Enable' : self.dac1Enable, 'FIOAnalog' : self.fioAnalog, 'EIOAnalog' : self.eioAnalog, 'NumberOfTimersEnabled' : self.numberTimersEnabled, 'EnableCounter0' : self.counter0Enabled, 'EnableCounter1' : self.counter1Enabled, 'TimerCounterPinOffset' : self.timerCounterPinOffset }
+    configIO.section = 2
     
     def configTimerClock(self, TimerClockBase = None, TimerClockDivisor = None):
         """
@@ -261,10 +375,24 @@ class U3(Device):
         self.timerClockDivisor = result[9]
         
         return { 'TimerClockBase' : self.timerClockBase, 'TimerClockDivisor' : self.timerClockDivisor }
+    configTimerClock.section = 2
 
     def toggleLED(self):
+        """
+        Name: U3.toggleLED()
+        
+        Args: None
+        
+        Desc: Toggles the state LED on and off.
+        
+        Example:
+        >>> import u3
+        >>> d = u3.U3()
+        >>> d.toggleLED()
+        """
         self.getFeedback( LED( not self.ledState ) )
         self.ledState = not self.ledState
+    toggleLED.section = 3
     
     def setFIOState(self, fioNum, state = 1):
         """
@@ -273,29 +401,49 @@ class U3(Device):
               state, 1 = High, 0 = Low
         Desc: A convenience function to set the state of an FIO. Will also 
               set the direction to output.
-        
+              
+        Example:
+        >>> import u3
+        >>> d = u3.U3()
+        >>> d.setFIOState( 4, state = 1)
         """
         self.getFeedback(BitDirWrite(fioNum, 1), BitStateWrite(fioNum, state))
+    setFIOState.section = 3
     
     def getFIOState(self, fioNum):
         """
         Name: U3.getFIOState(fioNum)
-        Args: fioNum, which FIO to read
-        Desc: A convenience function to read the state of an FIO. Unpredictable
-              results if the pin is not set to output.
         
+        Args: fioNum, which FIO to read
+        
+        Desc: A convenience function to read the state of an FIO.
+        
+        Example:
+        >>> import u3
+        >>> d = u3.U3()
+        >>> print d.getFIOState( 4 )
+        1
         """
         return self.getFeedback(BitStateRead(fioNum))[0]
+    getFIOState.section = 3
     
     def getAIN(self, posChannel, negChannel = 31, longSettle=False, quickSample=False):
         """
         Name: U3.getAIN(posChannel, negChannel = 31, longSettle=False,
                                                      quickSample=False)
+        
         Args: posChannel, the positive channel to read from.
               negChannel, the negitive channel to read from.
               longSettle, set to True for longSettle
               quickSample, set to True for quickSample
+        
         Desc: A convenience function to read an AIN.
+        
+        Example:
+        >>> import u3
+        >>> d = u3.U3()
+        >>> print d.getAIN( 0 )
+        0.0501680038869
         """
         try:
             if self.firmwareVersion >= 1.18 and negChannel == 31:
@@ -305,7 +453,7 @@ class U3(Device):
                 return self._getAINLowLevel(posChannel, negChannel, longSettle, quickSample)
         except AttributeError:
             return self._getAINLowLevel(posChannel, negChannel, longSettle, quickSample)
-
+    getAIN.section = 3
         
     def _getAINLowLevel(self, posChannel, negChannel, longSettle, quickSample):
         """
@@ -335,8 +483,13 @@ class U3(Device):
             negChannel = 32
         
         return self.binaryToCalibratedAnalogVoltage(bits, isLowVoltage = lvChannel, isSingleEnded = singleEnded, isSpecialSetting = isSpecial)
+    _getAINLowLevel.section = 4
+
 
     def _buildBuffer(self, sendBuffer, readLen, commandlist):
+        """
+        Builds up the buffer to be written for getFeedback
+        """
         for cmd in commandlist:
             if isinstance(cmd, FeedbackCommand):
                 sendBuffer += cmd.cmdBytes
@@ -344,8 +497,12 @@ class U3(Device):
             elif isinstance(cmd, list):
                 sendBuffer, readLen = self._buildBuffer(sendBuffer, readLen, cmd)
         return (sendBuffer, readLen)
+    _buildBuffer.section = 4
                 
     def _buildFeedbackResults(self, rcvBuffer, commandlist, results, i):
+        """
+        Builds the result list from the results of getFeedback
+        """
         for cmd in commandlist:
             if isinstance(cmd, FeedbackCommand):
                 results.append(cmd.handle(rcvBuffer[i:i+cmd.readLen]))
@@ -353,13 +510,17 @@ class U3(Device):
             elif isinstance(cmd, list):
                 self._buildFeedbackResults(rcvBuffer, cmd, results, i)
         return results
+    _buildFeedbackResults.section = 4
 
     def getFeedback(self, *commandlist):
         """
         Name: U3.getFeedback(commandlist)
+        
         Args: the FeedbackCommands to run
+        
         Desc: Forms the commandlist into a packet, sends it to the U3, and reads the response.
         
+        Examples:
         >>> myU3 = u3.U3()
         >>> ledCommand = u3.LED(False)
         >>> internalTempCommand = u3.AIN(30, 31, True)
@@ -415,15 +576,18 @@ class U3(Device):
         results = []
         i = 9
         return self._buildFeedbackResults(rcvBuffer, commandlist, results, i)
-        
+    getFeedback.section = 2    
+    
     def readMem(self, blockNum, readCal=False):
         """
         Name: U3.readMem(blockNum, readCal=False)
+        
         Args: blockNum, which block to read from
               readCal, set to True to read from calibration instead.
-        Desc: Reads 1 block (32 bytes) from the non-volatile user or calibration
-              memory. Please read section 5.2.6 of the user's guide before you
-              do something you may regret.
+        
+        Desc: Reads 1 block (32 bytes) from the non-volatile user or
+              calibration memory. Please read section 5.2.6 of the user's guide
+              before you do something you may regret.
         
         NOTE: Do not call this function while streaming.
         """
@@ -443,23 +607,30 @@ class U3(Device):
         result = self._writeRead(command, 40, [0xF8, 0x11, command[3]])
         
         return result[8:]
-        
+    readMem.section = 2
+     
     def readCal(self, blockNum):
         """
         Name: U3.readCal(blockNum)
-        Args: blockNum, which blog to read
+        
+        Args: blockNum, which block to read
+        
         Desc: See the description of readMem and section 5.2.6 of the user's
               guide.
+        
         Note: Do not call this function while streaming.
         """
         return self.readMem(blockNum, readCal = True)
+    readCal.section = 2
         
     def writeMem(self, blockNum, data, writeCal=False):
         """
         Name: U3.writeMem(blockNum, data, writeCal=False)
+        
         Args: blockNum, which block to write
               data, a list of bytes to write.
               writeCal, set to True to write to calibration instead
+        
         Desc: Writes 1 block (32 bytes) from the non-volatile user or
               calibration memory. Please read section 5.2.7 of the user's guide
               before you do something you may regret. Memory must be erased
@@ -486,22 +657,29 @@ class U3(Device):
         
         
         self._writeRead(command, 8, [0xF8, 0x01, command[3]])
+    writeMem.section = 2
     
     def writeCal(self, blockNum):
         """
         Name: U3.writeCal(blockNum, data)
+        
         Args: blockNum, which block to write
               data, a list of bytes
+        
         Desc: See the description of writeMem and section 5.2.7 of the user's
               guide.
+        
         Note: Do not call this function while streaming.
         """
         return self.writeMem(blockNum, data, writeCal = True)
+    writeCal.section = 2
         
     def eraseMem(self, eraseCal=False):
         """
         Name: U3.eraseMem(eraseCal=False)
+        
         Args: eraseCal, set to True to erase the calibration memory instead
+        
         Desc: The U3 uses flash memory that must be erased before writing.
               Please read section 5.2.8 of the user's guide before you do
               something you may regret.
@@ -530,21 +708,28 @@ class U3(Device):
             #command[5] = Checksum16 (MSB)
         
         self._writeRead(command, 8, [0xF8, 0x01, command[3]])
+    eraseMem.section = 2
     
     def eraseCal(self):
         """
         Name: U3.eraseCal()
+        
         Args: None
+        
         Desc: See the description of writeMem and section 5.2.8 of the user's
               guide.
+        
         Note: Do not call this function while streaming.
         """
         return self.eraseMem(eraseCal = True)
+    eraseCal.section = 2
     
     def reset(self, hardReset = False):
         """
         Name: U3.reset(hardReset = False)
+        
         Args: hardReset, set to True for a hard reset.
+        
         Desc: Causes a soft or hard reset.  A soft reset consists of 
               re-initializing most variables without re-enumeration. A hard
               reset is a reboot of the processor and does cause re-enumeration.
@@ -562,6 +747,7 @@ class U3(Device):
         command = setChecksum8(command, 4)
         
         self._writeRead(command, 4, [], False, False, False)
+    reset.section = 2
 
     def streamConfig(self, NumChannels = 1, SamplesPerPacket = 25, InternalStreamClockFrequency = 0, DivideClockBy256 = False, Resolution = 3, ScanInterval = 1, PChannels = [30], NChannels = [31], SampleFrequency = None):
         """        
@@ -662,6 +848,7 @@ class U3(Device):
         
         self.packetsPerRequest = max(1, int(freq/SamplesPerPacket))
         self.packetsPerRequest = min(self.packetsPerRequest, 48)
+    streamConfig.section = 2
     
     def processStreamData(self, result, numBytes = None):
         """
@@ -706,16 +893,19 @@ class U3(Device):
                 self.streamPacketOffset += 1
 
         return returnDict
+    processStreamData.section = 3
     
     def watchdog(self, ResetOnTimeout = False, SetDIOStateOnTimeout = False, TimeoutPeriod = 60, DIOState = 0, DIONumber = 0, onlyRead=False):
         """
         Name: U3.watchdog(ResetOnTimeout = False, SetDIOStateOnTimeout = False,
                           TimeoutPeriod = 60, DIOState = 0, DIONumber = 0,
                           onlyRead = False)
+        
         Args: Check out section 5.3.14 of the user's guide.
               Set onlyRead to True to perform only a read
-        Desc: This function will write the configuration of the watchdog, unless
-              onlyRead is set to True.
+        
+        Desc: This function will write the configuration of the watchdog,
+              unless onlyRead is set to True.
         
         Returns a dictonary:
         {
@@ -783,6 +973,7 @@ class U3(Device):
         watchdogStatus['DIONumber'] = ( result[10] & 15 )
         
         return watchdogStatus
+    watchdog.section = 2
 
     SPIModes = { 'A' : 0, 'B' : 1, 'C' : 2, 'D' : 3 }
     def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 4, CLKPinNum = 5, MISOPinNum = 6, MOSIPinNum = 7):
@@ -790,8 +981,10 @@ class U3(Device):
         Name: U3.spi(SPIBytes, AutoCS=True, DisableDirConfig = False,
                      SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 4,
                      CLKPinNum = 5, MISOPinNum = 6, MOSIPinNum = 7)
+        
         Args: SPIBytes, a list of bytes to be transferred.
               See Section 5.3.15 of the user's guide.
+        
         Desc: Sends and receives serial data using SPI synchronous
               communication.
         
@@ -839,11 +1032,13 @@ class U3(Device):
         result = self._writeRead(command, 8+numSPIBytes, [ 0xF8, 1+(numSPIBytes/2), 0x3A ])
                 
         return result[8:]
+    spi.section = 2
         
     def asynchConfig(self, Update = True, UARTEnable = True, DesiredBaud  = 9600, olderHardware = False, configurePins = True ):
         """
         Name: U3.asynchConfig(Update = True, UARTEnable = True, 
-                              DesiredBaud = 9600, olderHardware = False, configurePins = True)
+                              DesiredBaud = 9600, olderHardware = False,
+                              configurePins = True)
         Args: See section 5.3.16 of the User's Guide.
               olderHardware, If using hardware 1.21, please set olderHardware 
                              to True and read the timer configuration first.
@@ -910,11 +1105,14 @@ class U3(Device):
             returnDict['BaudFactor'] = struct.unpack("<H", struct.pack("BB", *result[8:]))[0]
 
         return returnDict
-        
+    asynchConfig.section = 2
+    
     def asynchTX(self, AsynchBytes):
         """
         Name: U3.asynchTX(AsynchBytes)
+        
         Args: AsynchBytes, must be a list of bytes to transfer.
+        
         Desc: Sends bytes to the U3 UART which will be sent asynchronously on
               the transmit line. See section 5.3.17 of the user's guide.
         
@@ -956,11 +1154,14 @@ class U3(Device):
         result = self._writeRead(command, 10, [0xF8, 0x02, 0x15])
         
         return { 'NumAsynchBytesSent' : result[7], 'NumAsynchBytesInRXBuffer' : result[8] }
-        
+    asynchTX.section = 2
+    
     def asynchRX(self, Flush = False):
         """
         Name: U3.asynchRX(Flush = False)
+        
         Args: Flush, Set to True to flush
+        
         Desc: Reads the oldest 32 bytes from the U3 UART RX buffer
               (received on receive terminal). The buffer holds 256 bytes. See
               section 5.3.18 of the User's Guide.
@@ -990,14 +1191,19 @@ class U3(Device):
         result = self._writeRead(command, 40, [0xF8, 0x11, 0x16])
         
         return { 'AsynchBytes' : result[8:], 'NumAsynchBytesInRXBuffer' : result[7] }
+    asynchRX.section = 2
     
     def i2c(self, Address, I2CBytes, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 6, SCLPinNum = 7, NumI2CBytesToReceive = 0):
         """
-        Name: U3.i2c(Address, I2CBytes, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 6, SCLPinNum = 7, NumI2CBytesToReceive = 0, AddressByte = None)
+        Name: U3.i2c(Address, I2CBytes, ResetAtStart = False, SpeedAdjust = 0,
+                     SDAPinNum = 6, SCLPinNum = 7, NumI2CBytesToReceive = 0,
+                     AddressByte = None)
+        
         Args: Address, the address (not shifted over)
               I2CBytes, must be a list of bytes to send.
               See section 5.3.19 of the user's guide.
               AddressByte, use this if you don't want a shift applied.
+        
         Desc: Sends and receives serial data using I2C synchronous
               communication.
         
@@ -1049,12 +1255,15 @@ class U3(Device):
                 return { 'AckArray' : result[8:12], 'I2CBytes' : result[12:] }
         else:
             return { 'AckArray' : result[8:], 'I2CBytes' : [] }
-        
+    i2c.section = 2
+    
     def sht1x(self, DataPinNum = 4, ClockPinNum = 5, SHTOptions = 0xc0):
         """
         Name: U3.sht1x(DataPinNum = 4, ClockPinNum = 5, SHTOptions = 0xc0)
+        
         Args: See section 5.3.20 of the user's guide.
               SHTOptions, see below.
+        
         Desc: Reads temperature and humidity from a Sensirion SHT1X sensor
               (which is used by the EI-1050).
 
@@ -1100,11 +1309,32 @@ class U3(Device):
         humid = (temp - 25)*(0.01 + 0.00008*val) + humid
         
         return { 'StatusReg' : result[8], 'StatusRegCRC' : result[9], 'Temperature' : temp, 'TemperatureCRC' : result[12] , 'Humidity' : humid, 'HumidityCRC' : result[15] }
-        
+    sht1x.section = 2
     
-    def binaryToCalibratedAnalogVoltage(self, bits, isLowVoltage = True, isSingleEnded = False, isSpecialSetting = False, channelNumber = 0):
+    def binaryToCalibratedAnalogVoltage(self, bits, isLowVoltage = True, isSingleEnded = True, isSpecialSetting = False, channelNumber = 0):
         """
-        Converts the bits returned from AIN functions into a calibrated voltage.
+        Name: U3.binaryToCalibratedAnalogVoltage(bits, isLowVoltage = True,
+                                                 isSingleEnded = True,
+                                                 isSpecialSetting = False,
+                                                 channelNumber = 0)
+        
+        Args: bits, the binary value of the reading.
+              isLowVoltage, True if the reading came from a low-voltage channel
+              isSingleEnded, True if the reading is not differential
+              isSpecialSetting, True if the reading came from special range
+              channelNumber, used to apply the correct calibration for HV
+        
+        Desc: Converts the bits returned from AIN functions into a calibrated
+              voltage.
+              
+        Example:
+        >>> import u3
+        >>> d = u3.U3()
+        >>> bits = d.getFeedback( u3.AIN(0, 31))[0]
+        >>> print bits
+        1248
+        >>> print d.binaryToCalibratedAnalogVoltage(bits)
+        0.046464288000000006
         """
         hasCal = self.calData is not None
         
@@ -1118,12 +1348,12 @@ class U3(Device):
                 if hasCal:
                     return ( bits * self.calData['lvDiffSlope'] ) + self.calData['lvDiffOffset'] + self.calData['vRefAtCAl']
                 else:
-                    return (float(bits)/65536)*4.88
+                    return (bits * 0.000074463)
             else:
                 if hasCal:
                     return ( bits * self.calData['lvDiffSlope'] ) + self.calData['lvDiffOffset']
                 else:
-                    return (float(bits)/65536)*4.88 - 2.44
+                    return (bits * 0.000074463) - 2.44
         else:
             if isSingleEnded and not isSpecialSetting:
                 if hasCal:
@@ -1139,11 +1369,22 @@ class U3(Device):
                     reading = diffR * hvSlope / self.calData['lvSESlope'] + hvOffset
                     return reading
                 else:
-                    return (float(bits)/65536)*30.4
+                    return (bits * 0.000074463) * (0.000314 / 0.000037231) + -10.3
             else:
                 raise Exception, "Can't do differential on high voltage channels"
+    binaryToCalibratedAnalogVoltage.section = 3
     
     def voltageToDACBits(self, volts, dacNumber = 0, is16Bits = False):
+        """
+        Name: U3.voltageToDACBits(volts, dacNumber = 0, is16Bits = False)
+        
+        Args: volts, the voltage you would like to set the DAC to.
+              dacNumber, 0 or 1, helps apply the correct calibration
+              is16Bits, True if you are going to use the 16-bit DAC command
+              
+        Desc: Takes a voltage, and turns it into the bits neede for the DAC 
+              Feedback commands.
+        """
         if self.calData is not None:
             if is16Bits:
                 bits = ( volts * self.calData['dac%sSlope' % dacNumber] * 256) + self.calData['dac%sOffset' % dacNumber] * 256
@@ -1153,13 +1394,18 @@ class U3(Device):
             bits = ( volts / 4.95 ) * 256
             
         return int(bits)
+    voltageToDACBits.section = 3
     
     def getCalibrationData(self):
         """
-        Reads in the U3's calibrations, so they can be applied to readings.
+        Name: U3.getCalibrationData()
         
-        Section 2.6.2 of the User's Guide
+        Args: None
         
+        Desc: Reads in the U3's calibrations, so they can be applied to
+              readings. Section 2.6.2 of the User's Guide is helpful. Sets up
+              an internal calData dict for any future calls that need 
+              calibration.
         """
         self.calData = dict()
         
@@ -1199,6 +1445,7 @@ class U3(Device):
         self.calData['hvAIN3Offset'] = toDouble(calData[24:32])
         
         return self.calData
+    getCalibrationData.section = 3
     
     def readDefaultsConfig(self):
         """
@@ -1249,12 +1496,14 @@ class U3(Device):
             results["AIN%sNegChannel" % i] = defaults[i]
         
         return results 
-
+    readDefaultsConfig.section = 3
+    
     def exportConfig(self):
         """
         Name: U3.exportConfig( ) 
         Args: None
-        Desc: Takes a configuration and puts it into a ConfigParser object.
+        Desc: Takes the current configuration and puts it into a ConfigParser
+              object. Useful for saving the setup of your U3.
         """
         # Make a new configuration file
         parser = ConfigParser.SafeConfigParser()
@@ -1332,6 +1581,7 @@ class U3(Device):
             parser.set(section, "timer1 value", str(value))
         
         return parser
+    exportConfig.section = 3
 
     def loadConfig(self, configParserObj):
         """
@@ -1437,9 +1687,12 @@ class U3(Device):
                     value = parser.getint(section, "timer1 mode")
                 
                 self.getFeedback( Timer1Config(mode, value) )
-      
+    loadConfig.section = 3      
 
 class FeedbackCommand(object):
+    """
+    The FeedbackCommand class is the base for all the Feedback commands.
+    """
     readLen = 0
     def handle(self, input):
         return None

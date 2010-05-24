@@ -4,7 +4,7 @@ Windows UD Driver, and the LabJack Linux and Mac drivers.
 
 Author LabJack Corporation
 
-Version 3-11-2010
+Version 5-18-2010
 
 For use with drivers:
     - UD Driver or Mac/Linux Exodriver
