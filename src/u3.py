@@ -482,7 +482,7 @@ class U3(Device):
         if isSpecial:
             negChannel = 32
         
-        return self.binaryToCalibratedAnalogVoltage(bits, isLowVoltage = lvChannel, isSingleEnded = singleEnded, isSpecialSetting = isSpecial)
+        return self.binaryToCalibratedAnalogVoltage(bits, isLowVoltage = lvChannel, isSingleEnded = singleEnded, isSpecialSetting = isSpecial, channelNumber = posChannel)
     _getAINLowLevel.section = 4
 
 
