@@ -868,21 +868,24 @@ class Device(object):
         """
         strLen = (self.readRegister(58000, format='BB'))[0]/2
         strLen -= 1
+        
+        orderMarker = '\xff\xfe'
+        
         if strLen < 24:
             name = self.readRegister(58000, numReg=strLen+1, format='<BB'+'H'*(strLen))
-            name = struct.pack('H'*strLen, *name[2:]).decode('UTF-16')
+            name = (orderMarker + struct.pack('H'*strLen, *name[2:])).decode('UTF-16')
         else:
             name = self.readRegister(58000, numReg=23+1, format='<BB'+'H'*(23))
-            name = struct.pack('H'*23, *name[2:]).decode('UTF-16')
+            name = (orderMarker + struct.pack('H'*23, *name[2:])).decode('UTF-16')
             
             remainder = strLen + 1 - 23
             
-            otherHalf = self.readRegister(58024, numReg=remainder, format='<'+'H'*(remainder))
+            otherHalf = self.readRegister(58024, numReg=remainder, format='>'+'H'*(remainder))
             
             if not isinstance(otherHalf, list):
                 otherHalf = [ otherHalf ]
             
-            otherHalf = struct.pack('H'*remainder, *otherHalf).decode('UTF-16')
+            otherHalf = (orderMarker + struct.pack('H'*remainder, *otherHalf)).decode('UTF-16')
             
             name = name + otherHalf
         
@@ -916,12 +919,13 @@ class Device(object):
         if strLen < 24:
             newname = struct.unpack('<'+'H'*strLen, newname[2:])
             newname = struct.unpack('BB'*strLen, struct.pack('<'+'H'*strLen, *newname))
-            newname = [ (strLen*2+2 << 8) + 3] + list(struct.unpack('<'+'H'*(strLen), struct.pack('BB'*(strLen), *newname)))
+            
+            newname = [ (strLen*2+2 << 8) + 3] + list(struct.unpack('>'+'H'*(strLen), struct.pack('BB'*(strLen), *newname)))
             self.writeRegister(58000, list(newname))
         else:
             packet1 = struct.unpack('<'+'H'*23, newname[2:48])
             packet1 = struct.unpack('BB' * 23,  struct.pack('<'+'H'*23, *packet1))
-            packet1 = [ (strLen*2+1 << 8) + 3] + list(struct.unpack('<'+'H'*(23), struct.pack('BB'*(23), *packet1)))
+            packet1 = [ (strLen*2+1 << 8) + 3] + list(struct.unpack('>'+'H'*(23), struct.pack('BB'*(23), *packet1)))
             self.writeRegister(58000, list(packet1))
             
             remainder = strLen - 23
