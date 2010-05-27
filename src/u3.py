@@ -852,7 +852,6 @@ class U3(Device):
         
         returnDict = collections.defaultdict(list)
         
-        
         for packet in self.breakupPackets(result, numBytes):
             for sample in self.samplesFromPacket(packet):
                 if self.streamPacketOffset >= len(self.streamChannelNumbers):
@@ -871,7 +870,7 @@ class U3(Device):
                 if self.deviceName.lower().endswith('hv') and self.streamChannelNumbers[self.streamPacketOffset] < 4:
                     lvChannel = False
                
-                value = self.binaryToCalibratedAnalogVoltage(value, isLowVoltage = lvChannel, isSingleEnded = singleEnded)
+                value = self.binaryToCalibratedAnalogVoltage(value, isLowVoltage = lvChannel, isSingleEnded = singleEnded, channelNumber = self.streamChannelNumbers[self.streamPacketOffset])
                 
                 returnDict["AIN%s" % self.streamChannelNumbers[self.streamPacketOffset]].append(value)
             
