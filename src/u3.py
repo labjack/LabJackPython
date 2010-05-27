@@ -445,20 +445,6 @@ class U3(Device):
         >>> print d.getAIN( 0 )
         0.0501680038869
         """
-        try:
-            if self.firmwareVersion >= 1.18 and negChannel == 31:
-                # AIN0 => Register 0, AIN1 => Register 2, AIN2 => Register 4
-                return self.readRegister(posChannel * 2)
-            else:
-                return self._getAINLowLevel(posChannel, negChannel, longSettle, quickSample)
-        except AttributeError:
-            return self._getAINLowLevel(posChannel, negChannel, longSettle, quickSample)
-    getAIN.section = 3
-        
-    def _getAINLowLevel(self, posChannel, negChannel, longSettle, quickSample):
-        """
-        For reading the AIN using low-level commands
-        """
         isSpecial = False
         
         if negChannel == 32:
@@ -483,8 +469,7 @@ class U3(Device):
             negChannel = 32
         
         return self.binaryToCalibratedAnalogVoltage(bits, isLowVoltage = lvChannel, isSingleEnded = singleEnded, isSpecialSetting = isSpecial, channelNumber = posChannel)
-    _getAINLowLevel.section = 4
-
+    getAIN.section = 3
 
     def _buildBuffer(self, sendBuffer, readLen, commandlist):
         """
@@ -1707,10 +1692,10 @@ class AIN(FeedbackCommand):
 
     returns 16-bit signed int sample
     
-    >>> d.getFeedback( u3.AIN(PositiveChannel, NegativeChannel,
+    >>> d.getFeedback( u3.AIN(PositiveChannel, NegativeChannel=31,
                               LongSettling=False, QuickSample=False) )
     '''
-    def __init__(self, PositiveChannel, NegativeChannel, 
+    def __init__(self, PositiveChannel, NegativeChannel=31, 
             LongSettling=False, QuickSample=False):
         self.positiveChannel = PositiveChannel
         self.negativeChannel = NegativeChannel
