@@ -437,7 +437,24 @@ class UE9(Device):
     
         result = self._writeRead(command, 64, [ 0xF8, 0x1D, 0x00])
         
-        return { 'FIODir' : result[6], 'FIOState' : result[7], 'EIODir' : result[8], 'EIOState' : result[9], 'CIODir' : (result[10] >> 4) & 0xf, 'CIOState' : result[10] & 0xf, 'MIODir' : (result[11] >> 4) & 7, 'MIOState' : result[11] & 7, 'AIN0' : unpackShort(result[12:14]), 'AIN1' : unpackShort(result[14:16]), 'AIN2' : unpackShort(result[16:18]), 'AIN3' : unpackShort(result[18:20]), 'AIN4' : unpackShort(result[20:22]), 'AIN5' : unpackShort(result[22:24]), 'AIN6' : unpackShort(result[24:26]), 'AIN7' : unpackShort(result[26:28]), 'AIN8' : unpackShort(result[28:30]), 'AIN9' : unpackShort(result[30:32]), 'AIN10' : unpackShort(result[32:34]), 'AIN11' : unpackShort(result[34:36]), 'AIN12' : unpackShort(result[36:38]), 'AIN13' : unpackShort(result[38:40]), 'AIN14' : unpackShort(result[40:42]), 'AIN15' : unpackShort(result[42:44]), 'Counter0' : unpackInt(result[44:48]), 'Counter1' : unpackInt(result[48:52]), 'TimerA' : unpackInt(result[52:56]), 'TimerB' : unpackInt(result[56:60]), 'TimerC' : unpackInt(result[60:]) }
+        returnDict = { 'FIODir' : result[6], 'FIOState' : result[7], 'EIODir' : result[8], 'EIOState' : result[9], 'CIODir' : (result[10] >> 4) & 0xf, 'CIOState' : result[10] & 0xf, 'MIODir' : (result[11] >> 4) & 7, 'MIOState' : result[11] & 7, 'Counter0' : unpackInt(result[44:48]), 'Counter1' : unpackInt(result[48:52]), 'TimerA' : unpackInt(result[52:56]), 'TimerB' : unpackInt(result[56:60]), 'TimerC' : unpackInt(result[60:]) }
+        
+        """
+'AIN0' : b2c(unpackShort(result[12:14])), 'AIN1' : unpackShort(result[14:16]), 'AIN2' : unpackShort(result[16:18]), 'AIN3' : unpackShort(result[18:20]), 'AIN4' : unpackShort(result[20:22]), 'AIN5' : unpackShort(result[22:24]), 'AIN6' : unpackShort(result[24:26]), 'AIN7' : unpackShort(result[26:28]), 'AIN8' : unpackShort(result[28:30]), 'AIN9' : unpackShort(result[30:32]), 'AIN10' : unpackShort(result[32:34]), 'AIN11' : unpackShort(result[34:36]), 'AIN12' : unpackShort(result[36:38]), 'AIN13' : unpackShort(result[38:40]), 'AIN14' : unpackShort(result[40:42]), 'AIN15' : unpackShort(result[42:44]), 
+        """
+        
+        b2c = self.binaryToCalibratedAnalogVoltage
+        g = 0
+        for i in range(16):
+            bits = unpackShort(result[(12+(2*i)):(14+(2*i))])
+            if i%2 == 0:
+                gain = command[26 + g] & 0xf
+            else:
+                gain = (command[26 + g] >> 4) & 0xf
+                g += 1
+            returnDict["AIN%s" % i] = b2c(bits, gain)
+        
+        return returnDict
 
     digitalPorts = [ 'FIO', 'EIO', 'CIO', 'MIO' ]
     def singleIO(self, IOType, Channel, Dir = None, BipGain = None, State = None, Resolution = None, DAC = 0, SettlingTime = 0):
@@ -516,16 +533,45 @@ class UE9(Device):
     
     def timerCounter(self, TimerClockDivisor=0, UpdateConfig=False, NumTimersEnabled=0, Counter0Enabled=False, Counter1Enabled=False, TimerClockBase=LJ_tcSYS, ResetTimer0=False, ResetTimer1=False, ResetTimer2=False, ResetTimer3=False, ResetTimer4=False, ResetTimer5=False, ResetCounter0=False, ResetCounter1=False, Timer0Mode=None, Timer0Value=None, Timer1Mode=None, Timer1Value=None, Timer2Mode=None, Timer2Value=None, Timer3Mode=None, Timer3Value=None, Timer4Mode=None, Timer4Value=None, Timer5Mode=None, Timer5Value=None):
         """
-        Name: UE9.timerCounter(TimerClockDivisor=0, UpdateConfig=False, NumTimersEnabled=0, Counter0Enabled=False, Counter1Enabled=True, TimerClockBase=LJ_tcSYS, ResetTimer0=False, ResetTimer1=False, ResetTimer2=False, ResetTimer3=False, ResetTimer4=False, ResetTimer5=False, ResetCounter0=False, ResetCounter1=False, Timer0Mode=None, Timer0Value=None, Timer1Mode=None, Timer1Value=None, Timer2Mode=None, Timer2Value=None, Timer3Mode=None, Timer3Value=None, Timer4Mode=None, Timer4Value=None, Timer5Mode=None, Timer5Value=None)
-        Args: TimerClockDivisor, The timer clock is divided by this value, or divided by 256 if this value is 0. The UpdateConfig bit must be set to change this parameter.
-              UpdateConfig, If true, counters and timers are re-configured by this call. If false, the timer/counter configuration will remain the same
+        Name: UE9.timerCounter(TimerClockDivisor=0, UpdateConfig=False,
+                               NumTimersEnabled=0, Counter0Enabled=False,
+                               Counter1Enabled=True, TimerClockBase=LJ_tcSYS,
+                               ResetTimer0=False, ResetTimer1=False,
+                               ResetTimer2=False, ResetTimer3=False,
+                               ResetTimer4=False, ResetTimer5=False,
+                               ResetCounter0=False, ResetCounter1=False,
+                               Timer0Mode=None, Timer0Value=None,
+                               Timer1Mode=None, Timer1Value=None,
+                               Timer2Mode=None, Timer2Value=None,
+                               Timer3Mode=None, Timer3Value=None,
+                               Timer4Mode=None, Timer4Value=None,
+                               Timer5Mode=None, Timer5Value=None)
+        
+        Args: TimerClockDivisor, The timer clock is divided by this value, or
+                                 divided by 256 if this value is 0. The
+                                 UpdateConfig bit must be set to change this
+                                 parameter.
+              UpdateConfig, If true, counters and timers are re-configured by
+                            this call. If false, the timer/counter configuration
+                            will remain the same.
               NumTimersEnabled, The number of timers enabled
-              TimerClockBase, The determines the timer base clock which is used by all output mode timers. The choices are a fixed 750 kHz clock source, or the system clock. The UE9 is by default in high power mode which means the system clock is fixed at 48 MHz. The UpdateConfig bit must be set to change this parameter.
+              TimerClockBase, The determines the timer base clock which is used
+                              by all output mode timers. The choices are a fixed
+                              750 kHz clock source, or the system clock. The UE9
+                              is by default in high power mode which means the
+                              system clock is fixed at 48 MHz. The UpdateConfig
+                              bit must be set to change this parameter.
               ResetTimer#, Resets the specified timer
               ResetCounter#, Resets the specified counter
-              Timer#Mode, These values are only updated if the UpdateConfig parameter is True. See section 5.3.5 in the User's Guide for values to pass to configure how a timer operates
-              Timer#Value, Only updates if UpdateReset is True. The meaning of this parameter varies with the timer mode. See Section 2.10 for further information.
-        Desc: Enables, configures, and reads the counters and timers. See section 5.3.5 of the User's Guide for more information
+              Timer#Mode, These values are only updated if the UpdateConfig
+                           parameter is True. See section 5.3.5 in the User's
+                           Guide for values to pass to configure a timer.
+              Timer#Value, Only updates if UpdateReset is True. The meaning of
+                           this parameter varies with the timer mode. See
+                           Section 2.10 for further information.
+        
+        Desc: Enables, configures, and reads the counters and timers. See
+              section 5.3.5 of the User's Guide for more information.
         >>> dev = UE9()
         >>> dev.timerCounter()
         {'Counter0Enabled': False, 'Timer5Enabled': False, 'Timer0Enabled': False, 'Timer1': 0, 'Timer4': 0, 'Timer3Enabled': False, 'Timer4Enabled': False, 'Timer5': 0, 'Counter1Enabled': False, 'Timer3': 0, 'Timer2': 0, 'Timer1Enabled': False, 'Timer0': 0, 'Timer2Enabled': False}
@@ -1049,6 +1095,15 @@ class UE9(Device):
          
         return { 'StatusReg' : result[8], 'StatusCRC' : result[9], 'Temperature' : temp, 'TemperatureCRC' : result[12], 'Humidity' : humid, 'HumidityCRC' : result[15] }
     
+        
+    def getAIN(self, channel, BipGain = 0x00, Resolution = 12, SettlingTime = 0):
+        """
+        Name: UE9.getAIN(channel, BipGain = 0x00, Resolution = 12,
+                         SettlingTime = 0)
+        """
+        bits = self.singleIO(4, channel, BipGain = BipGain, Resolution = Resolution, SettlingTime = SettlingTime )
+        return self.binaryToCalibratedAnalogVoltage(bits["AIN%s"%channel], BipGain)
+        
         
     def binaryToCalibratedAnalogVoltage(self, bits, gain):
         """ Name: UE9.binaryToCalibratedAnalogVoltage( bits, gain )
