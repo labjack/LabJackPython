@@ -21,12 +21,21 @@ class Bridge(Device):
     # ------------------ Object Functions ------------------
     # These functions are part of object interaction in python
     
-    def __init__(self, handle = None, localId = None, serialNumber = None, autoOpen = True, **kargs):
+    def __init__(self, handle = None, autoOpen = True, **kargs):
         Device.__init__(self, None, devType = 0x501)
     
         self.handle = handle
-        self.localId = localId
-        self.serialNumber = serialNumber
+        
+        if 'localId' in kargs:
+            self.localId = kargs['localId']
+        else:
+            self.localId = None
+        
+        if 'serial' in kargs:
+            self.serialNumber = kargs['serial']
+        else:
+            self.serialNumber = None
+        
         self.devType = 0x501
         self.unitId = 0
         self.debug = True
@@ -36,8 +45,8 @@ class Bridge(Device):
         if autoOpen:
             self.open(**kargs)
         
-    def open(self, firstFound = True, localId = None, devNumber = None, handleOnly = False, LJSocket = "localhost:6000"): #"
-        Device.open(self, 0x501, firstFound = firstFound, localId = localId, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket)
+    def open(self, firstFound = True, localId = None, serial = None, devNumber = None, handleOnly = False, LJSocket = "localhost:6000"): #"
+        Device.open(self, 0x501, firstFound = firstFound, localId = localId, serial = serial, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket)
     
     if os.name == "nt":
         def _readFromUDDriver(self, numBytes, stream, modbus):
@@ -124,11 +133,13 @@ class Bridge(Device):
         connectedMotes = []
         
         moteIds = self.readRegister(59202, numReg = numMotes, format = ">" + "H" *numMotes )
-        
-        for moteId in moteIds:
-            connectedMotes.append(Mote(self, moteId))
-        
-        return connectedMotes
+        if isinstance(moteIds, list):
+            for moteId in moteIds:
+                connectedMotes.append(Mote(self, moteId))
+            
+            return connectedMotes
+        else:
+            return [Mote(self, moteIds)]
         
     def makeMote(self, moteId):
         return Mote(self, moteId)
