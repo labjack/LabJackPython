@@ -1186,6 +1186,9 @@ def listAll(deviceType, connectionType = 1):
         
         if deviceType == 6:
             return __listAllU6Unix()
+            
+        if deviceType == 0x501:
+            return __listAllBridgesUnix()
 
 def isHandleValid(handle):
     if(os.name == 'nt'):
@@ -1523,7 +1526,20 @@ def _makeDeviceFromHandle(handle, deviceType):
         device.changed['deviceName'] = device.deviceName
         device.changed['hardwareVersion'] = device.hardwareVersion
         device.changed['bootloaderVersion'] = device.bootloaderVersion
-            
+        
+    elif deviceType == 0x501:
+        pkt, readlen = device._buildReadRegisterPacket(65001, 2, 0)
+        device.modbusPrependZeros = False
+        device.write(pkt, modbus = True, checksum = False)
+        response = device.read(64, False, True)
+        serial = device._parseReadRegisterResponse(response[:readlen], readlen, 59200, '>I', numReg = 2)
+        device.serialNumber = serial
+        device.localId = 0
+        device.deviceName = "SkyMote Bridge"
+        device.changed['localId'] = device.localId
+        device.changed['deviceName'] = device.deviceName
+        device.changed['serialNumber'] = device.serialNumber
+        
     return device
 
 def AddRequest(handle, IOType, Channel, Value, x1, UserData):
@@ -2713,6 +2729,22 @@ def __listAllU6Unix():
     for i in xrange(numDevices):
         try:
             device = openLabJack(LJ_dtU6, 1, firstFound = False, devNumber = i+1)
+            device.close()
+        
+            deviceList[str(device.serialNumber)] = device.__dict__
+        except LabJackException:
+            pass
+
+    return deviceList
+    
+def __listAllBridgesUnix():
+    """ List all for Bridges """
+    deviceList = {}
+    numDevices = staticLib.LJUSB_GetDevCount(0x501)
+
+    for i in xrange(numDevices):
+        try:
+            device = openLabJack(0x501, 1, firstFound = False, devNumber = i+1)
             device.close()
         
             deviceList[str(device.serialNumber)] = device.__dict__

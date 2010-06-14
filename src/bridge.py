@@ -36,10 +36,11 @@ class Bridge(Device):
         else:
             self.serialNumber = None
         
+        self.firmwareVersion = "0.1"
+        self.deviceName = "SkyMote Bridge"
         self.devType = 0x501
         self.unitId = 0
         self.debug = True
-        self.zeroPrepend = False
         self.modbusPrependZeros = False
         
         if autoOpen:
@@ -82,10 +83,16 @@ class Bridge(Device):
     
     # ------------------ Convenience Functions ------------------
     # These functions call read register for you. 
+    def readSerialNumber(self):
+        self.serialNumber = self.readRegister(65001)
+        return self.serialNumber
+        
+    def readNumberOfMotes(self):
+        return self.readRegister(59200, numReg = 2, format = '>I')
         
     def usbFirmwareVersion(self):
         left, right = self.readRegister(57000, format = 'BB')
-        return float("%s.%02d" % (left, right))
+        return "%s.%02d" % (left, right)
     
     def usbBufferStatus(self):
         return self.readRegister(57001)
