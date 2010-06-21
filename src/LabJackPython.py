@@ -128,7 +128,8 @@ import Modbus
 import atexit # For auto-closing devices
 import threading # For a thread-save device lock
 
-__version = "3-11-1010"
+__version = "5-18-2010"
+LABJACKPYTHON_VERSION = "5-18-2010"
 
 SOCKET_TIMEOUT = 10
 BROADCAST_SOCKET_TIMEOUT = 1
@@ -2479,29 +2480,12 @@ def GetDriverVersion():
     """
     
     if os.name == 'nt':        
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
         staticLib.GetDriverVersion.restype = ctypes.c_float
         return str(staticLib.GetDriverVersion())
         
     elif os.name == 'posix':
-        staticLib = None
-        mac = 0
-        try:
-            staticLib = ctypes.cdll.LoadLibrary("liblabjackusb.so")
-        except:
-            try:
-                staticLib = ctypes.cdll.LoadLibrary("liblabjackusb.dylib")
-                mac = 1
-            except:
-                raise LabJackException("Get Driver Version function could not load library")
-
-        #If not windows then return the operating system.
-        if mac:
-            return "Mac"
         staticLib.LJUSB_GetLibraryVersion.restype = ctypes.c_float
-        #Return only two decimal places
-        twoplaces = Decimal(10) ** -2
-        return str(Decimal(str(staticLib.LJUSB_GetLibraryVersion())).quantize(twoplaces))
+        return "%.2f" % staticLib.LJUSB_GetLibraryVersion()
         
 #Windows
 def TCVoltsToTemp(TCType, TCVolts, CJTempK):
