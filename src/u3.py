@@ -1591,13 +1591,21 @@ class U3(Device):
         # Set FIOs:
         section = "FIOs"
         if parser.has_section(section):
+            fioanalog = 0
+            eioanalog = 0
+        
             fiodirs = 0
+            eiodirs = 0
             ciodirs = 0
-            miodirs = 0
             
             fiostates = 0
+            eiostates = 0
             ciostates = 0
-            miostates = 0
+            
+            if parser.has_option(section, "fios analog"):
+                fioanalog = parser.getint(section, "fios analog")
+            if parser.has_option(section, "eios analog"):
+                eioanalog = parser.getint(section, "eios analog")
             
             if parser.has_option(section, "fios directions"):
                 fiodirs = parser.getint(section, "fios directions")
@@ -1612,6 +1620,8 @@ class U3(Device):
                 eiostates = parser.getint(section, "eios states")
             if parser.has_option(section, "cios states"):
                 ciostates = parser.getint(section, "cios states")
+            
+            self.configIO(FIOAnalog = fioanalog, EIOAnalog = eioanalog)
             
             self.getFeedback( PortStateWrite([fiostates, eiostates, ciostates]), PortDirWrite([fiodirs, eiodirs, ciodirs]) )
                 
