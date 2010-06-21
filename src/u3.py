@@ -891,7 +891,7 @@ class U3(Device):
         Desc: This function will write the configuration of the watchdog,
               unless onlyRead is set to True.
         
-        Returns a dictonary:
+        Returns a dictionary:
         {
             'WatchDogEnabled' : True if the watchdog is enabled, otherwise False
             'ResetOnTimeout' : If True, the device will reset on timeout.
@@ -1690,9 +1690,14 @@ class AIN(FeedbackCommand):
     also specify whether to turn on longSettle or quick Sample
 
     returns 16-bit signed int sample
-    
-    >>> d.getFeedback( u3.AIN(PositiveChannel, NegativeChannel=31,
-                              LongSettling=False, QuickSample=False) )
+
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.AIN(PositiveChannel = 0, NegativeChannel=31, LongSettling=False, QuickSample=False))
+    Sent:  [0x1b, 0xf8, 0x2, 0x0, 0x20, 0x0, 0x0, 0x1, 0x0, 0x1f]
+    Response:  [0xab, 0xf8, 0x3, 0x0, 0xaf, 0x0, 0x0, 0x0, 0x0, 0x20, 0x8f, 0x0]
+    [36640]
     '''
     def __init__(self, PositiveChannel, NegativeChannel=31, 
             LongSettling=False, QuickSample=False):
@@ -1725,9 +1730,14 @@ class WaitShort(FeedbackCommand):
     WaitShort Feedback command
 
     specify the number of 128us time increments to wait
-    
-    >>> d.getFeedback( u3.WaitShort( Time ) )
-    [ None ]
+
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.WaitShort(Time = 9))
+    Sent:  [0x9, 0xf8, 0x2, 0x0, 0xe, 0x0, 0x0, 0x5, 0x9, 0x0]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
     '''
     def __init__(self, Time):
         self.time = Time % 256
@@ -1742,8 +1752,13 @@ class WaitLong(FeedbackCommand):
     
     specify the number of 32ms time increments to wait
     
-    >>> d.getFeedback( u3.WaitLog( Time ) )
-    [ None ]
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.WaitLong(Time = 70))
+    Sent:  [0x47, 0xf8, 0x2, 0x0, 0x4c, 0x0, 0x0, 0x6, 0x46, 0x0]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
     '''
     def __init__(self, Time):
         self.time = Time % 256
@@ -1759,9 +1774,18 @@ class LED(FeedbackCommand):
     specify whether the LED should be on or off by truth value
     
     1 or True = On, 0 or False = Off
-    
-    >>> d.getFeedback( u3.LED( State ) )
-    [ None ]
+
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.LED(State = False))
+    Sent:  [0x4, 0xf8, 0x2, 0x0, 0x9, 0x0, 0x0, 0x9, 0x0, 0x0]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
+    >>> d.getFeedback(u3.LED(State = True))
+    Sent:  [0x5, 0xf8, 0x2, 0x0, 0xa, 0x0, 0x0, 0x9, 0x1, 0x0]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
     '''
     def __init__(self, State):
         self.state = State
@@ -1780,8 +1804,13 @@ class BitStateRead(FeedbackCommand):
     IONumber: 0-7=FIO, 8-15=EIO, 16-19=CIO
     return 0 or 1
     
-    >>> d.getFeedback( u3.BitStateRead( IONumber ) )
-    [ 1 ]
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.BitStateRead(IONumber = 5))
+    Sent:  [0xa, 0xf8, 0x2, 0x0, 0xf, 0x0, 0x0, 0xa, 0x5, 0x0]
+    Response:  [0xfb, 0xf8, 0x2, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x1]
+    [1]
     '''
     def __init__(self, IONumber):
         self.ioNumber = IONumber
@@ -1804,9 +1833,14 @@ class BitStateWrite(FeedbackCommand):
 
     IONumber: 0-7=FIO, 8-15=EIO, 16-19=CIO
     State: 0 or 1
-    
-    >>> d.getFeedback( u3.BitStateWrite( IONumber, State ) )
-    [ None ]
+
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.BitStateWrite(IONumber = 5, State = 0))
+    Sent:  [0xb, 0xf8, 0x2, 0x0, 0x10, 0x0, 0x0, 0xb, 0x5, 0x0]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
     '''
     def __init__(self, IONumber, State):
         self.ioNumber = IONumber
@@ -1822,9 +1856,14 @@ class BitDirRead(FeedbackCommand):
 
     IONumber: 0-7=FIO, 8-15=EIO, 16-19=CIO
     returns 1 = Output, 0 = Input
-    
-    >>> d.getFeedback( u3.BitDirRead( IONumber ) )
-    [ 1 ]
+
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.BitDirRead(IONumber = 5))
+    Sent:  [0xc, 0xf8, 0x2, 0x0, 0x11, 0x0, 0x0, 0xc, 0x5, 0x0]
+    Response:  [0xfb, 0xf8, 0x2, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x1]
+    [1]
     '''
     def __init__(self, IONumber):
         self.ioNumber = IONumber
@@ -1847,8 +1886,13 @@ class BitDirWrite(FeedbackCommand):
     IONumber: 0-7=FIO, 8-15=EIO, 16-19=CIO
     Direction: 1 = Output, 0 = Input
     
-    >>> d.getFeedback( u3.BitDirWrite( IONumber, Direction ) )
-    [ None ] 
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.BitDirWrite(IONumber = 5, Direction = 0))
+    Sent:  [0xd, 0xf8, 0x2, 0x0, 0x12, 0x0, 0x0, 0xd, 0x5, 0x0]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
     '''
     def __init__(self, IONumber, Direction):
         self.ioNumber = IONumber
@@ -1862,9 +1906,14 @@ class PortStateRead(FeedbackCommand):
     """
     PortStateRead Feedback command
     Reads the state of all digital I/O.
-    
-    >>> d.getFeedback( u3.PortStateRead() )
-    [ { 'FIO' : 10, 'EIO' : 0, 'CIO' : 0 } ]
+
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.PortStateRead())
+    Sent:  [0x14, 0xf8, 0x1, 0x0, 0x1a, 0x0, 0x0, 0x1a]
+    Response:  [0xeb, 0xf8, 0x3, 0x0, 0xee, 0x1, 0x0, 0x0, 0x0, 0xe0, 0xff, 0xf]
+    [{'CIO': 15, 'FIO': 224, 'EIO': 255}]
     """
     def __init__(self):
         self.cmdBytes = [ 26 ]
@@ -1884,12 +1933,16 @@ class PortStateWrite(FeedbackCommand):
     State: A list of 3 bytes representing FIO, EIO, CIO
     WriteMask: A list of 3 bytes, representing which to update.
                The Default is all ones.
-    
-    >>> d.getFeedback( u3.PortStateWrite( State, 
-                                          WriteMask = [ 0xff, 0xff, 0xff] ) )
-    [ None ]
+
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.PortStateWrite(State = [0xab, 0xcd, 0xef], WriteMask = [0xff, 0xff, 0xff]))
+    Sent:  [0x81, 0xf8, 0x4, 0x0, 0x7f, 0x5, 0x0, 0x1b, 0xff, 0xff, 0xff, 0xab, 0xcd, 0xef]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
     """
-    def __init__(self, State, WriteMask = [ 0xff, 0xff, 0xff]):
+    def __init__(self, State, WriteMask = [0xff, 0xff, 0xff]):
         self.state = State
         self.writeMask = WriteMask 
         self.cmdBytes = [ 27 ] + WriteMask + State
@@ -1902,8 +1955,13 @@ class PortDirRead(FeedbackCommand):
     PortDirRead Feedback command
     Reads the direction of all digital I/O.
     
-    >>> d.getFeedback( u3.PortDirRead() )
-    [ { 'FIO' : 10, 'EIO' : 0, 'CIO' : 0 } ]
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.PortDirRead())
+    Sent:  [0x16, 0xf8, 0x1, 0x0, 0x1c, 0x0, 0x0, 0x1c]
+    Response:  [0xfb, 0xf8, 0x3, 0x0, 0xfe, 0x1, 0x0, 0x0, 0x0, 0xf0, 0xff, 0xf]
+    [{'CIO': 15, 'FIO': 240, 'EIO': 255}]
     """
     def __init__(self):
         self.cmdBytes = [ 28 ]
@@ -1922,10 +1980,15 @@ class PortDirWrite(FeedbackCommand):
     
     Direction: A list of 3 bytes representing FIO, EIO, CIO
     WriteMask: A list of 3 bytes, representing which to update. Default is all ones.
-    
-    >>> d.getFeedback( u3.PortDirWrite( Direction, 
-                                        WriteMask = [ 0xff, 0xff, 0xff] ) )
-    [ None ]
+
+
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.PortDirWrite(Direction = [0xaa, 0xcc, 0xff], WriteMask = [0xff, 0xff, 0xff]))
+    Sent:  [0x91, 0xf8, 0x4, 0x0, 0x8f, 0x5, 0x0, 0x1d, 0xff, 0xff, 0xff, 0xaa, 0xcc, 0xff]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
     """
     def __init__(self, Direction, WriteMask = [ 0xff, 0xff, 0xff]):
         self.direction = Direction
@@ -1944,8 +2007,13 @@ class DAC8(FeedbackCommand):
     Dac: 0 or 1
     Value: 0-255
     
-    >>> d.getFeedback( u3.DAC8( Dac, Value ) )
-    [ None ]
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.DAC8(Dac = 0, Value = 0x55))
+    Sent:  [0x72, 0xf8, 0x2, 0x0, 0x77, 0x0, 0x0, 0x22, 0x55, 0x0]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
     '''
     def __init__(self, Dac, Value):
         self.dac = Dac
@@ -1963,8 +2031,13 @@ class DAC0_8(DAC8):
 
     Value: 0-255
     
-    >>> d.getFeedback( u3.DAC0_8( Value ) )
-    [ None ]
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.DAC0_8(Value = 0x33))
+    Sent:  [0x50, 0xf8, 0x2, 0x0, 0x55, 0x0, 0x0, 0x22, 0x33, 0x0]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
     """
     def __init__(self, Value):
         DAC8.__init__(self, 0, Value)
@@ -1980,8 +2053,13 @@ class DAC1_8(DAC8):
 
     Value: 0-255
     
-    >>> d.getFeedback( u3.DAC1_8( Value ) )
-    [ None ]
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.DAC1_8(Value = 0x22))
+    Sent:  [0x40, 0xf8, 0x2, 0x0, 0x45, 0x0, 0x0, 0x23, 0x22, 0x0]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
     """
     def __init__(self, Value):
         DAC8.__init__(self, 1, Value)
@@ -1998,8 +2076,13 @@ class DAC16(FeedbackCommand):
     Dac: 0 or 1
     Value: 0-65535
     
-    >>> d.getFeedback( u3.DAC16( Dac, Value ) )
-    [ None ]
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.DAC16(Dac = 0, Value = 0x5566))
+    Sent:  [0xdc, 0xf8, 0x2, 0x0, 0xe1, 0x0, 0x0, 0x26, 0x66, 0x55]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
     '''
     def __init__(self, Dac, Value):
         self.dac = Dac
@@ -2017,8 +2100,13 @@ class DAC0_16(DAC16):
 
     Value: 0-65535
     
-    >>> d.getFeedback( u3.DAC0_16( Value ) )
-    [ None ]
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.DAC0_16(Value = 0x1122))
+    Sent:  [0x54, 0xf8, 0x2, 0x0, 0x59, 0x0, 0x0, 0x26, 0x22, 0x11]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
     """
     def __init__(self, Value):
         DAC16.__init__(self, 0, Value)
@@ -2034,8 +2122,13 @@ class DAC1_16(DAC16):
 
     Value: 0-65535
     
-    >>> d.getFeedback( u3.DAC1_16( Value ) )
-    [ None ]
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.getFeedback(u3.DAC1_16(Value = 0x2233))
+    Sent:  [0x77, 0xf8, 0x2, 0x0, 0x7c, 0x0, 0x0, 0x27, 0x33, 0x22]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
     """
     def __init__(self, Value):
         DAC16.__init__(self, 1, Value)
@@ -2047,9 +2140,9 @@ class Timer(FeedbackCommand):
     """
     For reading the value of the Timer. It provides the ability to update/reset
     a given timer, and read the timer value.
-    ( Section 5.2.5.14 of the User's Guide)
+    (Section 5.2.5.14 of the User's Guide)
     
-    timer: Either 0 or 1 for counter0 or counter1
+    timer: Either 0 or 1 for timer 0 or timer 1
      
     UpdateReset: Set True if you want to update the value
     
@@ -2063,9 +2156,17 @@ class Timer(FeedbackCommand):
     specified and there are special return values. See Section 2.9.1 for
     expected return values. 
 
-    >>> d.getFeedback( u3.Timer( timer, UpdateReset = False, Value = 0 \
-    ... , Mode = None ) )
-    [ 12314 ]
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.configIO(NumberOfTimersEnabled = 1)
+    Sent:  [0x49, 0xf8, 0x3, 0xb, 0x42, 0x0, 0x1, 0x0, 0x41, 0x0, 0x0, 0x0]
+    Response:  [0x57, 0xf8, 0x3, 0xb, 0x50, 0x0, 0x0, 0x0, 0x41, 0x0, 0xf, 0x0]
+    {'NumberOfTimersEnabled': 1, 'TimerCounterPinOffset': 4, 'DAC1Enable': 0, 'FIOAnalog': 15, 'EIOAnalog': 0, 'TimerCounterConfig': 65, 'EnableCounter1': False, 'EnableCounter0': False}
+    >>> d.getFeedback(u3.Timer(timer = 0, UpdateReset = False, Value = 0, Mode = None))
+    Sent:  [0x26, 0xf8, 0x3, 0x0, 0x2a, 0x0, 0x0, 0x2a, 0x0, 0x0, 0x0, 0x0]
+    Response:  [0xfc, 0xf8, 0x4, 0x0, 0xfe, 0x1, 0x0, 0x0, 0x0, 0x63, 0xdd, 0x4c, 0x72, 0x0]
+    [1917640035]
     """
     def __init__(self, timer, UpdateReset = False, Value=0, Mode = None):
         self.timer = timer
@@ -2099,7 +2200,7 @@ class Timer0(Timer):
     """
     For reading the value of the Timer0. It provides the ability to
     update/reset Timer0, and read the timer value.
-    ( Section 5.2.5.14 of the User's Guide)
+    (Section 5.2.5.14 of the User's Guide)
      
     UpdateReset: Set True if you want to update the value
     
@@ -2109,9 +2210,17 @@ class Timer0(Timer):
     Mode: Set to the timer mode to handle any special processing. See classes
           QuadratureInputTimer and TimerStopInput1.
 
-    >>> d.getFeedback( u3.Timer0( UpdateReset = False, Value = 0, \
-    ... Mode = None ) )
-    [ 12314 ]
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.configIO(NumberOfTimersEnabled = 1)
+    Sent:  [0x49, 0xf8, 0x3, 0xb, 0x42, 0x0, 0x1, 0x0, 0x41, 0x0, 0x0, 0x0]
+    Response:  [0x57, 0xf8, 0x3, 0xb, 0x50, 0x0, 0x0, 0x0, 0x41, 0x0, 0xf, 0x0]
+    {'NumberOfTimersEnabled': 1, 'TimerCounterPinOffset': 4, 'DAC1Enable': 0, 'FIOAnalog': 15, 'EIOAnalog': 0, 'TimerCounterConfig': 65, 'EnableCounter1': False, 'EnableCounter0': False}
+    >>> d.getFeedback(u3.Timer0(UpdateReset = False, Value = 0, Mode = None))
+    Sent:  [0x26, 0xf8, 0x3, 0x0, 0x2a, 0x0, 0x0, 0x2a, 0x0, 0x0, 0x0, 0x0]
+    Response:  [0x51, 0xf8, 0x4, 0x0, 0x52, 0x2, 0x0, 0x0, 0x0, 0xf6, 0x90, 0x46, 0x86, 0x0]
+    [2252771574]
     """
     def __init__(self, UpdateReset = False, Value = 0, Mode = None):
         Timer.__init__(self, 0, UpdateReset, Value, Mode)
@@ -2123,7 +2232,7 @@ class Timer1(Timer):
     """
     For reading the value of the Timer1. It provides the ability to
     update/reset Timer1, and read the timer value.
-    ( Section 5.2.5.14 of the User's Guide)
+    (Section 5.2.5.14 of the User's Guide)
      
     UpdateReset: Set True if you want to update the value
     
@@ -2133,9 +2242,17 @@ class Timer1(Timer):
     Mode: Set to the timer mode to handle any special processing. See classes
           QuadratureInputTimer and TimerStopInput1.
 
-    >>> d.getFeedback( u3.Timer1( UpdateReset = False, Value = 0, \
-    ... Mode = None ) )
-    [ 12314 ]
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.configIO(NumberOfTimersEnabled = 2)
+    Sent:  [0x4a, 0xf8, 0x3, 0xb, 0x43, 0x0, 0x1, 0x0, 0x42, 0x0, 0x0, 0x0]
+    Response:  [0x58, 0xf8, 0x3, 0xb, 0x51, 0x0, 0x0, 0x0, 0x42, 0x0, 0xf, 0x0]
+    {'NumberOfTimersEnabled': 2, 'TimerCounterPinOffset': 4, 'DAC1Enable': 0, 'FIOAnalog': 15, 'EIOAnalog': 0, 'TimerCounterConfig': 66, 'EnableCounter1': False, 'EnableCounter0': False}
+    >>> d.getFeedback(u3.Timer1(UpdateReset = False, Value = 0, Mode = None))
+    Sent:  [0x28, 0xf8, 0x3, 0x0, 0x2c, 0x0, 0x0, 0x2c, 0x0, 0x0, 0x0, 0x0]
+    Response:  [0x8d, 0xf8, 0x4, 0x0, 0x8e, 0x2, 0x0, 0x0, 0x0, 0xf3, 0x31, 0xd0, 0x9a, 0x0]
+    [2597335539]
     """
     def __init__(self, UpdateReset = False, Value = 0, Mode = None):
         Timer.__init__(self, 1, UpdateReset, Value, Mode)
@@ -2148,7 +2265,7 @@ class QuadratureInputTimer(Timer):
     For reading Quadrature input timers. They are special because their values
     are signed.
     
-    ( Section 2.9.1.8 of the User's Guide)
+    (Section 2.9.1.8 of the User's Guide)
     
     Args:
        UpdateReset: Set True if you want to reset the counter.
@@ -2156,13 +2273,28 @@ class QuadratureInputTimer(Timer):
     
     Returns a signed integer.
     
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.configIO(NumberOfTimersEnabled = 2)
+    Sent:  [0x4a, 0xf8, 0x3, 0xb, 0x43, 0x0, 0x1, 0x0, 0x42, 0x0, 0x0, 0x0]
+    Response:  [0x58, 0xf8, 0x3, 0xb, 0x51, 0x0, 0x0, 0x0, 0x42, 0x0, 0xf, 0x0]
+    {'NumberOfTimersEnabled': 2, 'TimerCounterPinOffset': 4, 'DAC1Enable': 0, 'FIOAnalog': 15, 'EIOAnalog': 0, 'TimerCounterConfig': 66, 'EnableCounter1': False, 'EnableCounter0': False}
     >>> # Setup the two timers to be quadrature
-    >>> d.getFeedback( u3.Timer0Config( 8 ), u3.Timer1Config( 8 ) )
+    >>> d.getFeedback(u3.Timer0Config(8), u3.Timer1Config(8))
+    Sent:  [0x66, 0xf8, 0x5, 0x0, 0x68, 0x0, 0x0, 0x2b, 0x8, 0x0, 0x0, 0x2d, 0x8, 0x0, 0x0, 0x0]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
     [None, None]
     >>> # Read the value
-    >>> d.getFeedback( u3.QuadratureInputTimer() )
-    [-21]
-    
+    [0]
+    >>> d.getFeedback(u3.QuadratureInputTimer())
+    Sent:  [0x26, 0xf8, 0x3, 0x0, 0x2a, 0x0, 0x0, 0x2a, 0x0, 0x0, 0x0, 0x0]
+    Response:  [0xf5, 0xf8, 0x4, 0x0, 0xf5, 0x3, 0x0, 0x0, 0x0, 0xf8, 0xff, 0xff, 0xff, 0x0]
+    [-8]
+    >>> d.getFeedback(u3.QuadratureInputTimer())
+    Sent:  [0x26, 0xf8, 0x3, 0x0, 0x2a, 0x0, 0x0, 0x2a, 0x0, 0x0, 0x0, 0x0]
+    Response:  [0x9, 0xf8, 0x4, 0x0, 0xc, 0x0, 0x0, 0x0, 0x0, 0xc, 0x0, 0x0, 0x0, 0x0]
+    [12]
     """
     def __init__(self, UpdateReset = False, Value = 0):
         Timer.__init__(self, 0, UpdateReset, Value, Mode = 8)
@@ -2175,7 +2307,7 @@ class TimerStopInput1(Timer1):
     For reading a stop input timer. They are special because the value returns
     the current edge count and the stop value.
     
-    ( Section 2.9.1.9 of the User's Guide)
+    (Section 2.9.1.9 of the User's Guide)
     
     Args:
         UpdateReset: Set True if you want to update the value.
@@ -2184,13 +2316,22 @@ class TimerStopInput1(Timer1):
     Returns a tuple where the first value is current edge count, and the second
     value is the stop value.
     
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.configIO(NumberOfTimersEnabled = 2)
+    Sent:  [0x4a, 0xf8, 0x3, 0xb, 0x43, 0x0, 0x1, 0x0, 0x42, 0x0, 0x0, 0x0]
+    Response:  [0x58, 0xf8, 0x3, 0xb, 0x51, 0x0, 0x0, 0x0, 0x42, 0x0, 0xf, 0x0]
+    {'NumberOfTimersEnabled': 2, 'TimerCounterPinOffset': 4, 'DAC1Enable': 0, 'FIOAnalog': 15, 'EIOAnalog': 0, 'TimerCounterConfig': 66, 'EnableCounter1': False, 'EnableCounter0': False}
     >>> # Setup the timer to be Stop Input
-    >>> d.getFeedback( u3.Timer0Config( 9, Value = 30 ) )
+    >>> d.getFeedback(u3.Timer1Config(9, Value = 30))
+    Sent:  [0x50, 0xf8, 0x3, 0x0, 0x54, 0x0, 0x0, 0x2d, 0x9, 0x1e, 0x0, 0x0]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
     [None]
-    >>> # Read the timer
-    >>> d.getFeedback( u3.TimerStopInput1() )
-    [(0, 30)]
-    
+    >>> d.getFeedback(u3.TimerStopInput1())
+    Sent:  [0x28, 0xf8, 0x3, 0x0, 0x2c, 0x0, 0x0, 0x2c, 0x0, 0x0, 0x0, 0x0]
+    Response:  [0x1b, 0xf8, 0x4, 0x0, 0x1e, 0x0, 0x0, 0x0, 0x0, 0x1e, 0x0, 0x0, 0x0, 0x0]
+    [(0, 0)]
     """
     def __init__(self, UpdateReset = False, Value = 0):
         Timer.__init__(self, 1, UpdateReset, Value, Mode = 9)
@@ -2207,9 +2348,22 @@ class TimerConfig(FeedbackCommand):
     TimerMode = See Section 2.9 for more information about the available modes.
     
     Value = The meaning of this parameter varies with the timer mode.
-    
-    >>> d.getFeedback( u3.TimerConfig( timer, TimerMode, Value = 0 ) )
-    [ None ]
+
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.configIO(NumberOfTimersEnabled = 1)
+    Sent:  [0x49, 0xf8, 0x3, 0xb, 0x42, 0x0, 0x1, 0x0, 0x41, 0x0, 0x0, 0x0]
+    Response:  [0x57, 0xf8, 0x3, 0xb, 0x50, 0x0, 0x0, 0x0, 0x41, 0x0, 0xf, 0x0]
+    {'NumberOfTimersEnabled': 1, 'TimerCounterPinOffset': 4, 'DAC1Enable': 0, 'FIOAnalog': 15, 'EIOAnalog': 0, 'TimerCounterConfig': 65, 'EnableCounter1': False, 'EnableCounter0': False}
+    >>> d.getFeedback(u3.TimerConfig(timer = 0, TimerMode = 0, Value = 0))
+    Sent:  [0x27, 0xf8, 0x3, 0x0, 0x2b, 0x0, 0x0, 0x2b, 0x0, 0x0, 0x0, 0x0]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
+    >>> d.getFeedback(u3.TimerConfig(timer = 0, TimerMode = 0, Value = 65535))
+    Sent:  [0x27, 0xf8, 0x3, 0x0, 0x29, 0x2, 0x0, 0x2b, 0x0, 0xff, 0xff, 0x0]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
     """
     def __init__(self, timer, TimerMode, Value=0):
         '''Creates command bytes for configureing a Timer'''
@@ -2237,8 +2391,21 @@ class Timer0Config(TimerConfig):
     
     Value = The meaning of this parameter varies with the timer mode.
     
-    >>> d.getFeedback( u3.Timer0Config( TimerMode, Value = 0 ) )
-    [ None ]
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.configIO(NumberOfTimersEnabled = 1)
+    Sent:  [0x49, 0xf8, 0x3, 0xb, 0x42, 0x0, 0x1, 0x0, 0x41, 0x0, 0x0, 0x0]
+    Response:  [0x57, 0xf8, 0x3, 0xb, 0x50, 0x0, 0x0, 0x0, 0x41, 0x0, 0xf, 0x0]
+    {'NumberOfTimersEnabled': 1, 'TimerCounterPinOffset': 4, 'DAC1Enable': 0, 'FIOAnalog': 15, 'EIOAnalog': 0, 'TimerCounterConfig': 65, 'EnableCounter1': False, 'EnableCounter0': False}
+    >>> d.getFeedback(u3.Timer0Config(TimerMode = 1, Value = 0))
+    Sent:  [0x28, 0xf8, 0x3, 0x0, 0x2c, 0x0, 0x0, 0x2b, 0x1, 0x0, 0x0, 0x0]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
+    >>> d.getFeedback(u3.Timer0Config(TimerMode = 1, Value = 65535))
+    Sent:  [0x28, 0xf8, 0x3, 0x0, 0x2a, 0x2, 0x0, 0x2b, 0x1, 0xff, 0xff, 0x0]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
     """
     def __init__(self, TimerMode, Value = 0):
         TimerConfig.__init__(self, 0, TimerMode, Value)
@@ -2253,9 +2420,18 @@ class Timer1Config(TimerConfig):
     TimerMode = See Section 2.9 for more information about the available modes.
     
     Value = The meaning of this parameter varies with the timer mode.
-    
-    >>> d.getFeedback( u3.Timer1Config( TimerMode, Value = 0 ) )
-    [ None ]
+
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.configIO(NumberOfTimersEnabled = 2)
+    Sent:  [0x4a, 0xf8, 0x3, 0xb, 0x43, 0x0, 0x1, 0x0, 0x42, 0x0, 0x0, 0x0]
+    Response:  [0x58, 0xf8, 0x3, 0xb, 0x51, 0x0, 0x0, 0x0, 0x42, 0x0, 0xf, 0x0]
+    {'NumberOfTimersEnabled': 2, 'TimerCounterPinOffset': 4, 'DAC1Enable': 0, 'FIOAnalog': 15, 'EIOAnalog': 0, 'TimerCounterConfig': 66, 'EnableCounter1': False, 'EnableCounter0': False}
+    >>> d.getFeedback(u3.Timer1Config(TimerMode = 6, Value = 1))
+    Sent:  [0x30, 0xf8, 0x3, 0x0, 0x34, 0x0, 0x0, 0x2d, 0x6, 0x1, 0x0, 0x0]
+    Response:  [0xfa, 0xf8, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [None]
     """
     def __init__(self, TimerMode, Value = 0):
         TimerConfig.__init__(self, 1, TimerMode, Value)
@@ -2274,9 +2450,22 @@ class Counter(FeedbackCommand):
 
     Returns the current count from the counter if enabled.  If reset,
     this is the value before the reset.
-    
-    >>> d.getFeedback( u3.Counter( counter, Reset = False ) )
-    [ 2183 ]
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.configIO(EnableCounter0 = True, FIOAnalog = 15)
+    Sent:  [0x5f, 0xf8, 0x3, 0xb, 0x58, 0x0, 0x5, 0x0, 0x44, 0x0, 0xf, 0x0]
+    Response:  [0x5a, 0xf8, 0x3, 0xb, 0x53, 0x0, 0x0, 0x0, 0x44, 0x0, 0xf, 0x0]
+    {'NumberOfTimersEnabled': 0, 'TimerCounterPinOffset': 4, 'DAC1Enable': 0, 'FIOAnalog': 15, 'EIOAnalog': 0, 'TimerCounterConfig': 68, 'EnableCounter1': False, 'EnableCounter0': True}
+    >>> d.getFeedback(u3.Counter(counter = 0, Reset = False))
+    Sent:  [0x31, 0xf8, 0x2, 0x0, 0x36, 0x0, 0x0, 0x36, 0x0, 0x0]
+    Response:  [0xfc, 0xf8, 0x4, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [0]
+    >>> # Tap a ground wire to counter 0
+    >>> d.getFeedback(u3.Counter(counter = 0, Reset = False))
+    Sent:  [0x31, 0xf8, 0x2, 0x0, 0x36, 0x0, 0x0, 0x36, 0x0, 0x0]
+    Response:  [0xe9, 0xf8, 0x4, 0x0, 0xec, 0x0, 0x0, 0x0, 0x0, 0xe8, 0x4, 0x0, 0x0, 0x0]
+    [1256]
     '''
     def __init__(self, counter, Reset = False):
         self.counter = counter
@@ -2303,8 +2492,28 @@ class Counter0(Counter):
     Returns the current count from the counter if enabled.  If reset,
     this is the value before the reset.
     
-    >>> d.getFeedback( u3.Counter0( Reset = False ) )
-    [ 2183 ]
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.configIO(EnableCounter0 = True, FIOAnalog = 15)
+    Sent:  [0x5f, 0xf8, 0x3, 0xb, 0x58, 0x0, 0x5, 0x0, 0x44, 0x0, 0xf, 0x0]
+    Response:  [0x5a, 0xf8, 0x3, 0xb, 0x53, 0x0, 0x0, 0x0, 0x44, 0x0, 0xf, 0x0]
+    {'NumberOfTimersEnabled': 0, 'TimerCounterPinOffset': 4, 'DAC1Enable': 0, 'FIOAnalog': 15, 'EIOAnalog': 0, 'TimerCounterConfig': 68, 'EnableCounter1': False, 'EnableCounter0': True}
+    >>> d.getFeedback(u3.Counter0( Reset = False ) )
+    Sent:  [0x31, 0xf8, 0x2, 0x0, 0x36, 0x0, 0x0, 0x36, 0x0, 0x0]
+    Response:  [0xfc, 0xf8, 0x4, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [0]
+    >>> # Tap a ground wire to counter 0
+    >>> d.getFeedback(u3.Counter0(Reset = False))
+    Sent:  [0x31, 0xf8, 0x2, 0x0, 0x36, 0x0, 0x0, 0x36, 0x0, 0x0]
+    Response:  [0xe, 0xf8, 0x4, 0x0, 0x11, 0x0, 0x0, 0x0, 0x0, 0x11, 0x0, 0x0, 0x0, 0x0]
+    [17]
+    >>> # Tap a ground wire to counter 0
+    >>> d.getFeedback(u3.Counter0(Reset = False))
+    Sent:  [0x31, 0xf8, 0x2, 0x0, 0x36, 0x0, 0x0, 0x36, 0x0, 0x0]
+    Response:  [0x19, 0xf8, 0x4, 0x0, 0x1c, 0x0, 0x0, 0x0, 0x0, 0xb, 0x11, 0x0, 0x0, 0x0]
+    [4363]
+
     '''
     def __init__(self, Reset = False):
         Counter.__init__(self, 0, Reset)
@@ -2323,8 +2532,27 @@ class Counter1(Counter):
     Returns the current count from the counter if enabled.  If reset,
     this is the value before the reset.
     
-    >>> d.getFeedback( u3.Counter1( Reset = False ) )
-    [ 2183 ]
+    >>> import u3
+    >>> d = u3.U3()
+    >>> d.debug = True
+    >>> d.configIO(EnableCounter1 = True, FIOAnalog = 15)
+    Sent:  [0x63, 0xf8, 0x3, 0xb, 0x5c, 0x0, 0x5, 0x0, 0x48, 0x0, 0xf, 0x0]
+    Response:  [0x5e, 0xf8, 0x3, 0xb, 0x57, 0x0, 0x0, 0x0, 0x48, 0x0, 0xf, 0x0]
+    {'NumberOfTimersEnabled': 0, 'TimerCounterPinOffset': 4, 'DAC1Enable': 0, 'FIOAnalog': 15, 'EIOAnalog': 0, 'TimerCounterConfig': 72, 'EnableCounter1': True, 'EnableCounter0': False}
+    >>> d.getFeedback(u3.Counter1(Reset = False))
+    Sent:  [0x32, 0xf8, 0x2, 0x0, 0x37, 0x0, 0x0, 0x37, 0x0, 0x0]
+    Response:  [0xfc, 0xf8, 0x4, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+    [0]
+    >>> # Tap a ground wire to counter 1
+    >>> d.getFeedback(u3.Counter1(Reset = False))
+    Sent:  [0x32, 0xf8, 0x2, 0x0, 0x37, 0x0, 0x0, 0x37, 0x0, 0x0]
+    Response:  [0xfd, 0xf8, 0x4, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0]
+    [1]
+    >>> # Tap a ground wire to counter 1
+    >>> d.getFeedback(u3.Counter1(Reset = False))
+    Sent:  [0x32, 0xf8, 0x2, 0x0, 0x37, 0x0, 0x0, 0x37, 0x0, 0x0]
+    Response:  [0xb4, 0xf8, 0x4, 0x0, 0xb7, 0x0, 0x0, 0x0, 0x0, 0x6b, 0x2b, 0x21, 0x0, 0x0]
+    [2173803]
     '''
     def __init__(self, Reset = False):
         Counter.__init__(self, 1, Reset)

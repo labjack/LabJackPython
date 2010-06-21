@@ -579,7 +579,7 @@ class Device(object):
             self.write(command, checksum = checksum)
             
             result = self.read(readLen, stream=False)
-            if self.debug: print "Result: ", hexWithoutQuotes(result)
+            if self.debug: print "Response: ", hexWithoutQuotes(result)
             if checkBytes:
                 self._checkCommandBytes(result, commandBytes)
                         
