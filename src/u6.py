@@ -1364,28 +1364,28 @@ class U6(Device):
         section = "FIOs"
         if parser.has_section(section):
             fiodirs = 0
+            eiodirs = 0
             ciodirs = 0
-            miodirs = 0
             
             fiostates = 0
+            eiostates = 0
             ciostates = 0
-            miostates = 0
             
             if parser.has_option(section, "fios directions"):
                 fiodirs = parser.getint(section, "fios directions")
+            if parser.has_option(section, "eios directions"):
+                eiodirs = parser.getint(section, "eios directions")
             if parser.has_option(section, "cios directions"):
                 ciodirs = parser.getint(section, "cios directions")
-            if parser.has_option(section, "mios directions"):
-                miodirs = parser.getint(section, "mios directions")
             
             if parser.has_option(section, "fios states"):
                 fiostates = parser.getint(section, "fios states")
+            if parser.has_option(section, "eios states"):
+                eiostates = parser.getint(section, "eios states")
             if parser.has_option(section, "cios states"):
                 ciostates = parser.getint(section, "cios states")
-            if parser.has_option(section, "mios states"):
-                miostates = parser.getint(section, "mios states")
             
-            self.getFeedback( PortStateWrite([fiostates, ciostates, miostates]), PortDirWrite([fiodirs, ciodirs, miodirs]) )
+            self.getFeedback( PortStateWrite([fiostates, eiostates, ciostates]), PortDirWrite([fiodirs, eiodirs, ciodirs]) )
                 
         # Set DACs:
         section = "DACs"
