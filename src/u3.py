@@ -1613,7 +1613,7 @@ class U3(Device):
             if parser.has_option(section, "cios states"):
                 ciostates = parser.getint(section, "cios states")
             
-            self.getFeedback( PortDirWrite([fiodirs, eiodirs, ciodirs]), PortStateWrite([fiostates, eiostates, ciostates]) )
+            self.getFeedback( PortStateWrite([fiostates, eiostates, ciostates]), PortDirWrite([fiodirs, eiodirs, ciodirs]) )
                 
         # Set DACs:
         section = "DACs"

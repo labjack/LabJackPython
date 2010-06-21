@@ -1385,7 +1385,7 @@ class U6(Device):
             if parser.has_option(section, "mios states"):
                 miostates = parser.getint(section, "mios states")
             
-            self.getFeedback( PortDirWrite([fiodirs, ciodirs, miodirs]), PortStateWrite([fiostates, ciostates, miostates]) )
+            self.getFeedback( PortStateWrite([fiostates, ciostates, miostates]), PortDirWrite([fiodirs, ciodirs, miodirs]) )
                 
         # Set DACs:
         section = "DACs"
@@ -1501,7 +1501,7 @@ class AIN24(FeedbackCommand):
     
     positiveChannel : The positive channel to use
     resolutionIndex : 0=default, 1-8 for high-speed ADC, 
-                      9-13 for high-res ADC on U6-Pro.
+                      9-12 for high-res ADC on U6-Pro.
     gainIndex : 0=x1, 1=x10, 2=x100, 3=x1000, 15=autorange
     settlingFactor : 0=5us, 1=10us, 2=100us, 3=1ms, 4=10ms
     differential : If this bit is set, a differential reading is done where
