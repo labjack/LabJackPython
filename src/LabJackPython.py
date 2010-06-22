@@ -937,6 +937,8 @@ class Device(object):
             packet2 = struct.unpack('<'+'H'*(remainder), struct.pack('BB'*(remainder), *packet2))
             self.writeRegister(58024, list(packet2))
 
+    name = property(getName, setName)
+
     def setDefaults(self, SetToFactoryDefaults = False):
         """
         Name: Device.setDefaults(SetToFactoryDefaults = False)
