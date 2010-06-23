@@ -131,7 +131,7 @@ import threading # For a thread-save device lock
 __version = "5-18-2010"
 LABJACKPYTHON_VERSION = "5-18-2010"
 
-SOCKET_TIMEOUT = 10
+SOCKET_TIMEOUT = 3
 BROADCAST_SOCKET_TIMEOUT = 1
 MAX_USB_PACKET_LENGTH = 64
 
