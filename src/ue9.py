@@ -127,8 +127,8 @@ class UE9(Device):
         if PortB != None:
             command[6] |= (1 << 5)
             t = struct.pack("<H", PortB)
-            command[22] = ord(t[0])
-            command[23] = ord(t[1])
+            command[24] = ord(t[0])
+            command[25] = ord(t[1])
 
         if DHCPEnabled != None:
             command[6] |= (1 << 6)
