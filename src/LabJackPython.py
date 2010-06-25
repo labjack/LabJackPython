@@ -46,7 +46,7 @@ Version History
         - Updated Examples/U3/u3.py
     - 0.7.0 November 18, 2008
         - Modified listAll to display device information in a different, more intuitive way.
-        - Added a Device class for simplier usage
+        - Added a Device class for simpler usage
         - openLabJack can now search for devices to open via ipAddress, localId, or serialNumber
         - Put most functions into proper camelcase notation
         - Removed large static function encapsulating all functions.  Works as one module now.

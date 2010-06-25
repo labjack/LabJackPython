@@ -1637,8 +1637,8 @@ class U3(Device):
         # Set Timer Clock Configuration
         section = "Timer Clock Speed Configuration"
         if parser.has_section(section):
-            if parser.has_option(section, "timerclockbase") and parser.has_option(section, "timeclockdivisor"):
-                self.configTimerClock(TimerClockBase = parser.getint(section, "timerclockbase"), TimerClockDivisor = parser.getint(section, "timeclockdivisor"))
+            if parser.has_option(section, "timerclockbase") and parser.has_option(section, "timerclockdivisor"):
+                self.configTimerClock(TimerClockBase = parser.getint(section, "timerclockbase"), TimerClockDivisor = parser.getint(section, "timerclockdivisor"))
         
         # Set Timers / Counters
         section = "Timers And Counters"
