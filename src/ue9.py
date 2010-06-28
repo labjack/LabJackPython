@@ -1321,9 +1321,9 @@ class UE9(Device):
         ec0 = bool( cm & 1 )
         ec1 = bool( (cm >> 1) & 1 )
         
-        parser.set(section, "numbertimersenabled", str(nte) )
-        parser.set(section, "enablecounter0", str(ec0) )
-        parser.set(section, "enablecounter1", str(ec1) )
+        parser.set(section, "NumberTimersEnabled", str(nte) )
+        parser.set(section, "Counter0Enabled", str(ec0) )
+        parser.set(section, "Counter1Enabled", str(ec1) )
         
         for i in range(nte):
             mode, value = self.readRegister(7100 + (i*2), numReg = 2, format = ">HH")

@@ -1428,21 +1428,14 @@ class U6(Device):
             mode = None
             value = None
             
-            if parser.has_option(section, "timer0 mode"):
-                mode = parser.getint(section, "timer0 mode")
-                
-                if parser.has_option(section, "timer0 value"):
-                    value = parser.getint(section, "timer0 mode")
-                
-                self.getFeedback( Timer0Config(mode, value) )
-            
-            if parser.has_option(section, "timer1 mode"):
-                mode = parser.getint(section, "timer1 mode")
-                
-                if parser.has_option(section, "timer1 value"):
-                    value = parser.getint(section, "timer1 mode")
-                
-                self.getFeedback( Timer1Config(mode, value) )
+            for i in range(4):
+                if parser.has_option(section, "timer%i mode" % i):
+                    mode = parser.getint(section, "timer%i mode" % i)
+                    
+                    if parser.has_option(section, "timer%i value" % i):
+                        value = parser.getint(section, "timer%i value" % i)
+                    
+                    self.getFeedback( TimerConfig(i, mode, value) )
 
 class FeedbackCommand(object):
     '''
@@ -2094,8 +2087,8 @@ class TimerConfig(FeedbackCommand):
     def __init__(self, timer, TimerMode, Value=0):
         '''Creates command bytes for configureing a Timer'''
         #Conditions come from pages 33-34 of user's guide
-        if timer != 0 and timer != 1:
-            raise LabJackException("Timer should be either 0 or 1.")
+        if timer in range(4):
+            raise LabJackException("Timer should be either 0-3.")
         
         if TimerMode > 13 or TimerMode < 0:
             raise LabJackException("Invalid Timer Mode.")

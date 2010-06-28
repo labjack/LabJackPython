@@ -1542,27 +1542,23 @@ class U3(Device):
         section = "Timers And Counters"
         parser.add_section(section)
         
-        timerCounterConfig = self.configIO()['TimerCounterConfig']
+        timerCounterConfig = self.configIO()
         
-        nte = timerCounterConfig & 3
-        ec0 = bool( (timerCounterConfig >> 2) & 1 )
-        ec1 = bool( (timerCounterConfig >> 3) & 1 )
-        cpo = ( timerCounterConfig >> 4 )
+        nte = timerCounterConfig['NumberOfTimersEnabled']
+        ec0 = timerCounterConfig['EnableCounter0']
+        ec1 = timerCounterConfig['EnableCounter1']
+        cpo = timerCounterConfig['TimerCounterPinOffset']
         
-        parser.set(section, "numbertimersenabled", str(nte) )
-        parser.set(section, "enablecounter0", str(ec0) )
-        parser.set(section, "enablecounter1", str(ec1) )
-        parser.set(section, "timercounterpinoffset", str(cpo) )
+        parser.set(section, "NumberTimersEnabled", str(nte) )
+        parser.set(section, "Counter0Enabled", str(ec0) )
+        parser.set(section, "Counter1Enabled", str(ec1) )
+        parser.set(section, "TimerCounterPinOffset", str(cpo) )
         
-        if nte > 0:
-            mode, value = self.readRegister(7100, numReg = 2, format = ">HH")
-            parser.set(section, "timer0 mode", str(mode))
-            parser.set(section, "timer0 value", str(value))
+        for i in range(nte):
+            mode, value = self.readRegister(7100 + (2*i), numReg = 2, format = ">HH")
+            parser.set(section, "timer%i mode" % i, str(mode))
+            parser.set(section, "timer%i value" % i, str(value))
         
-        if nte == 2:
-            mode, value = self.readRegister(7102, numReg = 2, format = ">HH")
-            parser.set(section, "timer1 mode", str(mode))
-            parser.set(section, "timer1 value", str(value))
         
         return parser
     exportConfig.section = 3
@@ -1670,7 +1666,7 @@ class U3(Device):
                 mode = parser.getint(section, "timer0 mode")
                 
                 if parser.has_option(section, "timer0 value"):
-                    value = parser.getint(section, "timer0 mode")
+                    value = parser.getint(section, "timer0 value")
                 
                 self.getFeedback( Timer0Config(mode, value) )
             
@@ -1678,7 +1674,7 @@ class U3(Device):
                 mode = parser.getint(section, "timer1 mode")
                 
                 if parser.has_option(section, "timer1 value"):
-                    value = parser.getint(section, "timer1 mode")
+                    value = parser.getint(section, "timer1 value")
                 
                 self.getFeedback( Timer1Config(mode, value) )
     loadConfig.section = 3      
