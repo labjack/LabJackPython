@@ -632,15 +632,18 @@ class U6(Device):
                 if j >= len(self.streamChannelNumbers):
                     j = 0
                 
-                if (self.streamChannelOptions[j] >> 7) == 1:
-                    # do signed
-                    value = struct.unpack('<H', sample )[0]
-                else:
-                    # do unsigned
-                    value = struct.unpack('<H', sample )[0]
-                
-                gainIndex = (self.streamChannelOptions[j] >> 4) & 0x3
-                value = self.binaryToCalibratedAnalogVoltage(gainIndex, value, is16Bits=True)
+                if self.streamChannelNumbers[j] == 193:
+                    value = struct.unpack('<BB', sample )
+                else:                
+                    if (self.streamChannelOptions[j] >> 7) == 1:
+                        # do signed
+                        value = struct.unpack('<H', sample )[0]
+                    else:
+                        # do unsigned
+                        value = struct.unpack('<H', sample )[0]
+                    
+                    gainIndex = (self.streamChannelOptions[j] >> 4) & 0x3
+                    value = self.binaryToCalibratedAnalogVoltage(gainIndex, value, is16Bits=True)
                 
                 returnDict["AIN%s" % self.streamChannelNumbers[j]].append(value)
             

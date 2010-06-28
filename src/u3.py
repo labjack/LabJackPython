@@ -857,20 +857,23 @@ class U3(Device):
                 if self.streamPacketOffset >= len(self.streamChannelNumbers):
                     self.streamPacketOffset = 0
                 
-                if self.streamNegChannels[self.streamPacketOffset] != 31:
-                    # do signed
-                    value = struct.unpack('<H', sample )[0]
-                    singleEnded = False
-                else:
-                    # do unsigned
-                    value = struct.unpack('<H', sample )[0]
-                    singleEnded = True
-                
-                lvChannel = True
-                if self.deviceName.lower().endswith('hv') and self.streamChannelNumbers[self.streamPacketOffset] < 4:
-                    lvChannel = False
-               
-                value = self.binaryToCalibratedAnalogVoltage(value, isLowVoltage = lvChannel, isSingleEnded = singleEnded, channelNumber = self.streamChannelNumbers[self.streamPacketOffset])
+                if self.streamChannelNumbers[self.streamPacketOffset] == 193:
+                    value = struct.unpack('<BB', sample )
+                else:  
+                    if self.streamNegChannels[self.streamPacketOffset] != 31:
+                        # do signed
+                        value = struct.unpack('<H', sample )[0]
+                        singleEnded = False
+                    else:
+                        # do unsigned
+                        value = struct.unpack('<H', sample )[0]
+                        singleEnded = True
+                    
+                    lvChannel = True
+                    if self.deviceName.lower().endswith('hv') and self.streamChannelNumbers[self.streamPacketOffset] < 4:
+                        lvChannel = False
+                   
+                    value = self.binaryToCalibratedAnalogVoltage(value, isLowVoltage = lvChannel, isSingleEnded = singleEnded, channelNumber = self.streamChannelNumbers[self.streamPacketOffset])
                 
                 returnDict["AIN%s" % self.streamChannelNumbers[self.streamPacketOffset]].append(value)
             
