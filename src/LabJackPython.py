@@ -1152,7 +1152,7 @@ def listAll(deviceType, connectionType = 1):
             num = skymoteLib.LJUSB_GetDevCount(0x501)
             
             # Things are expecting a list, so we're going to give them one.
-            return range(num)
+            return dict()
             
             
         pNumFound = ctypes.c_long()
