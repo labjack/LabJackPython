@@ -563,7 +563,9 @@ class Device(object):
         Checks all the stuff from a command
         """
         size = len(commandBytes)
-        if results[0] == 0xB8 and results[1] == 0xB8:
+        if len(results) == 0:
+            raise LabJackException("Got a zero length packet.")
+        elif results[0] == 0xB8 and results[1] == 0xB8:
             raise LabJackException("Device detected a bad checksum.")
         elif results[1:(size+1)] != commandBytes:
             raise LabJackException("Got incorrect command bytes.\nExpected: %s\nGot: %s\nFull packet: %s" % (hexWithoutQuotes(commandBytes), hexWithoutQuotes(results[1:(size+1)]), hexWithoutQuotes(results)))
@@ -1150,7 +1152,7 @@ def listAll(deviceType, connectionType = 1):
             num = skymoteLib.LJUSB_GetDevCount(0x501)
             
             # Things are expecting a list, so we're going to give them one.
-            return range(num)
+            return dict()
             
             
         pNumFound = ctypes.c_long()
