@@ -2090,7 +2090,7 @@ class TimerConfig(FeedbackCommand):
     def __init__(self, timer, TimerMode, Value=0):
         '''Creates command bytes for configureing a Timer'''
         #Conditions come from pages 33-34 of user's guide
-        if timer in range(4):
+        if timer not in range(4):
             raise LabJackException("Timer should be either 0-3.")
         
         if TimerMode > 13 or TimerMode < 0:
