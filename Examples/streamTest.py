@@ -81,7 +81,7 @@ finally:
     d.close()
 
     total = dataCount * d.packetsPerRequest * d.streamSamplesPerPacket
-    print "%s requests with %s packets per request with %s samples per request = %s samples total." % ( dataCount, d.packetsPerRequest, d.streamSamplesPerPacket, total )
+    print "%s requests with %s packets per request with %s samples per packet = %s samples total." % ( dataCount, d.packetsPerRequest, d.streamSamplesPerPacket, total )
     print "%s samples were lost due to errors." % missed
     total -= missed
     print "Adjusted number of samples = %s" % total

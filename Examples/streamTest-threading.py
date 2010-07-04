@@ -111,7 +111,7 @@ class StreamDataReader(object):
         stop = datetime.now()
         
         total = self.dataCount * self.device.packetsPerRequest * self.device.streamSamplesPerPacket
-        print "%s requests with %s packets per request with %s samples per request = %s samples total." % ( self.dataCount, d.packetsPerRequest, d.streamSamplesPerPacket, total )
+        print "%s requests with %s packets per request with %s samples per packet = %s samples total." % ( self.dataCount, d.packetsPerRequest, d.streamSamplesPerPacket, total )
         
         print "%s samples were lost due to errors." % self.missed
         total -= self.missed

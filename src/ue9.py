@@ -4,7 +4,7 @@
 """
 from LabJackPython import *
 
-import struct, socket, select
+import struct, socket, select, ConfigParser
 
 def parseIpAddress(bytes):
     return "%s.%s.%s.%s" % (bytes[3], bytes[2], bytes[1], bytes[0] )
@@ -127,8 +127,8 @@ class UE9(Device):
         if PortB != None:
             command[6] |= (1 << 5)
             t = struct.pack("<H", PortB)
-            command[22] = ord(t[0])
-            command[23] = ord(t[1])
+            command[24] = ord(t[0])
+            command[25] = ord(t[1])
 
         if DHCPEnabled != None:
             command[6] |= (1 << 6)
@@ -435,7 +435,7 @@ class UE9(Device):
         command[32] = AIN13_12_BipGain
         command[33] = AIN15_14_BipGain
     
-        result = self._writeRead(command, 64, [ 0xF8, 0x1D, 0x00])
+        result = self._writeRead(command, 64, [ 0xF8, 0x1D, 0x00], checkBytes = False)
         
         returnDict = { 'FIODir' : result[6], 'FIOState' : result[7], 'EIODir' : result[8], 'EIOState' : result[9], 'CIODir' : (result[10] >> 4) & 0xf, 'CIOState' : result[10] & 0xf, 'MIODir' : (result[11] >> 4) & 7, 'MIOState' : result[11] & 7, 'Counter0' : unpackInt(result[44:48]), 'Counter1' : unpackInt(result[48:52]), 'TimerA' : unpackInt(result[52:56]), 'TimerB' : unpackInt(result[56:60]), 'TimerC' : unpackInt(result[60:]) }
         
@@ -1244,3 +1244,235 @@ class UE9(Device):
             results["AIN%sSettling" % i] = defaults[i]
         
         return results
+
+    def exportConfig(self):
+        """
+        Name: UE9.exportConfig( ) 
+        Args: None
+        Desc: Takes the current configuration and puts it into a ConfigParser
+              object. Useful for saving the setup of your UE9.
+        """
+        # Make a new configuration file
+        parser = ConfigParser.SafeConfigParser()
+        
+        # Local Id and name
+        self.commConfig()
+        self.controlConfig()
+        
+        section = "Identifiers"
+        parser.add_section(section)
+        parser.set(section, "local id", str(self.localId))
+        parser.set(section, "name", str(self.getName()))
+        parser.set(section, "device type", str(self.devType))
+        parser.set(section, "macAddress", str(self.macAddress))
+        
+        # Comm Config settings
+        section = "Communication"
+        parser.add_section(section)
+        
+        parser.set(section, "DHCPEnabled", str(self.DHCPEnabled))
+        parser.set(section, "ipAddress", str(self.ipAddress))
+        parser.set(section, "subnet", str(self.subnet))
+        parser.set(section, "gateway", str(self.gateway))
+        parser.set(section, "portA", str(self.portA))
+        parser.set(section, "portB", str(self.portB))
+        
+        
+        # FIO Direction / State
+        section = "FIOs"
+        parser.add_section(section)
+        
+        parser.set(section, "FIOs Directions", str( self.readRegister(6750) ))
+        parser.set(section, "FIOs States", str( self.readRegister(6700) ))
+        parser.set(section, "EIOs Directions", str( self.readRegister(6751) ))
+        parser.set(section, "EIOs States", str( self.readRegister(6701) ))
+        parser.set(section, "CIOs Directions", str( self.readRegister(6752) ))
+        parser.set(section, "CIOs States", str( self.readRegister(6702) ))
+        #parser.set(section, "MIOs Directions", str( self.readRegister(50591) ))
+        #parser.set(section, "MIOs States", str( self.readRegister(50591) ))
+            
+        # DACs
+        section = "DACs"
+        parser.add_section(section)
+        
+        dac0 = self.readRegister(5000)
+        dac0 = max(dac0, 0)
+        dac0 = min(dac0, 5)
+        parser.set(section, "dac0", "%0.2f" % dac0)
+        
+        dac1 = self.readRegister(5002)
+        dac1 = max(dac1, 0)
+        dac1 = min(dac1, 5)
+        parser.set(section, "dac1", "%0.2f" % dac1)
+        
+        # Timer Clock Configuration
+        section = "Timer Clock Speed Configuration"
+        parser.add_section(section)
+        
+        parser.set(section, "timerclockbase", str(self.readRegister(7000)))
+        parser.set(section, "timerclockdivisor", str(self.readRegister(7002)))
+        
+        # Timers / Counters
+        section = "Timers And Counters"
+        parser.add_section(section)
+        
+        nte = self.readRegister(50501)
+        cm = self.readRegister(50502)
+        ec0 = bool( cm & 1 )
+        ec1 = bool( (cm >> 1) & 1 )
+        
+        parser.set(section, "NumberTimersEnabled", str(nte) )
+        parser.set(section, "Counter0Enabled", str(ec0) )
+        parser.set(section, "Counter1Enabled", str(ec1) )
+        
+        for i in range(nte):
+            mode, value = self.readRegister(7100 + (i*2), numReg = 2, format = ">HH")
+            parser.set(section, "timer%s mode" % i, str(mode))
+            parser.set(section, "timer%s value" % i, str(value))
+            
+        
+        
+        return parser
+
+    def loadConfig(self, configParserObj):
+        """
+        Name: UE9.loadConfig( configParserObj ) 
+        Args: configParserObj, A Config Parser object to load in
+        Desc: Takes a configuration and updates the UE9 to match it.
+        """
+        parser = configParserObj
+        
+        # Set Identifiers:
+        section = "Identifiers"
+        if parser.has_section(section):
+            if parser.has_option(section, "device type"):
+                if parser.getint(section, "device type") != self.devType:
+                    raise Exception("Not a UE9 Config file.")
+            
+            if parser.has_option(section, "local id"):
+                self.commConfig( LocalID = parser.getint(section, "local id"))
+                
+            if parser.has_option(section, "name"):
+                self.setName( parser.get(section, "name") )
+        
+        # Comm Config settings
+        section = "Communication"
+        if parser.has_section(section):
+            DHCPEnabled = None
+            ipAddress = None
+            subnet = None
+            gateway = None
+            portA = None
+            portB = None
+            
+            if parser.has_option(section, "DHCPEnabled"):
+                DHCPEnabled = parser.getboolean(section, "DHCPEnabled")
+                
+            if parser.has_option(section, "ipAddress"):
+                ipAddress = parser.get(section, "ipAddress")
+                
+            if parser.has_option(section, "subnet"):
+                subnet = parser.get(section, "subnet")
+            
+            if parser.has_option(section, "gateway"):
+                gateway = parser.get(section, "gateway")
+            
+            if parser.has_option(section, "portA"):
+                portA = parser.getint(section, "portA")
+                
+            if parser.has_option(section, "portB"):
+                portB = parser.getint(section, "portB")
+                
+            self.commConfig( DHCPEnabled = DHCPEnabled, IPAddress = ipAddress, Subnet = subnet, Gateway = gateway, PortA = portA, PortB = portB )
+        
+        
+        # Set FIOs:
+        section = "FIOs"
+        if parser.has_section(section):
+            fiodirs = 0
+            eiodirs = 0
+            ciodirs = 0
+            
+            fiostates = 0
+            eiostates = 0
+            ciostates = 0
+            
+            if parser.has_option(section, "fios directions"):
+                fiodirs = parser.getint(section, "fios directions")
+            if parser.has_option(section, "eios directions"):
+                eiodirs = parser.getint(section, "eios directions")
+            if parser.has_option(section, "cios directions"):
+                ciodirs = parser.getint(section, "cios directions")
+            
+            if parser.has_option(section, "fios states"):
+                fiostates = parser.getint(section, "fios states")
+            if parser.has_option(section, "eios states"):
+                eiostates = parser.getint(section, "eios states")
+            if parser.has_option(section, "cios states"):
+                ciostates = parser.getint(section, "cios states")
+            
+            bitmask = 0xff00
+            
+            # FIO State/Dir
+            self.writeRegister(6700, bitmask + fiostates )
+            self.writeRegister(6750, bitmask + fiodirs )
+            
+            # EIO State/Dir
+            self.writeRegister(6701, bitmask + eiostates )
+            self.writeRegister(6751, bitmask + eiodirs )
+            
+            # CIO State/Dir
+            self.writeRegister(6702, bitmask + ciostates )
+            self.writeRegister(6752, bitmask + ciodirs )
+            
+                
+        # Set DACs:
+        section = "DACs"
+        if parser.has_section(section):
+            if parser.has_option(section, "dac0"):
+                self.writeRegister(5000, parser.getfloat(section, "dac0"))
+            
+            if parser.has_option(section, "dac1"):
+                self.writeRegister(5002, parser.getfloat(section, "dac1"))
+                
+        # Set Timer Clock Configuration
+        section = "Timer Clock Speed Configuration"
+        if parser.has_section(section):
+            if parser.has_option(section, "timerclockbase"):
+                self.writeRegister(7000, parser.getint(section, "timerclockbase"))
+            
+            if parser.has_option(section, "timerclockdivisor"):
+                self.writeRegister(7002, parser.getint(section, "timerclockbase"))
+        
+        # Set Timers / Counters
+        section = "Timers And Counters"
+        if parser.has_section(section):
+            nte = 0
+            
+            if parser.has_option(section, "NumberTimersEnabled"):
+                nte = parser.getint(section, "NumberTimersEnabled")
+                self.writeRegister(50501, nte)
+            
+            if parser.has_option(section, "Counter0Enabled"):
+                cm = (self.readRegister(50502) & 2) # 0b10
+                c0e = parser.getboolean(section, "Counter0Enabled")
+                self.writeRegister(50502, cm + int(c0e))
+            
+            if parser.has_option(section, "Counter1Enabled"):
+                cm = (self.readRegister(50502) & 1) # 0b01
+                c1e = parser.getboolean(section, "Counter1Enabled")
+                self.writeRegister(50502, (int(c1e) << 1) + 1)
+            
+            
+            
+            mode = None
+            value = None
+            
+            for i in range(nte):
+                if parser.has_option(section, "timer%s mode"):
+                    mode = parser.getint(section, "timer%s mode")
+                    
+                    if parser.has_option(section, "timer%s value"):
+                        value = parser.getint(section, "timer%s mode")
+                    
+                    self.writeRegister(7100 + (i*2), [mode, value])

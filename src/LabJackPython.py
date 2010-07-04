@@ -46,7 +46,7 @@ Version History
         - Updated Examples/U3/u3.py
     - 0.7.0 November 18, 2008
         - Modified listAll to display device information in a different, more intuitive way.
-        - Added a Device class for simplier usage
+        - Added a Device class for simpler usage
         - openLabJack can now search for devices to open via ipAddress, localId, or serialNumber
         - Put most functions into proper camelcase notation
         - Removed large static function encapsulating all functions.  Works as one module now.
@@ -128,9 +128,10 @@ import Modbus
 import atexit # For auto-closing devices
 import threading # For a thread-save device lock
 
-__version = "3-11-1010"
+__version = "5-18-2010"
+LABJACKPYTHON_VERSION = "5-18-2010"
 
-SOCKET_TIMEOUT = 10
+SOCKET_TIMEOUT = 3
 BROADCAST_SOCKET_TIMEOUT = 1
 MAX_USB_PACKET_LENGTH = 64
 
@@ -562,7 +563,9 @@ class Device(object):
         Checks all the stuff from a command
         """
         size = len(commandBytes)
-        if results[0] == 0xB8 and results[1] == 0xB8:
+        if len(results) == 0:
+            raise LabJackException("Got a zero length packet.")
+        elif results[0] == 0xB8 and results[1] == 0xB8:
             raise LabJackException("Device detected a bad checksum.")
         elif results[1:(size+1)] != commandBytes:
             raise LabJackException("Got incorrect command bytes.\nExpected: %s\nGot: %s\nFull packet: %s" % (hexWithoutQuotes(commandBytes), hexWithoutQuotes(results[1:(size+1)]), hexWithoutQuotes(results)))
@@ -578,7 +581,7 @@ class Device(object):
             self.write(command, checksum = checksum)
             
             result = self.read(readLen, stream=False)
-            if self.debug: print "Result: ", hexWithoutQuotes(result)
+            if self.debug: print "Response: ", hexWithoutQuotes(result)
             if checkBytes:
                 self._checkCommandBytes(result, commandBytes)
                         
@@ -936,6 +939,8 @@ class Device(object):
             packet2 = struct.unpack('<'+'H'*(remainder), struct.pack('BB'*(remainder), *packet2))
             self.writeRegister(58024, list(packet2))
 
+    name = property(getName, setName)
+
     def setDefaults(self, SetToFactoryDefaults = False):
         """
         Name: Device.setDefaults(SetToFactoryDefaults = False)
@@ -1147,7 +1152,7 @@ def listAll(deviceType, connectionType = 1):
             num = skymoteLib.LJUSB_GetDevCount(0x501)
             
             # Things are expecting a list, so we're going to give them one.
-            return range(num)
+            return dict()
             
             
         pNumFound = ctypes.c_long()
@@ -1186,6 +1191,9 @@ def listAll(deviceType, connectionType = 1):
         
         if deviceType == 6:
             return __listAllU6Unix()
+            
+        if deviceType == 0x501:
+            return __listAllBridgesUnix()
 
 def isHandleValid(handle):
     if(os.name == 'nt'):
@@ -1523,7 +1531,20 @@ def _makeDeviceFromHandle(handle, deviceType):
         device.changed['deviceName'] = device.deviceName
         device.changed['hardwareVersion'] = device.hardwareVersion
         device.changed['bootloaderVersion'] = device.bootloaderVersion
-            
+        
+    elif deviceType == 0x501:
+        pkt, readlen = device._buildReadRegisterPacket(65001, 2, 0)
+        device.modbusPrependZeros = False
+        device.write(pkt, modbus = True, checksum = False)
+        response = device.read(64, False, True)
+        serial = device._parseReadRegisterResponse(response[:readlen], readlen, 59200, '>I', numReg = 2)
+        device.serialNumber = serial
+        device.localId = 0
+        device.deviceName = "SkyMote Bridge"
+        device.changed['localId'] = device.localId
+        device.changed['deviceName'] = device.deviceName
+        device.changed['serialNumber'] = device.serialNumber
+        
     return device
 
 def AddRequest(handle, IOType, Channel, Value, x1, UserData):
@@ -2463,29 +2484,12 @@ def GetDriverVersion():
     """
     
     if os.name == 'nt':        
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
         staticLib.GetDriverVersion.restype = ctypes.c_float
         return str(staticLib.GetDriverVersion())
         
     elif os.name == 'posix':
-        staticLib = None
-        mac = 0
-        try:
-            staticLib = ctypes.cdll.LoadLibrary("liblabjackusb.so")
-        except:
-            try:
-                staticLib = ctypes.cdll.LoadLibrary("liblabjackusb.dylib")
-                mac = 1
-            except:
-                raise LabJackException("Get Driver Version function could not load library")
-
-        #If not windows then return the operating system.
-        if mac:
-            return "Mac"
         staticLib.LJUSB_GetLibraryVersion.restype = ctypes.c_float
-        #Return only two decimal places
-        twoplaces = Decimal(10) ** -2
-        return str(Decimal(str(staticLib.LJUSB_GetLibraryVersion())).quantize(twoplaces))
+        return "%.2f" % staticLib.LJUSB_GetLibraryVersion()
         
 #Windows
 def TCVoltsToTemp(TCType, TCVolts, CJTempK):
@@ -2713,6 +2717,22 @@ def __listAllU6Unix():
     for i in xrange(numDevices):
         try:
             device = openLabJack(LJ_dtU6, 1, firstFound = False, devNumber = i+1)
+            device.close()
+        
+            deviceList[str(device.serialNumber)] = device.__dict__
+        except LabJackException:
+            pass
+
+    return deviceList
+    
+def __listAllBridgesUnix():
+    """ List all for Bridges """
+    deviceList = {}
+    numDevices = staticLib.LJUSB_GetDevCount(0x501)
+
+    for i in xrange(numDevices):
+        try:
+            device = openLabJack(0x501, 1, firstFound = False, devNumber = i+1)
             device.close()
         
             deviceList[str(device.serialNumber)] = device.__dict__

@@ -293,7 +293,7 @@ class U6(Device):
         
         >>> myU6 = u6.U6()
         >>> myU6.configTimerClock()
-        {'TimeClockDivisor': 256, 'TimerClockBase': 2}
+        {'TimerClockDivisor': 256, 'TimerClockBase': 2}
         """
         command = [ 0 ] * 10
         
@@ -318,7 +318,7 @@ class U6(Device):
         divisor = result[9]
         if divisor == 0:
             divisor = 256
-        return { 'TimerClockBase' : (result[8] & 7), 'TimeClockDivisor' : divisor }
+        return { 'TimerClockBase' : (result[8] & 7), 'TimerClockDivisor' : divisor }
 
     def _buildBuffer(self, sendBuffer, readLen, commandlist):
         for cmd in commandlist:
@@ -632,15 +632,18 @@ class U6(Device):
                 if j >= len(self.streamChannelNumbers):
                     j = 0
                 
-                if (self.streamChannelOptions[j] >> 7) == 1:
-                    # do signed
-                    value = struct.unpack('<H', sample )[0]
-                else:
-                    # do unsigned
-                    value = struct.unpack('<H', sample )[0]
-                
-                gainIndex = (self.streamChannelOptions[j] >> 4) & 0x3
-                value = self.binaryToCalibratedAnalogVoltage(gainIndex, value, is16Bits=True)
+                if self.streamChannelNumbers[j] == 193:
+                    value = struct.unpack('<BB', sample )
+                else:                
+                    if (self.streamChannelOptions[j] >> 7) == 1:
+                        # do signed
+                        value = struct.unpack('<H', sample )[0]
+                    else:
+                        # do unsigned
+                        value = struct.unpack('<H', sample )[0]
+                    
+                    gainIndex = (self.streamChannelOptions[j] >> 4) & 0x3
+                    value = self.binaryToCalibratedAnalogVoltage(gainIndex, value, is16Bits=True)
                 
                 returnDict["AIN%s" % self.streamChannelNumbers[j]].append(value)
             
@@ -1364,28 +1367,28 @@ class U6(Device):
         section = "FIOs"
         if parser.has_section(section):
             fiodirs = 0
+            eiodirs = 0
             ciodirs = 0
-            miodirs = 0
             
             fiostates = 0
+            eiostates = 0
             ciostates = 0
-            miostates = 0
             
             if parser.has_option(section, "fios directions"):
                 fiodirs = parser.getint(section, "fios directions")
+            if parser.has_option(section, "eios directions"):
+                eiodirs = parser.getint(section, "eios directions")
             if parser.has_option(section, "cios directions"):
                 ciodirs = parser.getint(section, "cios directions")
-            if parser.has_option(section, "mios directions"):
-                miodirs = parser.getint(section, "mios directions")
             
             if parser.has_option(section, "fios states"):
                 fiostates = parser.getint(section, "fios states")
+            if parser.has_option(section, "eios states"):
+                eiostates = parser.getint(section, "eios states")
             if parser.has_option(section, "cios states"):
                 ciostates = parser.getint(section, "cios states")
-            if parser.has_option(section, "mios states"):
-                miostates = parser.getint(section, "mios states")
             
-            self.getFeedback( PortDirWrite([fiodirs, ciodirs, miodirs]), PortStateWrite([fiostates, ciostates, miostates]) )
+            self.getFeedback( PortStateWrite([fiostates, eiostates, ciostates]), PortDirWrite([fiodirs, eiodirs, ciodirs]) )
                 
         # Set DACs:
         section = "DACs"
@@ -1399,8 +1402,8 @@ class U6(Device):
         # Set Timer Clock Configuration
         section = "Timer Clock Speed Configuration"
         if parser.has_section(section):
-            if parser.has_option(section, "timerclockbase") and parser.has_option(section, "timeclockdivisor"):
-                self.configTimerClock(TimerClockBase = parser.getint(section, "timerclockbase"), TimerClockDivisor = parser.getint(section, "timeclockdivisor"))
+            if parser.has_option(section, "timerclockbase") and parser.has_option(section, "timerclockdivisor"):
+                self.configTimerClock(TimerClockBase = parser.getint(section, "timerclockbase"), TimerClockDivisor = parser.getint(section, "timerclockdivisor"))
         
         # Set Timers / Counters
         section = "Timers And Counters"
@@ -1428,21 +1431,14 @@ class U6(Device):
             mode = None
             value = None
             
-            if parser.has_option(section, "timer0 mode"):
-                mode = parser.getint(section, "timer0 mode")
-                
-                if parser.has_option(section, "timer0 value"):
-                    value = parser.getint(section, "timer0 mode")
-                
-                self.getFeedback( Timer0Config(mode, value) )
-            
-            if parser.has_option(section, "timer1 mode"):
-                mode = parser.getint(section, "timer1 mode")
-                
-                if parser.has_option(section, "timer1 value"):
-                    value = parser.getint(section, "timer1 mode")
-                
-                self.getFeedback( Timer1Config(mode, value) )
+            for i in range(4):
+                if parser.has_option(section, "timer%i mode" % i):
+                    mode = parser.getint(section, "timer%i mode" % i)
+                    
+                    if parser.has_option(section, "timer%i value" % i):
+                        value = parser.getint(section, "timer%i value" % i)
+                    
+                    self.getFeedback( TimerConfig(i, mode, value) )
 
 class FeedbackCommand(object):
     '''
@@ -1501,7 +1497,7 @@ class AIN24(FeedbackCommand):
     
     positiveChannel : The positive channel to use
     resolutionIndex : 0=default, 1-8 for high-speed ADC, 
-                      9-13 for high-res ADC on U6-Pro.
+                      9-12 for high-res ADC on U6-Pro.
     gainIndex : 0=x1, 1=x10, 2=x100, 3=x1000, 15=autorange
     settlingFactor : 0=5us, 1=10us, 2=100us, 3=1ms, 4=10ms
     differential : If this bit is set, a differential reading is done where
@@ -2094,8 +2090,8 @@ class TimerConfig(FeedbackCommand):
     def __init__(self, timer, TimerMode, Value=0):
         '''Creates command bytes for configureing a Timer'''
         #Conditions come from pages 33-34 of user's guide
-        if timer != 0 and timer != 1:
-            raise LabJackException("Timer should be either 0 or 1.")
+        if timer not in range(4):
+            raise LabJackException("Timer should be either 0-3.")
         
         if TimerMode > 13 or TimerMode < 0:
             raise LabJackException("Invalid Timer Mode.")
