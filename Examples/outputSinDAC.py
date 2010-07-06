@@ -1,5 +1,5 @@
 """
-" An example script to show how to output a sin wave using a DAC.
+" An example script to show how to output a sine wave using a DAC.
 " Because we have to do it all in software, there are limitations on how fast
 " we can update the DAC. Update intervals faster than 5 ms may give weird
 " results because of the large percentage of missed updates.
@@ -18,7 +18,7 @@
 # Controls how fast the DAC will be updated, in seconds.
 UPDATE_INTERVAL = 0.005
 
-# The frequency of the sin wave, in Hz
+# The frequency of the sine wave, in Hz
 FREQUENCY = 10
 
 # Imports:
@@ -28,7 +28,7 @@ import math # For sin function
 from datetime import datetime # For printing times
 
 if __name__ == '__main__':
-    print "This program will attempt to generate a sin wave with a frequency of %s Hz, updating once every %s seconds." % (FREQUENCY, UPDATE_INTERVAL)
+    print "This program will attempt to generate a sine wave with a frequency of %s Hz, updating once every %s seconds." % (FREQUENCY, UPDATE_INTERVAL)
     
     
     print "Opening LabJack...",
