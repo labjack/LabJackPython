@@ -3,7 +3,10 @@
 # we can update the DAC. Update intervals faster than 5 ms may give weird
 # results because of the large percentage of missed updates.
 #
-# Note: This example requires Python 2.6 to run.
+# Note: This example uses signal.setitimer() and signal.alarm(), and therefore 
+# requires Python 2.6 on Unix to run. See:
+#     http://docs.python.org/library/signal.html#signal.setitimer
+#     http://docs.python.org/library/signal.html#signal.alarm
 #
 # When changing the update interval and frequency, consider how your values
 # effect the waveform. A slow update interval coupled with a fast frequency
