@@ -736,7 +736,7 @@ class U6(Device):
               MISOPinNum, which pin is MISO
               MOSIPinNum, which pin is MOSI
         Desc: Sends and receives serial data using SPI synchronous
-              communication. See Section 5.3.17 of the user's guide.
+              communication. See Section 5.2.17 of the user's guide.
         """
         if not isinstance(SPIBytes, list):
             raise LabJackException("SPIBytes MUST be a list of bytes")
@@ -792,7 +792,7 @@ class U6(Device):
               BaudFactor, = 2^16 - 48000000/(2 * Desired Baud). Ignored
                         if DesiredBaud is set.
         Desc: Configures the U6 UART for asynchronous communication. See
-              section 5.3.18 of the User's Guide.
+              section 5.2.18 of the User's Guide.
         """
         
         if UARTEnable:
@@ -829,7 +829,7 @@ class U6(Device):
         Name: U6.asynchTX(AsynchBytes)
         Args: AsynchBytes, List of bytes to send
         Desc: Sends bytes to the U6 UART which will be sent asynchronously
-              on the transmit line. Section 5.3.20 of the User's Guide.
+              on the transmit line. Section 5.2.19 of the User's Guide.
         """
         
         numBytes = len(AsynchBytes)
@@ -862,7 +862,7 @@ class U6(Device):
         Name: U6.asynchTX(AsynchBytes)
         Args: Flush, If True, empties the entire 256-byte RX buffer.
         Desc: Sends bytes to the U6 UART which will be sent asynchronously
-              on the transmit line. Section 5.3.20 of the User's Guide.
+              on the transmit line. Section 5.2.20 of the User's Guide.
         """
         command = [ 0, 0xF8, 0x01, 0x16, 0, 0, 0, int(Flush)]
         
@@ -875,7 +875,7 @@ class U6(Device):
         Name: U6.i2c(Address, I2CBytes, EnableClockStretching = False, NoStopWhenRestarting = False, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 0, SCLPinNum = 1, NumI2CBytesToReceive = 0, AddressByte = None)
         Args: Address, the address (Not shifted over)
               I2CBytes, a list of bytes to send
-              EnableClockStretching, True enables clock streching
+              EnableClockStretching, True enables clock stretching
               NoStopWhenRestarting, True means no stop sent when restarting
               ResetAtStart, if True, an I2C bus reset will be done
                             before communicating.
@@ -886,7 +886,7 @@ class U6(Device):
               AddressByte, The address as you would put it in the lowlevel
                            packet. Overrides Address. Optional.
         Desc: Sends and receives serial data using I2C synchronous
-              communication. Section 5.3.21 of the User's Guide.
+              communication. Section 5.2.21 of the User's Guide.
         """
         numBytes = len(I2CBytes)
         
@@ -904,7 +904,7 @@ class U6(Device):
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
         if EnableClockStretching:
-            command[6] = (1 << 4)
+            command[6] |= (1 << 3)
         if NoStopWhenRestarting:
             command[6] |= (1 << 2)
         if ResetAtStart:
@@ -949,7 +949,7 @@ class U6(Device):
             bit 1 = Reserved at 0
             bit 0 = Resolution. 1 = 8 bit RH, 12 bit T; 0 = 12 RH, 14 bit T
         Desc: Reads temperature and humidity from a Sensirion SHT1X sensor.
-              Section 5.3.22 of the User's Guide.
+              Section 5.2.22 of the User's Guide.
         """
         command = [ 0 ] * 10
         
