@@ -2710,7 +2710,7 @@ def __listAllU3Unix():
 
 
 def __listAllU6Unix():
-    """ List all for U6's """
+    """ List all for U6s """
     deviceList = {}
     numDevices = staticLib.LJUSB_GetDevCount(LJ_dtU6)
 
