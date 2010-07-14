@@ -12,6 +12,10 @@ Section Number Mapping:
 from LabJackPython import *
 import struct, ConfigParser
 
+FIO0, FIO1, FIO2, FIO3, FIO4, FIO5, FIO6, FIO7, \
+EIO0, EIO1, EIO2, EIO3, EIO4, EIO5, EIO6, EIO7, \
+CIO0, CIO1, CIO2, CIO3 = range(20)
+
 class U3(Device):
     """
     U3 Class for all U3 specific low-level commands.
@@ -405,7 +409,7 @@ class U3(Device):
         Example:
         >>> import u3
         >>> d = u3.U3()
-        >>> d.setFIOState( 4, state = 1)
+        >>> d.setFIOState(4, state = 1)
         """
         self.getFeedback(BitDirWrite(fioNum, 1), BitStateWrite(fioNum, state))
     setFIOState.section = 3
@@ -421,7 +425,7 @@ class U3(Device):
         Example:
         >>> import u3
         >>> d = u3.U3()
-        >>> print d.getFIOState( 4 )
+        >>> print d.getFIOState(4)
         1
         """
         return self.getFeedback(BitStateRead(fioNum))[0]
@@ -470,6 +474,89 @@ class U3(Device):
         
         return self.binaryToCalibratedAnalogVoltage(bits, isLowVoltage = lvChannel, isSingleEnded = singleEnded, isSpecialSetting = isSpecial, channelNumber = posChannel)
     getAIN.section = 3
+
+    def configAnalog(self, *args):
+        """
+        Convenience method to configIO() that adds the given input numbers
+        in the range FIO0-EIO7 (0-15) to the analog team. That is, it adds
+        the given bit positions to those already set in the FIOAnalog
+        and EIOAnalog bitfields.
+
+        >>> import u3
+        >>> d = u3.U3()
+        >>> d.debug = True
+        >>> d.configIO()
+        Sent:  [0x47, 0xf8, 0x3, 0xb, 0x40, 0x0, 0x0, 0x0, 0x40, 0x0, 0x0, 0x0]
+        Result:  [0x56, 0xf8, 0x3, 0xb, 0x4f, 0x0, 0x0, 0x0, 0x40, 0x0, 0xf, 0x0]
+        {'NumberOfTimersEnabled': 0, 'TimerCounterPinOffset': 4, 'DAC1Enable': 0, 'FIOAnalog': 15, 'EIOAnalog': 0, 'TimerCounterConfig': 64, 'EnableCounter1': False, 'EnableCounter0': False}
+        >>> d.configAnalog(u3.FIO4, u3.FIO5)
+        Sent:  [0x47, 0xf8, 0x3, 0xb, 0x40, 0x0, 0x0, 0x0, 0x40, 0x0, 0x0, 0x0]
+        Result:  [0x56, 0xf8, 0x3, 0xb, 0x4f, 0x0, 0x0, 0x0, 0x40, 0x0, 0xf, 0x0]
+        Sent:  [0x93, 0xf8, 0x3, 0xb, 0x8c, 0x0, 0xd, 0x0, 0x40, 0x0, 0x3f, 0x0]
+        Result:  [0x86, 0xf8, 0x3, 0xb, 0x7f, 0x0, 0x0, 0x0, 0x40, 0x0, 0x3f, 0x0]
+        {'NumberOfTimersEnabled': 0, 'TimerCounterPinOffset': 4, 'DAC1Enable': 0, 'FIOAnalog': 63, 'EIOAnalog': 0, 'TimerCounterConfig': 64, 'EnableCounter1': False, 'EnableCounter0': False}
+        """
+        configIODict = self.configIO()
+        # Without args, return the same as configIO()
+        if len(args) == 0:
+            return configIODict
+
+        FIOAnalog, EIOAnalog = configIODict['FIOAnalog'], configIODict['EIOAnalog']
+        #
+        for i in args:
+            if i > EIO7:
+                pass    # Invalid. Must be in the range FIO0-EIO7.
+            elif i < EIO0:
+                FIOAnalog |= 2**i
+            else:
+                EIOAnalog |= 2**(i-EIO0)   # Start the EIO counting a 0, not 8
+        return self.configIO(FIOAnalog = FIOAnalog, EIOAnalog = EIOAnalog)
+
+    def configDigital(self, *args):
+        """
+        The converse of configAnalog(). The convenience method to configIO,
+        adds the given input numbers in the range FIO0-EIO7 (0-15) to the
+        digital team. That is, it removes the given bit positions from those
+        already set in the FIOAnalog and EIOAnalog bitfields.
+
+        >>> import u3
+        >>> d = u3.U3()
+        >>> d.debug = True
+        >>> d.configIO()
+        Sent:  [0x47, 0xf8, 0x3, 0xb, 0x40, 0x0, 0x0, 0x0, 0x40, 0x0, 0x0, 0x0]
+        Result:  [0x56, 0xf8, 0x3, 0xb, 0x4f, 0x0, 0x0, 0x0, 0x40, 0x0, 0xf, 0x0]
+        {'NumberOfTimersEnabled': 0, 'TimerCounterPinOffset': 4, 'DAC1Enable': 0, 'FIOAnalog': 15, 'EIOAnalog': 0, 'TimerCounterConfig': 64, 'EnableCounter1': False, 'EnableCounter0': False}
+        >>> d.configAnalog(u3.FIO4, u3.FIO5, u3.EIO0)
+        Sent:  [0x47, 0xf8, 0x3, 0xb, 0x40, 0x0, 0x0, 0x0, 0x40, 0x0, 0x0, 0x0]
+        Result:  [0x56, 0xf8, 0x3, 0xb, 0x4f, 0x0, 0x0, 0x0, 0x40, 0x0, 0xf, 0x0]
+        Sent:  [0x94, 0xf8, 0x3, 0xb, 0x8d, 0x0, 0xd, 0x0, 0x40, 0x0, 0x3f, 0x1]
+        Result:  [0x87, 0xf8, 0x3, 0xb, 0x80, 0x0, 0x0, 0x0, 0x40, 0x0, 0x3f, 0x1]
+        {'NumberOfTimersEnabled': 0, 'TimerCounterPinOffset': 4, 'DAC1Enable': 0, 'FIOAnalog': 63, 'EIOAnalog': 1, 'TimerCounterConfig': 64, 'EnableCounter1': False, 'EnableCounter0': False}
+        >>> d.configDigital(u3.FIO4, u3.FIO5, u3.EIO0)
+        Sent:  [0x47, 0xf8, 0x3, 0xb, 0x40, 0x0, 0x0, 0x0, 0x40, 0x0, 0x0, 0x0]
+        Result:  [0x87, 0xf8, 0x3, 0xb, 0x80, 0x0, 0x0, 0x0, 0x40, 0x0, 0x3f, 0x1]
+        Sent:  [0x63, 0xf8, 0x3, 0xb, 0x5c, 0x0, 0xd, 0x0, 0x40, 0x0, 0xf, 0x0]
+        Result:  [0x56, 0xf8, 0x3, 0xb, 0x4f, 0x0, 0x0, 0x0, 0x40, 0x0, 0xf, 0x0]
+        {'NumberOfTimersEnabled': 0, 'TimerCounterPinOffset': 4, 'DAC1Enable': 0, 'FIOAnalog': 15, 'EIOAnalog': 0, 'TimerCounterConfig': 64, 'EnableCounter1': False, 'EnableCounter0': False}
+
+        """
+        configIODict = self.configIO()
+        # Without args, return the same as configIO()
+        if len(args) == 0:
+            return configIODict
+
+        FIOAnalog, EIOAnalog = configIODict['FIOAnalog'], configIODict['EIOAnalog']
+        #
+        for i in args:
+            if i > EIO7:
+                pass    # Invalid. Must be in the range FIO0-EIO7.
+            elif i < EIO0:
+                if FIOAnalog & 2**i:    # If it is set
+                    FIOAnalog ^= 2**i   # Remove it
+            else:
+                if EIOAnalog & 2**(i-EIO0):   # Start the EIO counting a 0, not 8
+                    EIOAnalog ^= 2**(i-EIO0)
+        return self.configIO(FIOAnalog = FIOAnalog, EIOAnalog = EIOAnalog)
 
     def _buildBuffer(self, sendBuffer, readLen, commandlist):
         """
