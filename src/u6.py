@@ -884,7 +884,7 @@ class U6(Device):
               SCLPinNum, Which pin is clock
               NumI2CBytesToReceive, Number of I2C bytes to expect back.
               AddressByte, The address as you would put it in the lowlevel
-                           packet. You don't have to set this.
+                           packet. Overrides Address. Optional.
         Desc: Sends and receives serial data using I2C synchronous
               communication. Section 5.3.21 of the User's Guide.
         """

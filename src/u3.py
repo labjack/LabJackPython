@@ -1180,7 +1180,7 @@ class U3(Device):
         return { 'AsynchBytes' : result[8:], 'NumAsynchBytesInRXBuffer' : result[7] }
     asynchRX.section = 2
     
-    def i2c(self, Address, I2CBytes, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 6, SCLPinNum = 7, NumI2CBytesToReceive = 0):
+    def i2c(self, Address, I2CBytes, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 6, SCLPinNum = 7, NumI2CBytesToReceive = 0, AddressByte = None):
         """
         Name: U3.i2c(Address, I2CBytes, ResetAtStart = False, SpeedAdjust = 0,
                      SDAPinNum = 6, SCLPinNum = 7, NumI2CBytesToReceive = 0,
@@ -1190,6 +1190,8 @@ class U3(Device):
               I2CBytes, must be a list of bytes to send.
               See section 5.3.19 of the user's guide.
               AddressByte, use this if you don't want a shift applied.
+                           This address will be put it in the low-level 
+                           packet directly and overrides Address. Optional.
         
         Desc: Sends and receives serial data using I2C synchronous
               communication.
@@ -1221,7 +1223,10 @@ class U3(Device):
         command[7] = SpeedAdjust
         command[8] = SDAPinNum
         command[9] = SCLPinNum
-        command[10] = Address << 1
+        if AddressByte != None:
+            command[10] = AddressByte
+        else:
+            command[10] = Address << 1
         command[12] = numBytes
         if oddPacket:
             command[12] = numBytes-1
