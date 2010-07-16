@@ -1103,8 +1103,8 @@ def listAll(deviceType, connectionType = 1):
             f.close()
             serverSocket.close()
             
-            print "Result of scan:"
-            print lines
+            #print "Result of scan:"
+            #print lines
             return lines
     
     if deviceType == 12:
@@ -2803,8 +2803,8 @@ class LJSocketHandle(object):
                 f.close()
                 serverSocket.close()
                 
-                print "Result of scan:"
-                print lines
+                #print "Result of scan:"
+                #print lines
                 
                 if firstFound and len(lines) > 0:
                     self.socket = socket.socket()
