@@ -1,24 +1,25 @@
-"""
-" An example script to show how to output a sin wave using a DAC.
-" Because we have to do it all in software, there are limitations on how fast
-" we can update the DAC. Update intervals faster than 5 ms may give weird
-" results because of the large percentage of missed updates.
-"
-" Note: This example requires Python 2.6 to run.
-"
-" When changing the update interval and frequency, consider how your values
-" effect the waveform. A slow update interval coupled with a fast frequency
-" can result in strange behavior. Try to keep the period (1/frequency) much
-" greater than update interval.
-"
-"""
+# An example script to show how to output a sine wave using a DAC.
+# Because we have to do it all in software, there are limitations on how fast
+# we can update the DAC. Update intervals faster than 5 ms may give weird
+# results because of the large percentage of missed updates.
+#
+# Note: This example uses signal.setitimer() and signal.alarm(), and therefore 
+# requires Python 2.6 on Unix to run. See:
+#     http://docs.python.org/library/signal.html#signal.setitimer
+#     http://docs.python.org/library/signal.html#signal.alarm
+#
+# When changing the update interval and frequency, consider how your values
+# effect the waveform. A slow update interval coupled with a fast frequency
+# can result in strange behavior. Try to keep the period (1/frequency) much
+# greater than update interval.
+
 
 # Constants. Change these to change the results:
 
 # Controls how fast the DAC will be updated, in seconds.
 UPDATE_INTERVAL = 0.005
 
-# The frequency of the sin wave, in Hz
+# The frequency of the sine wave, in Hz
 FREQUENCY = 10
 
 # Imports:
@@ -28,7 +29,7 @@ import math # For sin function
 from datetime import datetime # For printing times
 
 if __name__ == '__main__':
-    print "This program will attempt to generate a sin wave with a frequency of %s Hz, updating once every %s seconds." % (FREQUENCY, UPDATE_INTERVAL)
+    print "This program will attempt to generate a sine wave with a frequency of %s Hz, updating once every %s seconds." % (FREQUENCY, UPDATE_INTERVAL)
     
     
     print "Opening LabJack...",

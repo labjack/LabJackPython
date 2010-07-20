@@ -46,7 +46,8 @@ class UE9(Device):
         
         self.debug = debug
         self.calData = None
-        
+        self.controlFWVersion = self.commFWVersion = None
+
         if autoOpen:
             self.open(**kargs)
     
@@ -175,7 +176,8 @@ class UE9(Device):
         
         self.hwVersion = "%s.%02d" % (result[35], result[34])
         self.commFWVersion = "%s.%02d" % (result[37], result[36])
-        
+        self.firmwareVersion = [self.controlFWVersion, self.commFWVersion]
+
         return { 'LocalID' : self.localId, 'PowerLevel' : self.powerLevel, 'IPAddress' : self.ipAddress, 'Gateway' : self.gateway, 'Subnet' : self.subnet, 'PortA' : self.portA, 'PortB' : self.portB, 'DHCPEnabled' : self.DHCPEnabled, 'ProductID' : self.productId, 'MACAddress' : self.macAddress, 'HWVersion' : self.hwVersion, 'CommFWVersion' : self.commFWVersion, 'SerialNumber' : self.serialNumber}
     
     def flushBuffer(self):
@@ -367,6 +369,7 @@ class UE9(Device):
         
         self.powerLevel = result[7]
         self.controlFWVersion = "%s.%02d" % (result[10], result[9])
+        self.firmwareVersion = [self.controlFWVersion, self.commFWVersion]
         self.controlBLVersion = "%s.%02d" % (result[12], result[11])
         self.hiRes = bool(result[13] & 1)
         
@@ -1015,13 +1018,14 @@ class UE9(Device):
         
         return { 'AsynchBytes' : result[8:], 'NumAsynchBytesInRXBuffer' : result[7] }
 
-    def i2c(self, Address, I2CBytes, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 1, SCLPinNum = 0, NumI2CBytesToReceive = 0):
+    def i2c(self, Address, I2CBytes, ResetAtStart = False, EnableClockStretching = False, SpeedAdjust = 0, SDAPinNum = 1, SCLPinNum = 0, NumI2CBytesToReceive = 0):
         """
-        Name: UE9.i2c(Address, I2CBytes, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 0, SCLPinNum = 1, NumI2CBytesToReceive = 0, AddressByte = None)
+        Name: UE9.i2c(Address, I2CBytes, ResetAtStart = False, EnableClockStretching = False, SpeedAdjust = 0, SDAPinNum = 0, SCLPinNum = 1, NumI2CBytesToReceive = 0, AddressByte = None)
         Args: Address, the address (not shifted over)
               I2CBytes, must be a list of bytes to send.
               See section 5.3.20 of the user's guide.
-              AddressByte, use this if you don't want a shift applied.
+              AddressByte, The address as you would put it in the lowlevel
+                           packet. Overrides Address. Optional
         Desc: Sends and receives serial data using I2C synchronous
               communication.
         """
@@ -1045,12 +1049,17 @@ class UE9(Device):
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
         if ResetAtStart:
-            command[6] = (1 << 1)
+            command[6] |= (1 << 1)
+        if EnableClockStretching:
+            command[6] |= (1 << 3)
         
         command[7] = SpeedAdjust
         command[8] = SDAPinNum
         command[9] = SCLPinNum
-        command[10] = Address << 1
+        if AddressByte != None:
+            command[10] = AddressByte
+        else:
+            command[10] = Address << 1
         command[12] = numBytes
         if oddPacket:
             command[12] = numBytes-1

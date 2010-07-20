@@ -519,7 +519,7 @@ class U3(Device):
             elif i < EIO0:
                 FIOAnalog |= 2**i
             else:
-                EIOAnalog |= 2**(i-EIO0)   # Start the EIO counting a 0, not 8
+                EIOAnalog |= 2**(i-EIO0)   # Start the EIO counting at 0, not 8
         return self.configIO(FIOAnalog = FIOAnalog, EIOAnalog = EIOAnalog)
 
     def configDigital(self, *args):
@@ -564,7 +564,7 @@ class U3(Device):
                 if FIOAnalog & 2**i:    # If it is set
                     FIOAnalog ^= 2**i   # Remove it
             else:
-                if EIOAnalog & 2**(i-EIO0):   # Start the EIO counting a 0, not 8
+                if EIOAnalog & 2**(i-EIO0):   # Start the EIO counting at 0, not 8
                     EIOAnalog ^= 2**(i-EIO0)
         return self.configIO(FIOAnalog = FIOAnalog, EIOAnalog = EIOAnalog)
 
@@ -985,7 +985,7 @@ class U3(Device):
                           TimeoutPeriod = 60, DIOState = 0, DIONumber = 0,
                           onlyRead = False)
         
-        Args: Check out section 5.3.14 of the user's guide.
+        Args: Check out section 5.2.14 of the user's guide.
               Set onlyRead to True to perform only a read
         
         Desc: This function will write the configuration of the watchdog,
@@ -1067,7 +1067,7 @@ class U3(Device):
                      CLKPinNum = 5, MISOPinNum = 6, MOSIPinNum = 7)
         
         Args: SPIBytes, a list of bytes to be transferred.
-              See Section 5.3.15 of the user's guide.
+              See Section 5.2.15 of the user's guide.
         
         Desc: Sends and receives serial data using SPI synchronous
               communication.
@@ -1123,7 +1123,7 @@ class U3(Device):
         Name: U3.asynchConfig(Update = True, UARTEnable = True, 
                               DesiredBaud = 9600, olderHardware = False,
                               configurePins = True)
-        Args: See section 5.3.16 of the User's Guide.
+        Args: See section 5.2.16 of the User's Guide.
               olderHardware, If using hardware 1.21, please set olderHardware 
                              to True and read the timer configuration first.
               configurePins, Will call the configIO to set up pins for you.
@@ -1198,7 +1198,7 @@ class U3(Device):
         Args: AsynchBytes, must be a list of bytes to transfer.
         
         Desc: Sends bytes to the U3 UART which will be sent asynchronously on
-              the transmit line. See section 5.3.17 of the user's guide.
+              the transmit line. See section 5.2.17 of the user's guide.
         
         returns a dictionary:
         {
@@ -1248,7 +1248,7 @@ class U3(Device):
         
         Desc: Reads the oldest 32 bytes from the U3 UART RX buffer
               (received on receive terminal). The buffer holds 256 bytes. See
-              section 5.3.18 of the User's Guide.
+              section 5.2.18 of the User's Guide.
 
         returns a dictonary:
         {
@@ -1277,16 +1277,19 @@ class U3(Device):
         return { 'AsynchBytes' : result[8:], 'NumAsynchBytesInRXBuffer' : result[7] }
     asynchRX.section = 2
     
-    def i2c(self, Address, I2CBytes, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 6, SCLPinNum = 7, NumI2CBytesToReceive = 0):
+    def i2c(self, Address, I2CBytes, ResetAtStart = False, EnableClockStretching = False, SpeedAdjust = 0, SDAPinNum = 6, SCLPinNum = 7, NumI2CBytesToReceive = 0, AddressByte = None):
         """
-        Name: U3.i2c(Address, I2CBytes, ResetAtStart = False, SpeedAdjust = 0,
+        Name: U3.i2c(Address, I2CBytes, ResetAtStart = False, 
+                     EnableClockStretching = False, SpeedAdjust = 0,
                      SDAPinNum = 6, SCLPinNum = 7, NumI2CBytesToReceive = 0,
                      AddressByte = None)
         
         Args: Address, the address (not shifted over)
               I2CBytes, must be a list of bytes to send.
-              See section 5.3.19 of the user's guide.
+              See section 5.2.19 of the user's guide.
               AddressByte, use this if you don't want a shift applied.
+                           This address will be put it in the low-level 
+                           packet directly and overrides Address. Optional.
         
         Desc: Sends and receives serial data using I2C synchronous
               communication.
@@ -1313,12 +1316,17 @@ class U3(Device):
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
         if ResetAtStart:
-            command[6] = (1 << 1)
+            command[6] |= (1 << 1)
+        if EnableClockStretching:
+            command[6] |= (1 << 3)
         
         command[7] = SpeedAdjust
         command[8] = SDAPinNum
         command[9] = SCLPinNum
-        command[10] = Address << 1
+        if AddressByte != None:
+            command[10] = AddressByte
+        else:
+            command[10] = Address << 1
         command[12] = numBytes
         if oddPacket:
             command[12] = numBytes-1
@@ -1345,7 +1353,7 @@ class U3(Device):
         """
         Name: U3.sht1x(DataPinNum = 4, ClockPinNum = 5, SHTOptions = 0xc0)
         
-        Args: See section 5.3.20 of the user's guide.
+        Args: See section 5.2.20 of the user's guide.
               SHTOptions, see below.
         
         Desc: Reads temperature and humidity from a Sensirion SHT1X sensor

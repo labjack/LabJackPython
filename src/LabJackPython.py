@@ -1005,8 +1005,8 @@ def listAll(deviceType, connectionType = 1):
             f.close()
             serverSocket.close()
             
-            print "Result of scan:"
-            print lines
+            #print "Result of scan:"
+            #print lines
             return lines
     
     if deviceType == 12:
@@ -2612,7 +2612,7 @@ def __listAllU3Unix():
 
 
 def __listAllU6Unix():
-    """ List all for U6's """
+    """ List all for U6s """
     deviceList = {}
     numDevices = staticLib.LJUSB_GetDevCount(LJ_dtU6)
 
@@ -2705,8 +2705,8 @@ class LJSocketHandle(object):
                 f.close()
                 serverSocket.close()
                 
-                print "Result of scan:"
-                print lines
+                #print "Result of scan:"
+                #print lines
                 
                 if firstFound and len(lines) > 0:
                     self.socket = socket.socket()
