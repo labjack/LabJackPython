@@ -1,6 +1,13 @@
 """
-" A U6 class to hold helper functions. Inspired by u3.py
-"
+Name: u6.py
+Desc: Defines the U6 class, which makes working with a U6 much easier. All of
+      the low-level functions for the U6 are implemented as functions of the U6
+      class. There are also a handful additional functions which improve upon
+      the interface provided by the low-level functions.
+
+To learn about the low-level functions, please see Section 5.2 of the U6 User's Guide:
+
+http://labjack.com/support/u6/users-guide/5.2
 """
 from LabJackPython import *
 
@@ -120,7 +127,15 @@ class CalibrationInfo(object):
         return str(self.__dict__)
 
 class U6(Device):
-    """ A Python class that represents a U6 """
+    """
+    U6 Class for all U6 specific low-level commands.
+    
+    Example:
+    >>> import u6
+    >>> d = u6.U6()
+    >>> print d.configU6()
+    {'SerialNumber': 320032102, ... , 'FirmwareVersion': '1.26'}
+    """
     def __init__(self, debug = False, autoOpen = True, **kargs):
         """
         Name: U6.__init__(self, debug = False, autoOpen = True, **kargs)

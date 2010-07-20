@@ -1,6 +1,13 @@
 """
-" A UE9 class to rock your face off. Inspired by u3.py
-"
+Name: ue9.py
+Desc: Defines the UE9 class, which makes working with a UE9 much easier. All of
+      the low-level functions for the UE9 are implemented as functions of the
+      UE9 class. There are also a handful additional functions which improve
+      upon the interface provided by the low-level functions.
+
+To learn about the low-level functions, please see Section 5.2 of the UE9 User's Guide:
+
+http://labjack.com/support/ue9/users-guide/5.2 
 """
 from LabJackPython import *
 
@@ -18,7 +25,15 @@ def unpackShort(bytes):
 DEFAULT_CAL_CONSTANTS = { "AINSlopes" : { '0' : 0.000077503, '1' : 0.000038736, '2' : 0.000019353, '3' : 0.0000096764, '8' : 0.00015629  }, "AINOffsets" : { '0' : -0.012000, '1' : -0.012000, '2' : -0.012000, '3' : -0.012000, '8' : -5.1760 } }
 
 class UE9(Device):
-    """ A nice python class to represent a UE9 """
+    """
+    UE9 Class for all UE9 specific low-level commands.
+    
+    Example:
+    >>> import ue9
+    >>> d = ue9.UE9()
+    >>> print d.commConfig()
+    {'CommFWVersion': '1.47', ..., 'IPAddress': '192.168.1.114'}
+    """
     def __init__(self, debug = False, autoOpen = True, **kargs):
         """
         Name: UE9.__init__(self)

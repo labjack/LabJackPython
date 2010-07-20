@@ -1,6 +1,13 @@
 """
 Name: u3.py
-Desc: Defines a much better U3 class.
+Desc: Defines the U3 class, which makes working with a U3 much easier. All of
+      the low-level functions for the U3 are implemented as functions of the U3
+      class. There are also a handful additional functions which improve upon
+      the interface provided by the low-level functions.
+
+To learn about the low-level functions, please see Section 5.2 of the U3 User's Guide:
+
+http://labjack.com/support/u3/users-guide/5.2 
 
 Section Number Mapping:
 1 = Object Functions
@@ -20,8 +27,11 @@ class U3(Device):
     """
     U3 Class for all U3 specific low-level commands.
     
-    u3 = U3()
-    
+    Example:
+    >>> import u3
+    >>> d = u3.U3()
+    >>> print d.configU3()
+    {'SerialNumber': 320032102, ... , 'FirmwareVersion': '1.26'}
     """
     def __init__(self, debug = False, autoOpen = True, **kargs):
         """
@@ -1456,7 +1466,7 @@ class U3(Device):
               dacNumber, 0 or 1, helps apply the correct calibration
               is16Bits, True if you are going to use the 16-bit DAC command
               
-        Desc: Takes a voltage, and turns it into the bits neede for the DAC 
+        Desc: Takes a voltage, and turns it into the bits needed for the DAC 
               Feedback commands.
         """
         if self.calData is not None:

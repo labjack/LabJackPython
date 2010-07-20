@@ -1,119 +1,10 @@
 """
 Multi-Platform Python wrapper that implements functions from the LabJack 
-Windows UD Driver, and the LabJack Linux and Mac drivers.
+Windows UD Driver, and the Exodriver.
 
-Author LabJack Corporation
+This python wrapper is intended to make working with your LabJack device easy. The functions contained in this module are helper and device agnostic functions. This module provides the base Device class which the U3, U6, and UE9 classes inherit from.
 
-Version 5-18-2010
-
-For use with drivers:
-    - UD Driver or Mac/Linux Exodriver
-
-
-This python wrapper is intended to be used as an easy way to implement the 
-Windows UD driver, the Mac driver or the Linux driver.  It uses the module ctypes 
-to interface with the appropriate operating system LabJack driver.  For versions 
-of Python older than 2.4 and older, CTypes is available at 
-http://sourceforge.net/projects/ctypes/.  Python 2.5 and new comes with the ctypes
-module as a standard.
-
-Version History
-    - 0.1.0: Converted many UD functions to Python using ctyes package.
-    - 0.2.0: Made linux support for Open, Read, Write, and driverVersion.
-    - 0.3.0: Made Mac support for Open, Read, Write, and driverVersion.
-    - 0.4.0 Wrote initial epydoc documentation.
-    - 0.5.0 December 12, 2006
-        - Added Get Driver Version for Linux
-        - Made windows functions return an error when called by a Linux or Mac OS.
-        - Fixed a twos compliment problem with Read and Write functions
-    - 0.5.1 January 8, 2007
-        - Fixed an error with eGetRaw which disallowed x1 to be a double array.
-        - Added a stream example program to the driver package.
-    - 0.5.2 January 23, 2007
-        - Added a DriverPresent function to test if the necessary drivers are present 
-          for the wrapper to run.
-    - 0.6.0 Febuary 6, 2007
-        - Added the LJHash function which is used for authorizing LabJack devices.
-    - 0.6.1 July 19, 2007
-        - Updated the documentation concerning the mac support.
-    - 0.6.2 October 10, 2007
-        - Added Checksum functions to driver
-        - Added windows functionality for write and read
-        - Added example functions for sht commands and u3 feedback
-    - 0.6.3 March 5, 2008
-        - Fixed TCP read and write error
-    - 0.6.4 July 31, 2008
-        - Updated Examples/U3/u3.py
-    - 0.7.0 November 18, 2008
-        - Modified listAll to display device information in a different, more intuitive way.
-        - Added a Device class for simpler usage
-        - openLabJack can now search for devices to open via ipAddress, localId, or serialNumber
-        - Put most functions into proper camelcase notation
-        - Removed large static function encapsulating all functions.  Works as one module now.
-        - Changed Read and Write to increase speed
-        - Performed many other minor revisions.
-    - 0.8.0 December 3, 2009
-        - All changes made on GitHub up to this point.
-        - Added LJSocket support
-        - U3/U6/UE9 now all auto-open on construction
-    - 0.8.1 February 15, 2010
-        - All bug fixes and changes made on GitHub to date.
-        - Re-worked open, write, and read to be broken out into several 
-          functions.
-            - Re-work of open now allows the use of firstFound and devNumber
-              for Ethernet UE9's on Mac/Linux.
-            - Re-work of open also allows Windows User's to work with their
-              UE9 over Ethernet without the UD Driver installed.
-        - Added better support for up-and-coming devices, including adding
-          bridge.py to the list of installed modules.
-    - March 11, 2010
-        - All bug fixes and changes made on GitHub to date.
-        - Trying a new system of making regular tagged releases
-        - Version numbers of LabJackPython are now dates.
-    - May 18, 2010
-        - Added lowlevelErrorToString to aid in mapping low-level errorcodes to
-          descriptions.
-        - Added better error reporting if LabJackPython can't connect to the
-          Modbus port on the UE9.
-        - Added better error reporting for U6s with *really* old firmware.
-        - Added a PWM example.
-        - Ctype's use_errno is only on Python 2.6, so added some try except
-          blocks so LabJackPython will still work with 2.5
-        - Added support for the SetDefaults command on the UE9 in Device class.
-        - Fixed a bug where Counters would return a tuple, not the expected
-          result.
-        - Added support for the new DSP Feedback command on the U6.
-        - Added support for ReadDefaults in Device class.
-        - Added function readDefaultsConfig to read default state.
-        - The getFeedback function will now check if the packet you are trying
-          to send is too big, or if the response will be too long.
-        - Fixed a bug where the LJSocket parameter wasn't being passed along.
-        - Added code that sets the transaction ID for all Modbus packets.
-          NOTE FOR UE9s: You will need to upgrade to Comm firmware 1.50
-        - Fixed a bug where after opening a device with LJSocket, LabJackPython
-          would then try to open the device with the UD Driver. Thanks to 
-          Andres Mejias for reporting the issue.
-        - Fixed a bug in softReset() and hardReset(). Thanks to Shawkat for
-          reporting the issue.
-        - streamStart() and streamStop() will raise exceptions if there is an
-          error.
-        - Added example of how to post to CloudDot.
-        - Added K-Type Thermocouple example
-        - Added basic Linux support for the U12.
-        - Added hexWithoutQuotes function to print USB packets in a nicer way. 
-          Also updated any debug statement to use it.
-        - Removed the "Writing:" debug output.
-        - Fixed a bug where DAC0_16 was using 8 bits, not 16.
-        - Added functional UART support to the U6.
-        - Added better error messages for incorrect command bytes and when the
-          UD driver fails to load.
-        - Fixed a bug with ListAll on Unix where LabJackPython would fail 
-          trying to open devices that were already opened.
-        - Added example for working with the DCA-10
-        - Fixed a bug where transaction IDs were not being set when writing
-          floating point numbers over Modbus.
-        - Added error reporting to help people who don't upgrade their UE9s to
-          Comm Firmware 1.50.
+A typical user should start with their device's module, such as u3.py.
 """
 # We use the 'with' keyword to manage the thread-safe device lock. It's built-in on 2.6; 2.5 requires an import.
 from __future__ import with_statement
@@ -126,10 +17,9 @@ from decimal import Decimal
 import socket
 import Modbus
 import atexit # For auto-closing devices
-import threading # For a thread-save device lock
+import threading # For a thread-safe device lock
 
-__version = "5-18-2010"
-LABJACKPYTHON_VERSION = "5-18-2010"
+LABJACKPYTHON_VERSION = "7-20-2010"
 
 SOCKET_TIMEOUT = 3
 BROADCAST_SOCKET_TIMEOUT = 1
@@ -143,8 +33,6 @@ class LabJackException(Exception):
     
     WINDOWS ONLY
     If errorString is not specified then errorString is set by errorCode
-    
-    #TODO Make errorCode to errorString conversion for non windows systems.
     """
     def __init__(self, ec = 0, errorString = ''):
         self.errorCode = ec
@@ -170,6 +58,13 @@ class NullHandleException(LabJackException):
         self.errorString = "Couldn't open device. Please check that the device you are trying to open is connected."
 
 def errcheck(ret, func, args):
+    """
+    Whenever a function is called through ctypes, the return value is passed to
+    this function to be checked for errors.
+    
+    Support for errno didn't come until 2.6, so Python 2.5 people should 
+    upgrade.
+    """
     if ret == -1:
         try:
             ec = ctypes.get_errno()
@@ -180,6 +75,9 @@ def errcheck(ret, func, args):
         return ret
 
 def _loadLinuxSo():
+    """
+    Attempts to load the liblabjackusb.so for Linux.
+    """
     try:
         l = ctypes.CDLL("liblabjackusb.so", use_errno=True)
     except TypeError:
@@ -189,6 +87,9 @@ def _loadLinuxSo():
     return l 
 
 def _loadMacDylib():
+    """
+    Attempts to load the liblabjackusb.dylib for Mac OS X.
+    """
     try:
         l = ctypes.CDLL("liblabjackusb.dylib", use_errno=True)
     except TypeError:
@@ -228,6 +129,7 @@ except LabJackException, e:
     print "%s: %s" % ( type(e), e )
     staticLib = None
     
+# Attempt to load the windows Skymote library.
 try:
     skymoteLib = ctypes.windll.LoadLibrary("liblabjackusb")
 except:

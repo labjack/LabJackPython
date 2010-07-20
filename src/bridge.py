@@ -1,6 +1,7 @@
 """
 Name: bridge.py
-Desc: Defines a class for working with the wireless bridge
+Desc: Provides a Bridge and Mote class for working with SkyMote bridges and 
+      motes.
 """
 from LabJackPython import *
 
@@ -36,7 +37,8 @@ class Bridge(Device):
         else:
             self.serialNumber = None
         
-        self.firmwareVersion = "0.1"
+        self.ethernetFWVersion = None
+        self.usbFWVersion = None
         self.deviceName = "SkyMote Bridge"
         self.devType = 0x501
         self.unitId = 0
@@ -90,8 +92,14 @@ class Bridge(Device):
     def readNumberOfMotes(self):
         return self.readRegister(59200, numReg = 2, format = '>I')
         
+    def ethernetFirmwareVersion(self):
+        left, right = self.readRegister(56000, format = 'BB')
+        self.ethernetFWVersion = "%s.%02d" % (left, right)
+        return "%s.%02d" % (left, right)
+    
     def usbFirmwareVersion(self):
         left, right = self.readRegister(57000, format = 'BB')
+        self.usbFWVersion = "%s.%02d" % (left, right)
         return "%s.%02d" % (left, right)
     
     def usbBufferStatus(self):
