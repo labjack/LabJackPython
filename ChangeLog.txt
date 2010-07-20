@@ -1,0 +1,123 @@
+Version History
+- 0.1.0: Converted many UD functions to Python using ctyes package.
+- 0.2.0: Made linux support for Open, Read, Write, and driverVersion.
+- 0.3.0: Made Mac support for Open, Read, Write, and driverVersion.
+- 0.4.0 Wrote initial epydoc documentation.
+- 0.5.0 December 12, 2006
+    - Added Get Driver Version for Linux
+    - Made windows functions return an error when called by a Linux or Mac OS.
+    - Fixed a twos compliment problem with Read and Write functions
+- 0.5.1 January 8, 2007
+    - Fixed an error with eGetRaw which disallowed x1 to be a double array.
+    - Added a stream example program to the driver package.
+- 0.5.2 January 23, 2007
+    - Added a DriverPresent function to test if the necessary drivers are present 
+      for the wrapper to run.
+- 0.6.0 Febuary 6, 2007
+    - Added the LJHash function which is used for authorizing LabJack devices.
+- 0.6.1 July 19, 2007
+    - Updated the documentation concerning the mac support.
+- 0.6.2 October 10, 2007
+    - Added Checksum functions to driver
+    - Added windows functionality for write and read
+    - Added example functions for sht commands and u3 feedback
+- 0.6.3 March 5, 2008
+    - Fixed TCP read and write error
+- 0.6.4 July 31, 2008
+    - Updated Examples/U3/u3.py
+- 0.7.0 November 18, 2008
+    - Modified listAll to display device information in a different, more intuitive way.
+    - Added a Device class for simpler usage
+    - openLabJack can now search for devices to open via ipAddress, localId, or serialNumber
+    - Put most functions into proper camelcase notation
+    - Removed large static function encapsulating all functions.  Works as one module now.
+    - Changed Read and Write to increase speed
+    - Performed many other minor revisions.
+- 0.8.0 December 3, 2009
+    - All changes made on GitHub up to this point.
+    - Added LJSocket support
+    - U3/U6/UE9 now all auto-open on construction
+- 0.8.1 February 15, 2010
+    - All bug fixes and changes made on GitHub to date.
+    - Re-worked open, write, and read to be broken out into several 
+      functions.
+        - Re-work of open now allows the use of firstFound and devNumber
+          for Ethernet UE9's on Mac/Linux.
+        - Re-work of open also allows Windows User's to work with their
+          UE9 over Ethernet without the UD Driver installed.
+    - Added better support for up-and-coming devices, including adding
+      bridge.py to the list of installed modules.
+- March 11, 2010
+    - All bug fixes and changes made on GitHub to date.
+    - Trying a new system of making regular tagged releases
+    - Version numbers of LabJackPython are now dates.
+- May 18, 2010
+    - Added lowlevelErrorToString to aid in mapping low-level errorcodes to
+      descriptions.
+    - Added better error reporting if LabJackPython can't connect to the
+      Modbus port on the UE9.
+    - Added better error reporting for U6s with *really* old firmware.
+    - Added a PWM example.
+    - Ctype's use_errno is only on Python 2.6, so added some try except
+      blocks so LabJackPython will still work with 2.5
+    - Added support for the SetDefaults command on the UE9 in Device class.
+    - Fixed a bug where Counters would return a tuple, not the expected
+      result.
+    - Added support for the new DSP Feedback command on the U6.
+    - Added support for ReadDefaults in Device class.
+    - Added function readDefaultsConfig to read default state.
+    - The getFeedback function will now check if the packet you are trying
+      to send is too big, or if the response will be too long.
+    - Fixed a bug where the LJSocket parameter wasn't being passed along.
+    - Added code that sets the transaction ID for all Modbus packets.
+      NOTE FOR UE9s: You will need to upgrade to Comm firmware 1.50
+    - Fixed a bug where after opening a device with LJSocket, LabJackPython
+      would then try to open the device with the UD Driver. Thanks to 
+      Andres Mejias for reporting the issue.
+    - Fixed a bug in softReset() and hardReset(). Thanks to Shawkat for
+      reporting the issue.
+    - streamStart() and streamStop() will raise exceptions if there is an
+      error.
+    - Added example of how to post to CloudDot.
+    - Added K-Type Thermocouple example
+    - Added basic Linux support for the U12.
+    - Added hexWithoutQuotes function to print USB packets in a nicer way. 
+      Also updated any debug statement to use it.
+    - Removed the "Writing:" debug output.
+    - Fixed a bug where DAC0_16 was using 8 bits, not 16.
+    - Added functional UART support to the U6.
+    - Added better error messages for incorrect command bytes and when the
+      UD driver fails to load.
+    - Fixed a bug with ListAll on Unix where LabJackPython would fail 
+      trying to open devices that were already opened.
+    - Added example for working with the DCA-10
+    - Fixed a bug where transaction IDs were not being set when writing
+      floating point numbers over Modbus.
+    - Added error reporting to help people who don't upgrade their UE9s to
+      Comm Firmware 1.50.
+- July 20, 2010
+    - Moved version history info into ChangeLog.txt
+    - Settled on LABJACKPYTHON_VERSION to access version number programmatically.
+    - Re-wrote the header to LabJackPython.py, u3.py, u6.py, ue9.py, u12.py, and bridge.py
+    - Added a firmwareVersion attribute to the UE9 class
+    - Corrected a typo in u3.py's configDigital and configAnalog
+    - Removed print statement from every LJSocket scan
+    - Added EnableClockStretching flag to I2C low-level commands for U3, U6, and UE9
+    - Added AddressByte argument to u3.py's i2c() method
+    - Corrected a typo in LabJackPython's __listAllU6Unix()
+    - Added Unix requirement of outputSinDAC.py
+    - Improved documentation of outputSinDAC.py
+    - Added configAnalog() and configDigital() methods
+    - Corrected an error in TimerConfig constructor
+    - Removed SkyMote support from listAll
+    - Added a check for zero length packets to checkBytes
+    - Fixed a typo in the output of the streaming examples
+    - Added support for streaming special channel 193 (EIO/FIO) 
+    - Fixed some bugs in the export/import config functions
+    - Fixed a bug in UE9's commConfig
+    - Added import/export support for the UE9
+    - Made name a property
+    - Improved the documentation of U3 Feedback commands
+    - Fixed GetDriverVersion to work with both the UD driver and the Exodriver
+    - UE9 now has a getAIN function and Feedback will convert the binary to a voltage.
+    - Added a streaming example that uses threads.
