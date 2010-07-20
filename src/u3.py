@@ -509,7 +509,7 @@ class U3(Device):
             elif i < EIO0:
                 FIOAnalog |= 2**i
             else:
-                EIOAnalog |= 2**(i-EIO0)   # Start the EIO counting a 0, not 8
+                EIOAnalog |= 2**(i-EIO0)   # Start the EIO counting at 0, not 8
         return self.configIO(FIOAnalog = FIOAnalog, EIOAnalog = EIOAnalog)
 
     def configDigital(self, *args):
@@ -554,7 +554,7 @@ class U3(Device):
                 if FIOAnalog & 2**i:    # If it is set
                     FIOAnalog ^= 2**i   # Remove it
             else:
-                if EIOAnalog & 2**(i-EIO0):   # Start the EIO counting a 0, not 8
+                if EIOAnalog & 2**(i-EIO0):   # Start the EIO counting at 0, not 8
                     EIOAnalog ^= 2**(i-EIO0)
         return self.configIO(FIOAnalog = FIOAnalog, EIOAnalog = EIOAnalog)
 
