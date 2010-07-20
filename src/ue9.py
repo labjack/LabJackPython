@@ -31,7 +31,8 @@ class UE9(Device):
         
         self.debug = debug
         self.calData = None
-        
+        self.controlFWVersion = self.commFWVersion = None
+
         if autoOpen:
             self.open(**kargs)
     
@@ -160,7 +161,8 @@ class UE9(Device):
         
         self.hwVersion = "%s.%02d" % (result[35], result[34])
         self.commFWVersion = "%s.%02d" % (result[37], result[36])
-        
+        self.firmwareVersion = [self.controlFWVersion, self.commFWVersion]
+
         return { 'LocalID' : self.localId, 'PowerLevel' : self.powerLevel, 'IPAddress' : self.ipAddress, 'Gateway' : self.gateway, 'Subnet' : self.subnet, 'PortA' : self.portA, 'PortB' : self.portB, 'DHCPEnabled' : self.DHCPEnabled, 'ProductID' : self.productId, 'MACAddress' : self.macAddress, 'HWVersion' : self.hwVersion, 'CommFWVersion' : self.commFWVersion, 'SerialNumber' : self.serialNumber}
     
     def flushBuffer(self):
@@ -352,6 +354,7 @@ class UE9(Device):
         
         self.powerLevel = result[7]
         self.controlFWVersion = "%s.%02d" % (result[10], result[9])
+        self.firmwareVersion = [self.controlFWVersion, self.commFWVersion]
         self.controlBLVersion = "%s.%02d" % (result[12], result[11])
         self.hiRes = bool(result[13] & 1)
         
