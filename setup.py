@@ -4,5 +4,6 @@ setup(name='LabJackPython',
       description='The LabJack python module.',
       url='http://www.labjack.com',
       author='The LabJack crew',
+      package_dir = {'': 'src'},
       py_modules=['LabJackPython', 'Modbus', 'u3', 'u6', 'ue9', 'u12', 'bridge']
       )
