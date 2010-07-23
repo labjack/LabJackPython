@@ -13,6 +13,20 @@ from LabJackPython import *
 
 import struct, socket, select, ConfigParser
 
+def openAllUE9():
+    """
+    A helpful function which will open all the connected UE9s. Returns a 
+    dictionary where the keys are the serialNumber, and the value is the device
+    object.
+    """
+    returnDict = dict()
+    
+    for i in range(deviceCount(9)):
+        d = UE9(firstFound = False, devNumber = i+1)
+        returnDict[str(d.serialNumber)] = d
+        
+    return returnDict
+
 def parseIpAddress(bytes):
     return "%s.%s.%s.%s" % (bytes[3], bytes[2], bytes[1], bytes[0] )
     
@@ -1279,39 +1293,42 @@ class UE9(Device):
         # Make a new configuration file
         parser = ConfigParser.SafeConfigParser()
         
+        # Change optionxform so that options preserve their case.
+        parser.optionxform = str
+        
         # Local Id and name
         self.commConfig()
         self.controlConfig()
         
         section = "Identifiers"
         parser.add_section(section)
-        parser.set(section, "local id", str(self.localId))
-        parser.set(section, "name", str(self.getName()))
-        parser.set(section, "device type", str(self.devType))
-        parser.set(section, "macAddress", str(self.macAddress))
+        parser.set(section, "Local ID", str(self.localId))
+        parser.set(section, "Name", str(self.getName()))
+        parser.set(section, "Device Type", str(self.devType))
+        parser.set(section, "MAC Address", str(self.macAddress))
         
         # Comm Config settings
         section = "Communication"
         parser.add_section(section)
         
         parser.set(section, "DHCPEnabled", str(self.DHCPEnabled))
-        parser.set(section, "ipAddress", str(self.ipAddress))
-        parser.set(section, "subnet", str(self.subnet))
-        parser.set(section, "gateway", str(self.gateway))
-        parser.set(section, "portA", str(self.portA))
-        parser.set(section, "portB", str(self.portB))
+        parser.set(section, "IP Address", str(self.ipAddress))
+        parser.set(section, "Subnet", str(self.subnet))
+        parser.set(section, "Gateway", str(self.gateway))
+        parser.set(section, "PortA", str(self.portA))
+        parser.set(section, "PortB", str(self.portB))
         
         
         # FIO Direction / State
         section = "FIOs"
         parser.add_section(section)
         
-        parser.set(section, "FIOs Directions", str( self.readRegister(6750) ))
-        parser.set(section, "FIOs States", str( self.readRegister(6700) ))
-        parser.set(section, "EIOs Directions", str( self.readRegister(6751) ))
-        parser.set(section, "EIOs States", str( self.readRegister(6701) ))
-        parser.set(section, "CIOs Directions", str( self.readRegister(6752) ))
-        parser.set(section, "CIOs States", str( self.readRegister(6702) ))
+        parser.set(section, "FIO Directions", str( self.readRegister(6750) ))
+        parser.set(section, "FIO States", str( self.readRegister(6700) ))
+        parser.set(section, "EIO Directions", str( self.readRegister(6751) ))
+        parser.set(section, "EIO States", str( self.readRegister(6701) ))
+        parser.set(section, "CIO Directions", str( self.readRegister(6752) ))
+        parser.set(section, "CIO States", str( self.readRegister(6702) ))
         #parser.set(section, "MIOs Directions", str( self.readRegister(50591) ))
         #parser.set(section, "MIOs States", str( self.readRegister(50591) ))
             
@@ -1322,19 +1339,19 @@ class UE9(Device):
         dac0 = self.readRegister(5000)
         dac0 = max(dac0, 0)
         dac0 = min(dac0, 5)
-        parser.set(section, "dac0", "%0.2f" % dac0)
+        parser.set(section, "DAC0", "%0.2f" % dac0)
         
         dac1 = self.readRegister(5002)
         dac1 = max(dac1, 0)
         dac1 = min(dac1, 5)
-        parser.set(section, "dac1", "%0.2f" % dac1)
+        parser.set(section, "DAC1", "%0.2f" % dac1)
         
         # Timer Clock Configuration
         section = "Timer Clock Speed Configuration"
         parser.add_section(section)
         
-        parser.set(section, "timerclockbase", str(self.readRegister(7000)))
-        parser.set(section, "timerclockdivisor", str(self.readRegister(7002)))
+        parser.set(section, "TimerClockBase", str(self.readRegister(7000)))
+        parser.set(section, "TimerClockDivisor", str(self.readRegister(7002)))
         
         # Timers / Counters
         section = "Timers And Counters"
@@ -1351,8 +1368,8 @@ class UE9(Device):
         
         for i in range(nte):
             mode, value = self.readRegister(7100 + (i*2), numReg = 2, format = ">HH")
-            parser.set(section, "timer%s mode" % i, str(mode))
-            parser.set(section, "timer%s value" % i, str(value))
+            parser.set(section, "Timer%s Mode" % i, str(mode))
+            parser.set(section, "Timer%s Value" % i, str(value))
             
         
         

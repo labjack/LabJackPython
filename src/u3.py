@@ -23,6 +23,21 @@ FIO0, FIO1, FIO2, FIO3, FIO4, FIO5, FIO6, FIO7, \
 EIO0, EIO1, EIO2, EIO3, EIO4, EIO5, EIO6, EIO7, \
 CIO0, CIO1, CIO2, CIO3 = range(20)
 
+def openAllU3():
+    """
+    A helpful function which will open all the connected U3s. Returns a 
+    dictionary where the keys are the serialNumber, and the value is the device
+    object.
+    """
+    returnDict = dict()
+    
+    for i in range(deviceCount(3)):
+        d = U3(firstFound = False, devNumber = i+1)
+        returnDict[str(d.serialNumber)] = d
+        
+    return returnDict
+        
+
 class U3(Device):
     """
     U3 Class for all U3 specific low-level commands.
@@ -1600,14 +1615,17 @@ class U3(Device):
         # Make a new configuration file
         parser = ConfigParser.SafeConfigParser()
         
+        # Change optionxform so that options preserve their case.
+        parser.optionxform = str
+        
         # Local Id and name
         self.configU3()
         
         section = "Identifiers"
         parser.add_section(section)
-        parser.set(section, "local id", str(self.localId))
-        parser.set(section, "name", str(self.getName()))
-        parser.set(section, "device type", str(self.devType))
+        parser.set(section, "Local ID", str(self.localId))
+        parser.set(section, "Name", str(self.getName()))
+        parser.set(section, "Device Type", str(self.devType))
         
         # FIO Direction / State
         section = "FIOs"
@@ -1619,10 +1637,10 @@ class U3(Device):
         parser.set(section, "EIOs Analog", str( self.readRegister(50591) ))
         
         for key, value in dirs.items():
-            parser.set(section, "%ss Directions" % key, str(value))
+            parser.set(section, "%s Directions" % key, str(value))
             
         for key, value in states.items():
-            parser.set(section, "%ss States" % key, str(value))
+            parser.set(section, "%s States" % key, str(value))
             
         # DACs
         section = "DACs"
@@ -1631,12 +1649,12 @@ class U3(Device):
         dac0 = self.readRegister(5000)
         dac0 = max(dac0, 0)
         dac0 = min(dac0, 5)
-        parser.set(section, "dac0", "%0.2f" % dac0)
+        parser.set(section, "DAC0", "%0.2f" % dac0)
         
         dac1 = self.readRegister(5002)
         dac1 = max(dac1, 0)
         dac1 = min(dac1, 5)
-        parser.set(section, "dac1", "%0.2f" % dac1)
+        parser.set(section, "DAC1", "%0.2f" % dac1)
         
         # Timer Clock Configuration
         section = "Timer Clock Speed Configuration"
@@ -1664,8 +1682,8 @@ class U3(Device):
         
         for i in range(nte):
             mode, value = self.readRegister(7100 + (2*i), numReg = 2, format = ">HH")
-            parser.set(section, "timer%i mode" % i, str(mode))
-            parser.set(section, "timer%i value" % i, str(value))
+            parser.set(section, "Timer%i Mode" % i, str(mode))
+            parser.set(section, "Timer%i Value" % i, str(value))
         
         
         return parser
