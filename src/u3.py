@@ -456,6 +456,22 @@ class U3(Device):
         return self.getFeedback(BitStateRead(fioNum))[0]
     getFIOState.section = 3
     
+    def getTemperature(self):
+        """
+        Name: U3.getTemperature()
+        
+        Args: None
+        
+        Desc: Reads the internal temperature sensor on the U3. Returns the
+              temperature in Kelvin.
+        """
+        
+        bits = self.getFeedback( AIN(30, 31) )[0]
+        
+        return self.binaryToCalibratedAnalogTemperature(bits)
+        
+        
+    
     def getAIN(self, posChannel, negChannel = 31, longSettle=False, quickSample=False):
         """
         Name: U3.getAIN(posChannel, negChannel = 31, longSettle=False,
@@ -1480,6 +1496,14 @@ class U3(Device):
             else:
                 raise Exception, "Can't do differential on high voltage channels"
     binaryToCalibratedAnalogVoltage.section = 3
+    
+    def binaryToCalibratedAnalogTemperature(self, bytesTemperature):
+        hasCal = self.calData is not None
+        
+        if hasCal:
+            return self.calData['tempSlope'] * float(bytesTemperature)
+        else:
+            return float(bytesTemperature) * 0.013021
     
     def voltageToDACBits(self, volts, dacNumber = 0, is16Bits = False):
         """
