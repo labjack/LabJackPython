@@ -771,28 +771,17 @@ class Device(object):
         >>> d.getName()
         u'My LabJack U3'
         """
-        strLen = (self.readRegister(58000, format='BB'))[0]/2
-        strLen -= 1
+        name = list(self.readRegister(58000, format='B'*48, numReg = 24))
         
-        orderMarker = '\xff\xfe'
-        
-        if strLen < 24:
-            name = self.readRegister(58000, numReg=strLen+1, format='<BB'+'H'*(strLen))
-            name = (orderMarker + struct.pack('H'*strLen, *name[2:])).decode('UTF-16')
+        if name[1] == 3:
+            # Old style string
+            name = "My %s" % self.deviceName
+            print "Old UTF-16 name detected, replacing with %s" % name
+            self.setName(name)
+            name = name.decode("UTF-8")
         else:
-            name = self.readRegister(58000, numReg=23+1, format='<BB'+'H'*(23))
-            name = (orderMarker + struct.pack('H'*23, *name[2:])).decode('UTF-16')
-            
-            remainder = strLen + 1 - 23
-            
-            otherHalf = self.readRegister(58024, numReg=remainder, format='>'+'H'*(remainder))
-            
-            if not isinstance(otherHalf, list):
-                otherHalf = [ otherHalf ]
-            
-            otherHalf = (orderMarker + struct.pack('H'*remainder, *otherHalf)).decode('UTF-16')
-            
-            name = name + otherHalf
+            end = name.index(0x00)
+            name = struct.pack("B"*end, *name[:end]).decode("UTF-8")
         
         return name
         
@@ -817,29 +806,20 @@ class Device(object):
         """
         strLen = len(name)
         
-        if strLen > 31:
-            raise LabJackException("The name is too long, must be less than 31 characters.")
+        if strLen > 47:
+            raise LabJackException("The name is too long, must be less than 48 characters.")
         
-        newname = name.encode('UTF-16')
-        if strLen < 24:
-            newname = struct.unpack('<'+'H'*strLen, newname[2:])
-            newname = struct.unpack('BB'*strLen, struct.pack('<'+'H'*strLen, *newname))
-            
-            newname = [ (strLen*2+2 << 8) + 3] + list(struct.unpack('>'+'H'*(strLen), struct.pack('BB'*(strLen), *newname)))
-            self.writeRegister(58000, list(newname))
-        else:
-            packet1 = struct.unpack('<'+'H'*23, newname[2:48])
-            packet1 = struct.unpack('BB' * 23,  struct.pack('<'+'H'*23, *packet1))
-            packet1 = [ (strLen*2+1 << 8) + 3] + list(struct.unpack('>'+'H'*(23), struct.pack('BB'*(23), *packet1)))
-            self.writeRegister(58000, list(packet1))
-            
-            remainder = strLen - 23
-            
-            packet2 = struct.unpack('<'+'H'*remainder, newname[48:])
-            packet2 = struct.unpack('BB' * remainder,  struct.pack('<'+'H'*remainder, *packet2))
-            packet2 = list(packet2)
-            packet2 = struct.unpack('<'+'H'*(remainder), struct.pack('BB'*(remainder), *packet2))
-            self.writeRegister(58024, list(packet2))
+        newname = name.encode('UTF-8')
+        bl = list(struct.unpack("B"*strLen, newname)) + [0x00]
+        strLen += 1
+        
+        if strLen%2 != 0:
+            bl = bl + [0x00]
+            strLen += 1
+        
+        bl = struct.unpack(">"+"H"*(strLen/2), struct.pack("B" * strLen, *bl))
+        
+        self.writeRegister(58000, list(bl))
 
     name = property(getName, setName)
 
