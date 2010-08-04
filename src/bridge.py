@@ -93,13 +93,18 @@ class Bridge(Device):
         return self.readRegister(59200, numReg = 2, format = '>I')
         
     def ethernetFirmwareVersion(self):
-        left, right = self.readRegister(56000, format = 'BB')
+        left, right = self.readRegister(56000, format = '>BB')
         self.ethernetFWVersion = "%s.%02d" % (left, right)
         return "%s.%02d" % (left, right)
     
     def usbFirmwareVersion(self):
-        left, right = self.readRegister(57000, format = 'BB')
+        left, right = self.readRegister(57000, format = '>BB')
         self.usbFWVersion = "%s.%02d" % (left, right)
+        return "%s.%02d" % (left, right)
+        
+    def mainFirmwareVersion(self):
+        left, right = self.readRegister(65006, format = ">BB")
+        self.mainFWVersion = "%s.%02d" % (left, right)
         return "%s.%02d" % (left, right)
     
     def usbBufferStatus(self):
@@ -144,6 +149,8 @@ class Bridge(Device):
     def listMotes(self):
         numMotes = self.readRegister(59200, numReg = 2, format = '>I')
         
+        if numMotes == 0:
+            return []
         
         connectedMotes = []
         
@@ -180,8 +187,101 @@ class Mote(object):
     def writeRegister(self, addr, value):
         return self.bridge.writeRegister(addr, value, unitId = self.moteId)
         
+    def getName(self):
+        """
+        Name: Device.getName()
+        Args: None
+        Desc: Returns the name of a device.
+              Always returns a unicode string.
+              Works as of the following firmware versions:
+              U6 - 1.00
+              U3 - 1.22
+              UE9 - 2.00
+        
+        >>> d = u3.U3()
+        >>> d.open()
+        >>> d.getName()
+        u'My LabJack U3'
+        """
+        strLen = (self.readRegister(58000, format='BB'))[0]/2
+        strLen -= 1
+        
+        orderMarker = '\xff\xfe'
+        
+        if strLen < 24:
+            name = self.readRegister(58000, numReg=strLen+1, format='<BB'+'H'*(strLen))
+            name = (orderMarker + struct.pack('H'*strLen, *name[2:])).decode('UTF-16')
+        else:
+            name = self.readRegister(58000, numReg=23+1, format='<BB'+'H'*(23))
+            name = (orderMarker + struct.pack('H'*23, *name[2:])).decode('UTF-16')
+            
+            remainder = strLen + 1 - 23
+            
+            otherHalf = self.readRegister(58024, numReg=remainder, format='>'+'H'*(remainder))
+            
+            if not isinstance(otherHalf, list):
+                otherHalf = [ otherHalf ]
+            
+            otherHalf = (orderMarker + struct.pack('H'*remainder, *otherHalf)).decode('UTF-16')
+            
+            name = name + otherHalf
+        
+        return name
+        
+    def setName(self, name = "My LabJack U3"):
+        """
+        Name: Device.setName(name = ""My LabJack U3")
+        Args: name, the name you'd like to assign the the U3
+        Desc: Writes a new name to the device.
+              Names a limited to 30 characters or less.
+              Works as of the following firmware versions:
+              U6 - 1.00
+              U3 - 1.22
+              UE9 - 2.00
+        
+        >>> d = u3.U3()
+        >>> d.open()
+        >>> d.getName()
+        u'My LabJack U3'
+        >>> d.setName("Johann")
+        >>> d.getName()
+        u'Johann'
+        """
+        strLen = len(name)
+        
+        if strLen > 31:
+            raise LabJackException("The name is too long, must be less than 31 characters.")
+        
+        newname = name.encode('UTF-16')
+        if strLen < 24:
+            newname = struct.unpack('<'+'H'*strLen, newname[2:])
+            newname = struct.unpack('BB'*strLen, struct.pack('<'+'H'*strLen, *newname))
+            
+            newname = [ (strLen*2+2 << 8) + 3] + list(struct.unpack('>'+'H'*(strLen), struct.pack('BB'*(strLen), *newname)))
+            self.writeRegister(58000, list(newname))
+        else:
+            packet1 = struct.unpack('<'+'H'*23, newname[2:48])
+            packet1 = struct.unpack('BB' * 23,  struct.pack('<'+'H'*23, *packet1))
+            packet1 = [ (strLen*2+1 << 8) + 3] + list(struct.unpack('>'+'H'*(23), struct.pack('BB'*(23), *packet1)))
+            self.writeRegister(58000, list(packet1))
+            
+            remainder = strLen - 23
+            
+            packet2 = struct.unpack('<'+'H'*remainder, newname[48:])
+            packet2 = struct.unpack('BB' * remainder,  struct.pack('<'+'H'*remainder, *packet2))
+            packet2 = list(packet2)
+            packet2 = struct.unpack('<'+'H'*(remainder), struct.pack('BB'*(remainder), *packet2))
+            self.writeRegister(58024, list(packet2))
+
+    name = property(getName, setName)
+        
     def close(self):
         self.bridge = None
+    
+    def mainFirmwareVersion(self):
+        left, right = self.readRegister(65006, format = ">BB")
+        self.mainFWVersion = "%s.%02d" % (left, right)
+        return "%s.%02d" % (left, right)
     
     # ------------------ Convenience Functions ------------------
     # These functions call read register for you. 
@@ -190,7 +290,7 @@ class Mote(object):
         """
         Performs a sweep of all the sensors on the sensor mote.
         """
-        rxLqi, txLqi, battery, temp, light, motion, sound, rh = self.readRegister(12000, numReg = 16, format = ">" + "f"*8)
+        rxLqi, txLqi, battery, temp, light, motion, sound = self.readRegister(12000, numReg = 14, format = ">" + "f"*7)
         
         results = dict()
         results['RxLQI'] = rxLqi
@@ -200,7 +300,6 @@ class Mote(object):
         results['Light'] = light
         results['Motion'] = motion
         results['Sound'] = sound
-        results['RH'] = rh
         
         return results
         
