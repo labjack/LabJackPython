@@ -22,6 +22,7 @@ import threading # For a thread-safe device lock
 LABJACKPYTHON_VERSION = "7-20-2010"
 
 SOCKET_TIMEOUT = 3
+LJSOCKET_TIMEOUT = 62
 BROADCAST_SOCKET_TIMEOUT = 1
 MAX_USB_PACKET_LENGTH = 64
 
@@ -168,13 +169,16 @@ class Device(object):
         
 
     def _writeToLJSocketHandle(self, writeBuffer, modbus):
-        if modbus is True and self.modbusPrependZeros:
-                writeBuffer = [ 0, 0 ] + writeBuffer
+        #if modbus is True and self.modbusPrependZeros:
+        #        writeBuffer = [ 0, 0 ] + writeBuffer
             
         packFormat = "B" * len(writeBuffer)
         tempString = struct.pack(packFormat, *writeBuffer)
         
-        self.handle.socket.send(tempString)
+        if modbus:
+            self.handle.modbusSocket.send(tempString)
+        else:
+            self.handle.crSocket.send(tempString)
         
         return writeBuffer
 
@@ -249,7 +253,7 @@ class Device(object):
             raise LabJackException("The device handle is None.")
         
         if(isinstance(self.handle, LJSocketHandle)):
-            return self._readFromLJSocketHandle(numBytes)
+            return self._readFromLJSocketHandle(numBytes, modbus, stream)
             
         elif(isinstance(self.handle, UE9TCPHandle)):
             return self._readFromUE9TCPHandle(numBytes, stream, modbus)
@@ -259,11 +263,16 @@ class Device(object):
             elif os.name == 'nt':
                 return self._readFromUDDriver(numBytes, stream, modbus)
                 
-    def _readFromLJSocketHandle(self, numBytes):
+    def _readFromLJSocketHandle(self, numBytes, modbus, spont = False):
         """
         Reads from LJSocket. Returns the result as a list.
         """
-        rcvString = self.handle.socket.recv(numBytes)
+        if modbus:
+            rcvString = self.handle.modbusSocket.recv(numBytes)
+        elif spont:
+            rcvString = self.handle.spontSocket.recv(numBytes)
+        else:
+            rcvString = self.handle.crSocket.recv(numBytes)
         readBytes = len(rcvString)
         packFormat = "B" * readBytes
         rcvDataBuff = struct.unpack(packFormat, rcvString)
@@ -979,8 +988,7 @@ def listAll(deviceType, connectionType = 1):
             for i in range(int(numLines)):
                 l = f.readline().strip()
                 dev = parseline(l)
-                if dev['port'] != 5020:
-                    lines.append(dev)       
+                lines.append(dev)       
             
             f.close()
             serverSocket.close()
@@ -2673,9 +2681,6 @@ class LJSocketHandle(object):
                     l = f.readline().strip()
                     dev = parseline(l)
                     
-                    if dev['port'] in (5020, 502):
-                        continue
-                    
                     if devType == dev['prodId']:
                         lines.append(dev)
                         
@@ -2689,33 +2694,64 @@ class LJSocketHandle(object):
                 #print lines
                 
                 if firstFound and len(lines) > 0:
-                    self.socket = socket.socket()
-                    self.socket.connect((ipAddress, lines[0]['port']))
-                    self.socket.settimeout(SOCKET_TIMEOUT)
+                    marked = lines[0]
                 elif marked is not None:
-                    self.socket = socket.socket()
-                    self.socket.connect((ipAddress, marked['port']))
-                    self.socket.settimeout(SOCKET_TIMEOUT)
+                    pass
                 else:
-                    raise Exception("Labjack not found.")
+                    raise Exception("LabJack not found.")
+                    
+                if marked['crPort'] != 'x':
+                    self.crSocket = socket.socket()
+                    self.crSocket.connect((ipAddress, marked['crPort']))
+                    self.crSocket.settimeout(LJSOCKET_TIMEOUT)
+                else:
+                    self.crSocket = None
+                    
+                if marked['modbusPort'] != 'x':
+                    self.modbusSocket = socket.socket()
+                    self.modbusSocket.connect((ipAddress, marked['modbusPort']))
+                    self.modbusSocket.settimeout(LJSOCKET_TIMEOUT)
+                else:
+                    self.modbusSocket = None
+                    
+                if marked['spontPort'] != 'x':
+                    self.spontSocket = socket.socket()
+                    self.spontSocket.connect((ipAddress, marked['spontPort']))
+                    self.spontSocket.settimeout(LJSOCKET_TIMEOUT)
+                else:
+                    self.spontSocket = None
                 
             else:
-                raise Exception("Got an error from springboard. It said '%s'" % l)
+                raise Exception("Got an error from LJSocket. It said '%s'" % l)
             
         except Exception, e:
             raise LabJackException(ec = LJE_LABJACK_NOT_FOUND, errorString = "Couldn't connect to a LabJack at %s:%s. The error was: %s" % (ipAddress, port, str(e)))
     
     def close(self):
-        self.socket.close()
+        if self.crSocket is not None:
+            self.crSocket.close()
+            
+        if self.modbusSocket is not None:
+            self.modbusSocket.close()
+            
+        if self.spontSocket is not None:
+            self.spontSocket.close()
 
         
 def parseline(line):
     try:
-        prodId, port, localId, serial = line.split(' ')
+        prodId, crPort, modbusPort, spontPort, localId, serial = line.split(' ')
+        if not crPort.startswith('x'):
+            crPort = int(crPort)
+        if not modbusPort.startswith('x'):
+            modbusPort = int(modbusPort)
+        if not spontPort.startswith('x'):
+            spontPort = int(spontPort)
+            
     except ValueError:
         raise Exception("")
     
-    return { 'prodId' : int(prodId), 'port' : int(port), 'localId' : int(localId), 'serial' : int(serial)  }
+    return { 'prodId' : int(prodId), 'crPort' : crPort, 'modbusPort' : modbusPort, 'spontPort' : spontPort, 'localId' : int(localId), 'serial' : int(serial)  }
 
 
 #Class for handling UE9 TCP Connections
