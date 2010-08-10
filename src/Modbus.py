@@ -3,6 +3,9 @@
 # Created: 05.05.2008
 # Last Modified: 12/3/2009
 
+from __future__ import with_statement
+from threading import Lock
+
 from struct import pack, unpack #, unpack_from  # unpack_from is new in 2.5
 from datetime import datetime
 
@@ -22,6 +25,8 @@ WRITE_PACKET              = 6
 HEADER_LENGTH             = 9
 BYTES_PER_REGISTER        = 2
 
+GLOBAL_TRANSACTION_ID_LOCK = Lock()
+
 def _calcBaseTransId():
     t = datetime.now()
     d = "%s%s%s%s" % (t.hour, t.minute, t.second, t.microsecond)
@@ -32,25 +37,27 @@ BASE_TRANS_ID = _calcBaseTransId()
 CURRENT_TRANS_IDS = set()
 
 def _buildHeaderBytes(length = 6, unitId = None):
-    global BASE_TRANS_ID, CURRENT_TRANS_IDS
-    if unitId is None:
-        basicHeader = (BASE_TRANS_ID, 0, length, 0x00)
-    else:
-        basicHeader = (BASE_TRANS_ID, 0, length, unitId)
-    
-    CURRENT_TRANS_IDS.add(BASE_TRANS_ID)
-    
-    BASE_TRANS_ID = ( BASE_TRANS_ID + 1 ) % 65536
-    
-    return pack('>HHHB', *basicHeader)
+    with GLOBAL_TRANSACTION_ID_LOCK:
+        global BASE_TRANS_ID, CURRENT_TRANS_IDS
+        if unitId is None:
+            basicHeader = (BASE_TRANS_ID, 0, length, 0x00)
+        else:
+            basicHeader = (BASE_TRANS_ID, 0, length, unitId)
+        
+        CURRENT_TRANS_IDS.add(BASE_TRANS_ID)
+        
+        BASE_TRANS_ID = ( BASE_TRANS_ID + 1 ) % 65536
+        
+        return pack('>HHHB', *basicHeader)
     
 def _checkTransId(transId):
-    global CURRENT_TRANS_IDS
-    
-    if transId in CURRENT_TRANS_IDS:
-        CURRENT_TRANS_IDS.remove(transId)
-    else:
-        raise ModbusException("Got an unexpected transaction ID. Id = %s, Set = %s" % (transId, CURRENT_TRANS_IDS))
+    with GLOBAL_TRANSACTION_ID_LOCK:
+        global CURRENT_TRANS_IDS
+        
+        if transId in CURRENT_TRANS_IDS:
+            CURRENT_TRANS_IDS.remove(transId)
+        else:
+            raise ModbusException("Got an unexpected transaction ID. Id = %s, Set = %s" % (transId, CURRENT_TRANS_IDS))
 
 def readHoldingRegistersRequest(addr, numReg = None, unitId = None):
     if numReg is None:
@@ -247,6 +254,10 @@ def calcNumberOfRegistersAndFormat(addr, numReg = None):
         # RXLQI/TXLQI/VBatt/Temp/Light/Motion/Sound/RH/Pressure
         minNumReg = 2
         format = 'f'
+    elif addr == 50102:
+        # Check-in interval
+        minNumReg = 2
+        format = 'I'
     elif addr in range(57002, 57010):
         # TX/RX Bridge stuff
         minNumReg = 2
@@ -255,6 +266,10 @@ def calcNumberOfRegistersAndFormat(addr, numReg = None):
         # VUSB/VJack/VST
         minNumReg = 2
         format = 'f'
+    elif addr == 59990:
+        # Rapid mode
+        minNumReg = 1
+        format = 'H'
     elif addr == 59200:
         # NumberOfKnownDevices
         minNumReg = 2
