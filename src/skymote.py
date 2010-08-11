@@ -70,6 +70,25 @@ class Bridge(Device):
     def read(self, numBytes, stream = False, modbus = False):
         result = Device.read(self, 64, stream, modbus)
         return result[:numBytes]
+        
+    def spontaneous(self):
+        while True:
+            packet = self.read(64, stream = True)
+            localId = packet[6]
+            packet = struct.pack("B"*len(packet), *packet)
+            rxLqi, txLqi, battery, temp, light, motion, sound = struct.unpack(">"+"f"*7, packet[9:37])
+            
+            results = dict()
+            results['localId'] = localId
+            results['RxLQI'] = rxLqi
+            results['TxLQI'] = txLqi
+            results['Battery'] = battery
+            results['Temp'] = temp
+            results['Light'] = light
+            results['Motion'] = motion
+            results['Sound'] = sound
+            
+            yield results
     
     def readRegister(self, addr, numReg = None, format = None, unitId = None):
         if unitId is None:
@@ -266,6 +285,20 @@ class Mote(object):
     
     # ------------------ Convenience Functions ------------------
     # These functions call read register for you. 
+    
+    def startRapidMode(self, minutes = 1):
+        # Sends the command to put a bridge in rapid mode.
+        self.writeRegister(59990, minutes)
+        
+    def stopRapidMode(self):
+        # Sends the command to disable rapid mode.
+        self.startRapidMode(0)
+        
+    def setCheckinInterval(self, milliseconds=1000):
+        self.writeRegister(50102, milliseconds)
+        
+    def readCheckinInterval(self):
+        return self.readRegister(50102)
     
     def sensorSweep(self):
         """

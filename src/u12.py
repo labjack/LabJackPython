@@ -409,7 +409,12 @@ class U12(object):
 
     def open(self, id = -1, serialNumber = None):
         """
-        Dummy method that is used to preserve compatability with other devices in Labjack Python
+        Opens the U12.
+        
+        The Windows UW driver opens the device every time a function is called.
+        The Exodriver, however, works like the UD family of devices and returns
+        a handle. On Windows, this method does nothing. On Mac OS X and Linux,
+        this method acquires a device handle and saves it to the U12 object.
         """
         if ON_WINDOWS:
             pass

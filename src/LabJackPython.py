@@ -1426,8 +1426,18 @@ def _makeDeviceFromHandle(handle, deviceType):
         pkt, readlen = device._buildReadRegisterPacket(65001, 2, 0)
         device.modbusPrependZeros = False
         device.write(pkt, modbus = True, checksum = False)
-        response = device.read(64, False, True)
-        serial = device._parseReadRegisterResponse(response[:readlen], readlen, 59200, '>I', numReg = 2)
+        for i in range(5):
+            try:
+                serial = None
+                response = device.read(64, False, True)
+                serial = device._parseReadRegisterResponse(response[:readlen], readlen, 59200, '>I', numReg = 2)
+                break
+            except Modbus.ModbusException:
+                pass
+                
+        if serial is None:
+            raise LabJackException("Error reading serial number.")
+                
         device.serialNumber = serial
         device.localId = 0
         device.deviceName = "SkyMote Bridge"

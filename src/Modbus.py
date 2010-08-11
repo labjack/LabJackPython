@@ -301,3 +301,10 @@ def getTransactionId(packet):
         return unpack(">H", pack("BB", *packet[:2]) )[0]
     else:
         return unpack(">H", packet[:2])[0]
+        
+def getProtocolId(packet):
+    """Pulls out the transaction id of the packet"""
+    if isinstance(packet, list):
+        return unpack(">H", pack("BB", *packet[2:4]) )[0]
+    else:
+        return unpack(">H", packet[2:4])[0]
