@@ -1244,6 +1244,8 @@ class U12(object):
         bf.bit1 = int(bool(UpdateIO))
         bf.bit0 = int(bool(LEDState))
         
+        command[4] = int(bf)
+        
         # Bits 7-4: 1001 (Start Continuous)
         bf2 = BitField( rawByte = int(IO3ToIO0States) )
         bf2.bit7 = 1

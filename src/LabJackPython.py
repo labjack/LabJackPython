@@ -26,6 +26,8 @@ LJSOCKET_TIMEOUT = 62
 BROADCAST_SOCKET_TIMEOUT = 1
 MAX_USB_PACKET_LENGTH = 64
 
+NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS = 5
+
 class LabJackException(Exception):
     """Custom Exception meant for dealing specifically with LabJack Exceptions.
 
@@ -208,11 +210,21 @@ class Device(object):
             
         return writeBuffer
             
-    def _writeToUDDriver(self, writeBuffer, modbus):
-        if modbus is True and self.modbusPrependZeros:
-            writeBuffer = [ 0, 0 ] + writeBuffer
-        
-        eGetRaw(self.handle, LJ_ioRAW_OUT, 0, len(writeBuffer), writeBuffer)
+    def _writeToUDDriver(self, writeBuffer, modbus):        
+        if self.devType == 0x501:
+            newA = (ctypes.c_byte*len(writeBuffer))(0) 
+            for i in range(len(writeBuffer)):
+                newA[i] = ctypes.c_byte(writeBuffer[i])
+            
+            writeBytes = skymoteLib.LJUSB_IntWrite(self.handle, 1, ctypes.byref(newA), len(writeBuffer))
+            
+            if(writeBytes != len(writeBuffer)):
+                raise LabJackException( "Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
+        else:
+            if modbus is True and self.modbusPrependZeros:
+                writeBuffer = [ 0, 0 ] + writeBuffer
+            
+            eGetRaw(self.handle, LJ_ioRAW_OUT, 0, len(writeBuffer), writeBuffer)
         
         return writeBuffer
 
@@ -306,10 +318,15 @@ class Device(object):
             return [(newA[i] & 0xff) for i in range(readBytes)]
             
     def _readFromUDDriver(self, numBytes, stream, modbus):
-        tempBuff = [0] * numBytes
-        if stream:
-            return eGetRaw(self.handle, LJ_ioRAW_IN, 1, numBytes, tempBuff)[1]
-        return eGetRaw(self.handle, LJ_ioRAW_IN, 0, numBytes, tempBuff)[1]
+        if self.devType == 0x501:
+            newA = (ctypes.c_byte*numBytes)()
+            readBytes = skymoteLib.LJUSB_IntRead(self.handle, 0x81, ctypes.byref(newA), numBytes)
+            return [(newA[i] & 0xff) for i in range(readBytes)]
+        else:
+            tempBuff = [0] * numBytes
+            if stream:
+                return eGetRaw(self.handle, LJ_ioRAW_IN, 1, numBytes, tempBuff)[1]
+            return eGetRaw(self.handle, LJ_ioRAW_IN, 0, numBytes, tempBuff)[1]
     
     def readRegister(self, addr, numReg = None, format = None, unitId = None):
         """ Reads a specific register from the device and returns the value.
@@ -561,9 +578,16 @@ class Device(object):
         self.handle = d.handle
         
         if not handleOnly:
-            for key, value in d.changed.items():
-                self.__setattr__(key, value)
+            self._loadChangedIntoSelf(d)
+            
+        self._registerAtExitClose()
                     
+
+    def _loadChangedIntoSelf(self, d):
+        for key, value in d.changed.items():
+            self.__setattr__(key, value)
+            
+    def _registerAtExitClose(self):
         if not self._autoCloseSetup:
             # Only need to register auto-close once per device.
             atexit.register(self.close)
@@ -888,6 +912,18 @@ class Device(object):
         
     def readCurrent(self, BlockNum):
         self.readDefaults(BlockNum, ReadCurrent = True)
+        
+    def loadGenericDevice(self, device):
+        """ Take a generic Device object, and loads it into the current object.
+            The generic Device is consumed in the process.
+        """
+        self.handle = device.handle
+        
+        self._loadChangedIntoSelf(device)
+        
+        self._registerAtExitClose()
+        
+        device = None
 
 # --------------------- BEGIN LabJackPython ---------------------------------
 
@@ -971,7 +1007,7 @@ def listAll(deviceType, connectionType = 1):
         
         serverSocket = socket.socket()
         serverSocket.connect((ipAddress, port))
-        serverSocket.settimeout(SOCKET_TIMEOUT)
+        serverSocket.settimeout(10)
         
         f = serverSocket.makefile(bufsize = 0)
         f.write("scan\r\n")
@@ -1041,8 +1077,13 @@ def listAll(deviceType, connectionType = 1):
             
             num = skymoteLib.LJUSB_GetDevCount(0x501)
             
-            # Things are expecting a list, so we're going to give them one.
-            return dict()
+            deviceList = dict()
+            
+            # TODO: Actually read the serial number and stuff.
+            for i in range(num):
+                deviceList[str(i)] = i
+            
+            return deviceList
             
             
         pNumFound = ctypes.c_long()
@@ -1061,13 +1102,14 @@ def listAll(deviceType, connectionType = 1):
                               ctypes.cast(pIDs, ctypes.POINTER(ctypes.c_long)), 
                               ctypes.cast(pAddresses, ctypes.POINTER(ctypes.c_long)))
         
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0 and ec != 1010: raise LabJackException(ec)
         
         deviceList = dict()
     
         for i in xrange(pNumFound.value):
-            deviceValue = dict(localId = pIDs[i], serialNumber = pSerialNumbers[i], ipAddress = DoubleToStringAddress(pAddresses[i]), devType = deviceType)
-            deviceList[pSerialNumbers[i]] = deviceValue
+            if pSerialNumbers[i] != 1010:
+                deviceValue = dict(localId = pIDs[i], serialNumber = pSerialNumbers[i], ipAddress = DoubleToStringAddress(pAddresses[i]), devType = deviceType)
+                deviceList[pSerialNumbers[i]] = deviceValue
     
         return deviceList
 
@@ -1113,6 +1155,61 @@ def deviceCount(devType = None):
             return numdev
         else:
             return staticLib.LJUSB_GetDevCount(devType)
+
+
+def getDevCounts():
+    if os.name == "nt":
+        # Right now there is no good way to count all the U12s on a Windows box
+        return { 3 : len(listAll(3)), 6 : len(listAll(6)), 9 : len(listAll(9)), 1 : 0, 0x501 : len(listAll(0x501))}
+    else:
+        devCounts = (ctypes.c_uint*NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS)()
+        devIds = (ctypes.c_uint*NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS)()
+        n = ctypes.c_uint(NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS)
+        r = staticLib.LJUSB_GetDevCounts(ctypes.byref(devCounts), ctypes.byref(devIds), n)
+        
+        returnDict = dict()
+        
+        for i in range(NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS):
+            returnDict[int(devIds[i])] = int(devCounts[i])
+        
+        return returnDict
+
+
+
+def openAllLabJacks():
+    if os.name == "nt":
+        # Windows doesn't provide a nice way to open all the devices.
+        devs = dict()
+        devs[3] = listAll(3)
+        devs[6] = listAll(6)
+        devs[9] = listAll(9)
+        devs[0x501] = listAll(0x501)
+        
+        devices = list()
+        for prodId, numConnected in devs.items():
+            for i, serial in enumerate(numConnected.keys()):
+                d = Device(None, devType = prodId)
+                if prodId == 0x501:
+                    d.open(prodId, devNumber = i)
+                else:
+                    d.open(prodId, serial = serial)
+                
+                devices.append(d)
+    else:
+        maxHandles = 10
+        devHandles = (ctypes.c_void_p*maxHandles)()
+        devIds = (ctypes.c_uint*maxHandles)()
+        n = ctypes.c_uint(maxHandles)
+        numOpened = staticLib.LJUSB_OpenAllDevices(ctypes.byref(devHandles), ctypes.byref(devIds), n)
+        
+        devices = list()
+        
+        for i in range(numOpened):
+            devices.append(_makeDeviceFromHandle(devHandles[i], int(devIds[i])))
+    
+    
+    return devices
+
 
 
 def _openLabJackUsingLJSocket(deviceType, firstFound, pAddress, LJSocket, handleOnly ):

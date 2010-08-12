@@ -51,44 +51,32 @@ class Bridge(Device):
     def open(self, firstFound = True, localId = None, serial = None, devNumber = None, handleOnly = False, LJSocket = "localhost:6000"): #"
         Device.open(self, 0x501, firstFound = firstFound, localId = localId, serial = serial, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket)
     
-    if os.name == "nt":
-        def _readFromUDDriver(self, numBytes, stream, modbus):
-            newA = (ctypes.c_byte*numBytes)()
-            readBytes = skymoteLib.LJUSB_IntRead(self.handle, 0x81, ctypes.byref(newA), numBytes)
-            return [(newA[i] & 0xff) for i in range(readBytes)]
-            
-        def _writeToUDDriver(self, writeBuffer, modbus):
-            newA = (ctypes.c_byte*len(writeBuffer))(0) 
-            for i in range(len(writeBuffer)):
-                newA[i] = ctypes.c_byte(writeBuffer[i])
-            
-            writeBytes = skymoteLib.LJUSB_IntWrite(self.handle, 1, ctypes.byref(newA), len(writeBuffer))
-            
-            if(writeBytes != len(writeBuffer)):
-                raise LabJackException( "Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
-    
     def read(self, numBytes, stream = False, modbus = False):
         result = Device.read(self, 64, stream, modbus)
         return result[:numBytes]
         
     def spontaneous(self):
         while True:
-            packet = self.read(64, stream = True)
-            localId = packet[6]
-            packet = struct.pack("B"*len(packet), *packet)
-            rxLqi, txLqi, battery, temp, light, motion, sound = struct.unpack(">"+"f"*7, packet[9:37])
-            
-            results = dict()
-            results['localId'] = localId
-            results['RxLQI'] = rxLqi
-            results['TxLQI'] = txLqi
-            results['Battery'] = battery
-            results['Temp'] = temp
-            results['Light'] = light
-            results['Motion'] = motion
-            results['Sound'] = sound
-            
-            yield results
+            try:
+                packet = self.read(64, stream = True)
+                localId = packet[6]
+                packet = struct.pack("B"*len(packet), *packet)
+                rxLqi, txLqi, battery, temp, light, motion, sound = struct.unpack(">"+"f"*7, packet[9:37])
+                
+                results = dict()
+                results['localId'] = localId
+                results['RxLQI'] = rxLqi
+                results['TxLQI'] = txLqi
+                results['Battery'] = battery
+                results['Temp'] = temp
+                results['Light'] = light
+                results['Motion'] = motion
+                results['Sound'] = sound
+                
+                yield results
+            except socket.timeout:
+                # Our read timed out, but keep going.
+                pass
     
     def readRegister(self, addr, numReg = None, format = None, unitId = None):
         if unitId is None:
