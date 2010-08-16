@@ -48,8 +48,8 @@ class Bridge(Device):
         if autoOpen:
             self.open(**kargs)
         
-    def open(self, firstFound = True, localId = None, serial = None, devNumber = None, handleOnly = False, LJSocket = "localhost:6000"): #"
-        Device.open(self, 0x501, firstFound = firstFound, localId = localId, serial = serial, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket)
+    def open(self, firstFound = True, serial = None, devNumber = None, handleOnly = False, LJSocket = "localhost:6000"): #"
+        Device.open(self, 0x501, firstFound = firstFound, localId = None, serial = serial, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket)
     
     def read(self, numBytes, stream = False, modbus = False):
         result = Device.read(self, 64, stream, modbus)
@@ -64,7 +64,7 @@ class Bridge(Device):
                 rxLqi, txLqi, battery, temp, light, motion, sound = struct.unpack(">"+"f"*7, packet[9:37])
                 
                 results = dict()
-                results['localId'] = localId
+                results['unitId'] = localId
                 results['RxLQI'] = rxLqi
                 results['TxLQI'] = txLqi
                 results['Battery'] = battery
@@ -152,6 +152,8 @@ class Bridge(Device):
     
     # ------------------ Mote Functions ------------------
     # These functions help you work with the motes.
+    def numMotes(self):
+        return self.readRegister(59200, numReg = 2, format = '>I')
     
     def listMotes(self):
         numMotes = self.readRegister(59200, numReg = 2, format = '>I')
