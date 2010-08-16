@@ -39,7 +39,7 @@ d = None
 #d.configIO(FIOAnalog = 1)
 #
 #print "configuring U3 stream"
-#d.streamConfig( NumChannels = 1, PChannels = [ 0 ], NChannels = [ 31 ], Resolution = 3, SampleFrequency = 53000 )
+#d.streamConfig( NumChannels = 1, PChannels = [ 0 ], NChannels = [ 31 ], Resolution = 3, SampleFrequency = 50000 )
 
 ################################################################################
 ## U6
@@ -67,38 +67,13 @@ class StreamDataReader(object):
         
     def readStreamData(self):
         self.running = True
-        numBytesPerPacket = 14 + (self.device.streamSamplesPerPacket * 2)
-        numReadBytes = (14 + (self.device.streamSamplesPerPacket * 2)) * self.device.packetsPerRequest
-        
-        handle = self.device.handle
-        streamRead = LabJackPython.staticLib.LJUSB_Stream
-        newA = (ctypes.c_byte*numReadBytes)()
-        returnDict = { 'errors' : 0, 'missed' : 0 }
         
         start = datetime.now()
         self.device.streamStart()
         while self.running:
-            returnDict['errors'] = 0
-            returnDict['missed'] = 0
-            
-            readBytes = streamRead(handle, ctypes.byref(newA), numReadBytes)
-            
-            result = struct.pack("b"*readBytes, *newA)
-            
-            numPackets = len(result) // numBytesPerPacket
-            for i in range(numPackets):
-                e = ord(result[11+(i*numBytesPerPacket)])
-                #e = result[11+(i*numBytes)]
-                if e != 0:
-                    returnDict['errors'] += 1
-                    if e == 60:
-                        returnDict['missed'] += struct.unpack('<I', result[6+(i*numBytesPerPacket):10+(i*numBytesPerPacket)] )[0]
-                        self.missed += returnDict['missed']
-                        
-                        
-            #self.device.processStreamData(result)
-            #returnDict.update()
-            returnDict['result'] = result
+            # Calling with convert = False, because we are going to convert in
+            # the main thread.
+            returnDict = self.device.streamData(convert = False).next()
             
             self.data.put_nowait(copy.deepcopy(returnDict))
             
