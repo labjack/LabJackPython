@@ -254,7 +254,7 @@ def calcNumberOfRegistersAndFormat(addr, numReg = None):
         # RXLQI/TXLQI/VBatt/Temp/Light/Motion/Sound/RH/Pressure
         minNumReg = 2
         format = 'f'
-    elif addr == 50102:
+    elif addr in range(50100, 50103):
         # Check-in interval
         minNumReg = 2
         format = 'I'

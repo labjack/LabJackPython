@@ -44,6 +44,7 @@ class Bridge(Device):
         self.unitId = 0
         self.debug = True
         self.modbusPrependZeros = False
+        self.nameCache = None
         
         if autoOpen:
             self.open(**kargs)
@@ -183,7 +184,14 @@ class Mote(object):
     def __init__(self, bridge, moteId):
         self.bridge = bridge
         self.moteId = moteId
-        self.deviceName = "SkyMote Mote"
+        self.unitId = moteId
+        self.productName = "SkyMote Mote"
+        self.nickname = None
+        self.checkinInterval = None
+        self.processInterval = 1000
+        self.mainFWVersion = None
+        self.devType = None
+        self.serialNumber = None
         
     def __repr__(self):
         return str(self)
@@ -222,8 +230,14 @@ class Mote(object):
             self.setName(name)
             name = name.decode("UTF-8")
         else:
-            end = name.index(0x00)
-            name = struct.pack("B"*end, *name[:end]).decode("UTF-8")
+            try:
+                end = name.index(0x00)
+                name = struct.pack("B"*end, *name[:end]).decode("UTF-8")
+            except ValueError:
+                name = "My %s" % self.deviceName
+                print "Improperly formatted name detected, replacing with %s" % name
+                self.setName(name)
+                name = name.decode("UTF-8")
         
         return name
         
@@ -274,9 +288,13 @@ class Mote(object):
         return "%s.%02d" % (left, right)
     
     # ------------------ Convenience Functions ------------------
-    # These functions call read register for you. 
+    # These functions call read register for you.
     
-    def startRapidMode(self, minutes = 1):
+    def readSerialNumber(self):
+        self.serialNumber = self.readRegister(65001)
+        return self.serialNumber
+    
+    def startRapidMode(self, minutes = 3):
         # Sends the command to put a bridge in rapid mode.
         self.writeRegister(59990, minutes)
         
@@ -284,11 +302,21 @@ class Mote(object):
         # Sends the command to disable rapid mode.
         self.startRapidMode(0)
         
-    def setCheckinInterval(self, milliseconds=1000):
-        self.writeRegister(50102, milliseconds)
+    def setCheckinInterval(self, milliseconds=1000, processInterval = None):
+        if processInterval is None:
+            processInterval = self.processInterval
+        self.processInterval = processInterval
+        
+        bytes = list(struct.unpack(">HHHH", struct.pack(">II", processInterval, milliseconds)))
+        self.writeRegister(50100, bytes)
         
     def readCheckinInterval(self):
-        return self.readRegister(50102)
+        self.checkinInterval = self.readRegister(50102)
+        return self.checkinInterval
+    
+    def readProcessInterval(self):
+        self.processInterval = self.readRegister(50100)
+        return self.processInterval
     
     def sensorSweep(self):
         """
