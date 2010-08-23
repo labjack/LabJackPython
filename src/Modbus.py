@@ -27,10 +27,12 @@ BYTES_PER_REGISTER        = 2
 
 GLOBAL_TRANSACTION_ID_LOCK = Lock()
 
+MAX_TRANS_ID = 64760
+
 def _calcBaseTransId():
     t = datetime.now()
     d = "%s%s%s%s" % (t.hour, t.minute, t.second, t.microsecond)
-    d = int(d) % 65536
+    d = int(d) % MAX_TRANS_ID
     return d
 
 BASE_TRANS_ID = _calcBaseTransId()
@@ -46,7 +48,7 @@ def _buildHeaderBytes(length = 6, unitId = None):
         
         CURRENT_TRANS_IDS.add(BASE_TRANS_ID)
         
-        BASE_TRANS_ID = ( BASE_TRANS_ID + 1 ) % 65536
+        BASE_TRANS_ID = ( BASE_TRANS_ID + 1 ) % MAX_TRANS_ID
         
         return pack('>HHHB', *basicHeader)
     
