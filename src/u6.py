@@ -79,6 +79,9 @@ def dictAsString(d):
 class CalibrationInfo(object):
     """ A class to hold the calibration info for a U6 """
     def __init__(self):
+        # A flag to tell difference between nominal and actual values.
+        self.nominal = True
+    
         # Positive Channel calibration
         self.ain10vSlope = 3.1580578 * (10 ** -4)
         self.ain10vOffset = -10.5869565220
@@ -1036,6 +1039,8 @@ class U6(Device):
         if self.debug is True:
             print "Calibration data retrieval"
         
+        self.calInfo.nominal = False
+        
         #reading block 0 from memory
         rcvBuffer = self._readCalDataBlock(0)
         
@@ -1232,6 +1237,10 @@ class U6(Device):
         >>> myU6.getTemperature()
         299.87723471224308
         """
+        if self.calInfo.nominal:
+            # Read the actual calibration constants if we haven't already.
+            self.getCalibrationData()
+        
         result = self.getFeedback(AIN24AR(14))
         return self.binaryToCalibratedAnalogTemperature(result[0]['AIN'])
         

@@ -36,7 +36,7 @@ def unpackInt(bytes):
 def unpackShort(bytes):
     return struct.unpack("<H", struct.pack("BB", *bytes))[0]
 
-DEFAULT_CAL_CONSTANTS = { "AINSlopes" : { '0' : 0.000077503, '1' : 0.000038736, '2' : 0.000019353, '3' : 0.0000096764, '8' : 0.00015629  }, "AINOffsets" : { '0' : -0.012000, '1' : -0.012000, '2' : -0.012000, '3' : -0.012000, '8' : -5.1760 } }
+DEFAULT_CAL_CONSTANTS = { "AINSlopes" : { '0' : 0.000077503, '1' : 0.000038736, '2' : 0.000019353, '3' : 0.0000096764, '8' : 0.00015629  }, "AINOffsets" : { '0' : -0.012000, '1' : -0.012000, '2' : -0.012000, '3' : -0.012000, '8' : -5.1760 }, "TempSlope" : 0.012968 }
 
 class UE9(Device):
     """
@@ -1142,7 +1142,16 @@ class UE9(Device):
         bits = self.singleIO(4, channel, BipGain = BipGain, Resolution = Resolution, SettlingTime = SettlingTime )
         return self.binaryToCalibratedAnalogVoltage(bits["AIN%s"%channel], BipGain)
         
+    def getTemperature(self):
+        """
+        Name: UE9.getTemperature()
+        """
+        if self.calData is None:
+            self.getCalibrationData()
         
+        bits = self.singleIO(4, 133, BipGain = 0x00, Resolution = 12, SettlingTime = 0 )
+        return self.binaryToCalibratedAnalogTemperature(bits["AIN133"])
+    
     def binaryToCalibratedAnalogVoltage(self, bits, gain):
         """ Name: UE9.binaryToCalibratedAnalogVoltage( bits, gain )
             Args: bits, the binary value to be converted
@@ -1165,6 +1174,12 @@ class UE9(Device):
         
         return (bits * slope) + offset
         
+    def binaryToCalibratedAnalogTemperature(self, bits):
+        if self.calData is not None:
+            return bits * self.calData['TempSlope']
+        else:
+            return bits * DEFAULT_CAL_CONSTANTS['TempSlope']
+        
     def getCalibrationData(self):
         """ Name: UE9.getCalibrationData()
             Args: None
@@ -1183,6 +1198,10 @@ class UE9(Device):
         
         ainslopes = { '0' : None, '1' : None, '2' : None, '3' : None, '8' : None }
         ainoffsets = { '0' : None, '1' : None, '2' : None, '3' : None, '8' : None }
+        dacslopes = { '0' : None, '1' : None }
+        dacoffsets = { '0' : None, '1' : None }
+        
+        tempslope = None
         
         memBlock = self.readMem(0)
         ainslopes['0'] = toDouble(memBlock[:8])
@@ -1201,6 +1220,16 @@ class UE9(Device):
         ainslopes['8'] = toDouble(memBlock[:8])
         ainoffsets['8'] = toDouble(memBlock[8:16])
         
+        # Read DAC and Temperature slopes
+        memBlock = self.readMem(2)
+        dacslopes['0'] = toDouble(memBlock[:8])
+        dacoffsets['0'] = toDouble(memBlock[8:16])
+        
+        dacslopes['1'] = toDouble(memBlock[16:24])
+        dacoffsets['1'] = toDouble(memBlock[24:32])
+        
+        tempslope = toDouble(memBlock[32:40])
+        
         if self.deviceName.endswith("Pro"):
             memBlock = self.readMem(3)
             ainslopes['0'] = toDouble(memBlock[:8])
@@ -1210,7 +1239,7 @@ class UE9(Device):
             ainslopes['8'] = toDouble(memBlock[:8])
             ainoffsets['8'] = toDouble(memBlock[8:16])
         
-        self.calData = { "AINSlopes" : ainslopes, "AINOffsets" : ainoffsets }
+        self.calData = { "AINSlopes" : ainslopes, "AINOffsets" : ainoffsets, 'TempSlope' : tempslope, "DACSlopes" : dacslopes, "DACOffsets" : dacoffsets }
         
         return self.calData
     
