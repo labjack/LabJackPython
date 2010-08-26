@@ -62,10 +62,12 @@ class Bridge(Device):
                 packet = self.read(64, stream = True)
                 localId = packet[6]
                 packet = struct.pack("B"*len(packet), *packet)
+                transId = struct.unpack(">H", packet[0:2])[0]
                 rxLqi, txLqi, battery, temp, light, bump, sound = struct.unpack(">"+"f"*7, packet[9:37])
                 
                 results = dict()
                 results['unitId'] = localId
+                results['transId'] = transId
                 results['RxLQI'] = rxLqi
                 results['TxLQI'] = txLqi
                 results['Battery'] = battery

@@ -1423,7 +1423,7 @@ def _makeDeviceFromHandle(handle, deviceType):
             rcvDataBuff = device.read(38)
         
             # Local ID
-            device.localID = rcvDataBuff[8] & 0xff
+            device.localId = rcvDataBuff[8] & 0xff
         
             # MAC Address
             device.macAddress = "%02X:%02X:%02X:%02X:%02X:%02X" % (rcvDataBuff[33], rcvDataBuff[32], rcvDataBuff[31], rcvDataBuff[30], rcvDataBuff[29], rcvDataBuff[28])
@@ -1437,7 +1437,7 @@ def _makeDeviceFromHandle(handle, deviceType):
             # Comm FW Version
             device.commFWVersion = "%s.%02d" % (rcvDataBuff[37], rcvDataBuff[36])
             
-            device.changed['localId'] = device.localID
+            device.changed['localId'] = device.localId
             device.changed['macAddress'] = device.macAddress
             device.changed['serialNumber'] = device.serialNumber
             device.changed['ipAddress'] = device.ipAddress
@@ -2848,6 +2848,7 @@ class LJSocketHandle(object):
 def parseline(line):
     try:
         prodId, crPort, modbusPort, spontPort, localId, serial = line.split(' ')
+        print "line =", line
         if not crPort.startswith('x'):
             crPort = int(crPort)
         if not modbusPort.startswith('x'):
