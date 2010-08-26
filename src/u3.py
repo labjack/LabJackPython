@@ -466,7 +466,11 @@ class U3(Device):
               temperature in Kelvin.
         """
         
-        bits = self.getFeedback( AIN(30, 31) )[0]
+        # Get the calibration data first, otherwise the conversion is way off (10 degC on my U3)
+        if self.calData is None:
+            self.getCalibrationData()
+
+        bits, = self.getFeedback( AIN(30, 31) )
         
         return self.binaryToCalibratedAnalogTemperature(bits)
         

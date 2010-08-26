@@ -2,6 +2,8 @@ Python 2.5 or higher is required to use LabJackPython.
 
 Installation is easy:
     $ sudo python setup.py install
+
+(Leave off the `sudo' on Windows.)
     
 From there, interacting with your devices is easy.
 
