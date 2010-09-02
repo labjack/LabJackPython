@@ -2848,7 +2848,6 @@ class LJSocketHandle(object):
 def parseline(line):
     try:
         prodId, crPort, modbusPort, spontPort, localId, serial = line.split(' ')
-        print "line =", line
         if not crPort.startswith('x'):
             crPort = int(crPort)
         if not modbusPort.startswith('x'):

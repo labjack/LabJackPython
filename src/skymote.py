@@ -63,18 +63,18 @@ class Bridge(Device):
                 localId = packet[6]
                 packet = struct.pack("B"*len(packet), *packet)
                 transId = struct.unpack(">H", packet[0:2])[0]
-                rxLqi, txLqi, battery, temp, light, bump, sound = struct.unpack(">"+"f"*7, packet[9:37])
+                report = struct.unpack(">HBBfHH"+"f"*8, packet[9:53])
                 
                 results = dict()
                 results['unitId'] = localId
                 results['transId'] = transId
-                results['RxLQI'] = rxLqi
-                results['TxLQI'] = txLqi
-                results['Battery'] = battery
-                results['Temp'] = temp
-                results['Light'] = light
-                results['Bump'] = bump
-                results['Sound'] = sound
+                results['RxLQI'] = report[1]
+                results['TxLQI'] = report[2]
+                results['Battery'] = report[3]
+                results['Temp'] = report[6]
+                results['Light'] = report[7]
+                results['Bump'] = report[4]
+                results['Sound'] = report[11]
                 
                 yield results
             except socket.timeout:
