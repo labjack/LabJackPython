@@ -2082,22 +2082,22 @@ class U12(object):
             if writeD:
                 if channel > 7:
                     channel = channel-7
-                    direction = BitField(rawByte = oldstate['D15toD8Directions'])
+                    direction = BitField(rawByte = int(oldstate['D15toD8Directions']))
                     direction[7-channel] = 0
                     
-                    state = BitField(rawByte = oldstate['D15toD8States'])
-                    state[7-channel] = state
+                    states = BitField(rawByte = int(oldstate['D15toD8States']))
+                    states[7-channel] = state
                     
                     self.rawDIO(D15toD8Directions = direction, D15toD8States = state, UpdateDigital = True)
                     
                 else:
-                    direction = BitField(rawByte = oldstate['D7toD0Directions'])
+                    direction = BitField(rawByte = int(oldstate['D7toD0Directions']))
                     direction[7-channel] = 0
                     
-                    state = BitField(rawByte = oldstate['D7toD0States'])
-                    state[7-channel] = state
+                    states = BitField(rawByte = int(oldstate['D7toD0States']))
+                    states[7-channel] = state
                     
-                    self.rawDIO(D7ToD0Directions = direction, D8toD0States = state, UpdateDigital = True)
+                    self.rawDIO(D7toD0Directions = direction, D7toD0States = states, UpdateDigital = True)
                     
             else:
                 bf = BitField()
