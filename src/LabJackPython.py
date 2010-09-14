@@ -809,12 +809,18 @@ class Device(object):
         if name[1] == 3:
             # Old style string
             name = "My %s" % self.deviceName
-            print "Old UTF-16 name detected, replacing with %s" % name
+            if self.debug: print "Old UTF-16 name detected, replacing with %s" % name
             self.setName(name)
             name = name.decode("UTF-8")
         else:
-            end = name.index(0x00)
-            name = struct.pack("B"*end, *name[:end]).decode("UTF-8")
+            try:
+                end = name.index(0x00)
+                name = struct.pack("B"*end, *name[:end]).decode("UTF-8")
+            except ValueError:
+                name = "My %s" % self.deviceName
+                if self.debug: print "Invalid name detected, replacing with %s" % name 
+                self.setName(name)
+                name = name.decode("UTF-8")
         
         return name
         
