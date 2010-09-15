@@ -640,18 +640,18 @@ class U3(Device):
         Examples:
         >>> myU3 = u3.U3()
         >>> ledCommand = u3.LED(False)
-        >>> internalTempCommand = u3.AIN(30, 31, True)
-        >>> myU3.getFeedback(ledCommand, internalTempCommand)
-        [None, 23200]
+        >>> ain0Command = u3.AIN(0, 31, True)
+        >>> myU3.getFeedback(ledCommand, ain0Command)
+        [None, 9376]
 
         OR if you like the list version better:
         
         >>> myU3 = U3()
         >>> ledCommand = u3.LED(False)
-        >>> internalTempCommand = u3.AIN(30, 31, True)
-        >>> commandList = [ ledCommand, internalTempCommand ]
+        >>> ain0Command = u3.AIN(30, 31, True)
+        >>> commandList = [ ledCommand, ain0Command ]
         >>> myU3.getFeedback(commandList)
-        [None, 23200]
+        [None, 9376]
         
         """
         
