@@ -166,27 +166,26 @@ class Bridge(Device):
         
         connectedMotes = []
         
-        moteIds = self.readRegister(59202, numReg = numMotes, format = ">" + "H" *numMotes )
-        if isinstance(moteIds, list):
-            for moteId in moteIds:
-                connectedMotes.append(Mote(self, moteId))
+        unitIds = self.readRegister(59202, numReg = numMotes, format = ">" + "H" *numMotes )
+        if isinstance(unitIds, list):
+            for unitId in unitIds:
+                connectedMotes.append(Mote(self, unitId))
             
             return connectedMotes
         else:
-            return [Mote(self, moteIds)]
+            return [Mote(self, unitIds)]
         
-    def makeMote(self, moteId):
-        return Mote(self, moteId)
+    def makeMote(self, unitId):
+        return Mote(self, unitId)
     
 
 
 class Mote(object):
     # ------------------ Object Functions ------------------
     # These functions are part of object interaction in python
-    def __init__(self, bridge, moteId):
+    def __init__(self, bridge, unitId):
         self.bridge = bridge
-        self.moteId = moteId
-        self.unitId = moteId
+        self.unitId = unitId
         self.productName = "SkyMote Mote"
         self.nickname = None
         self.checkinInterval = None
@@ -199,13 +198,13 @@ class Mote(object):
         return str(self)
     
     def __str__(self):
-        return "<Mote Object with ID = %s>" % self.moteId
+        return "<Mote Object with ID = %s>" % self.unitId
         
     def readRegister(self, addr, numReg = None, format = None):
-        return self.bridge.readRegister(addr, numReg = numReg, format = format, unitId = self.moteId)
+        return self.bridge.readRegister(addr, numReg = numReg, format = format, unitId = self.unitId)
     
     def writeRegister(self, addr, value):
-        return self.bridge.writeRegister(addr, value, unitId = self.moteId)
+        return self.bridge.writeRegister(addr, value, unitId = self.unitId)
         
     def getName(self):
         """
@@ -280,7 +279,16 @@ class Mote(object):
         self.writeRegister(58000, list(bl))
 
     name = property(getName, setName)
+    
+    def getUnitId(self):
+        self.unitId = self.readRegister(65103)
+        return self.unitId
         
+    def setUnitId(self, unitId):
+        self.writeRegister(65103, unitId)
+        self.unitId = unitId
+        return True
+    
     def close(self):
         self.bridge = None
     
