@@ -1,4 +1,8 @@
-Python 2.5 or higher is required to use LabJackPython.
+Python 2.5 or higher is required to use LabJackPython. To use the UE9
+over Ethernet, install comm firmware 1.50 or higher. At the moment it’s
+on the beta page:
+
+    http://labjack.com/support/firmware/ue9/beta
 
 Installation is easy:
     $ sudo python setup.py install
