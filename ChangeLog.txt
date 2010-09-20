@@ -121,3 +121,16 @@ Version History
     - Fixed GetDriverVersion to work with both the UD driver and the Exodriver
     - UE9 now has a getAIN function and Feedback will convert the binary to a voltage.
     - Added a streaming example that uses threads.
+- September 20, 2010
+    - Made changes to exportConfig so that the written values will keep their case
+    - Moved setup.py out of the src directory.
+    - Added a getTemperature to the U3/U6/UE9 class.
+    - Renamed bridge.py to skymote.py
+    - getName/setName now use UTF-8 instead of a weird UTF-16 thing.
+    - Updated LabJackPython.py to support the new LJSocket scan format.
+    - Added a lock around assigning Transaction IDs.
+    - Added support for new Exodriver functions getDevCounts() and openAllLabJacks()
+    - Updated streamTest-threading.py to use streamData() and be less confusing.
+    - Added a work-around for UE9s and Transaction IDs 64768 and 64769
+    - Various improvements to skymote support, including spontaneous data.
+    - Fixed a bug in U12.py's eDigitalOut
