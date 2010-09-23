@@ -1032,7 +1032,7 @@ class UE9(Device):
         
         return { 'AsynchBytes' : result[8:], 'NumAsynchBytesInRXBuffer' : result[7] }
 
-    def i2c(self, Address, I2CBytes, ResetAtStart = False, EnableClockStretching = False, SpeedAdjust = 0, SDAPinNum = 1, SCLPinNum = 0, NumI2CBytesToReceive = 0):
+    def i2c(self, Address, I2CBytes, ResetAtStart = False, EnableClockStretching = False, SpeedAdjust = 0, SDAPinNum = 1, SCLPinNum = 0, NumI2CBytesToReceive = 0, AddressByte = None):
         """
         Name: UE9.i2c(Address, I2CBytes, ResetAtStart = False, EnableClockStretching = False, SpeedAdjust = 0, SDAPinNum = 0, SCLPinNum = 1, NumI2CBytesToReceive = 0, AddressByte = None)
         Args: Address, the address (not shifted over)
