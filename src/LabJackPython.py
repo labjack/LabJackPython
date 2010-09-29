@@ -1197,8 +1197,10 @@ def openAllLabJacks():
                 d = Device(None, devType = prodId)
                 if prodId == 0x501:
                     d.open(prodId, devNumber = i)
+                    d = _makeDeviceFromHandle(d.handle, prodId)
                 else:
                     d.open(prodId, serial = serial)
+                    d = _makeDeviceFromHandle(d.handle, prodId)
                 
                 devices.append(d)
     else:

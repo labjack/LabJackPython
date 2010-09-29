@@ -991,6 +991,8 @@ class U3(Device):
                 
                 if self.streamChannelNumbers[self.streamPacketOffset] == 193:
                     value = struct.unpack('<BB', sample )
+                elif self.streamChannelNumbers[self.streamPacketOffset] in (200, 201, 210, 211, 224):
+                    value = struct.unpack('<H', sample )[0]
                 else:  
                     if self.streamNegChannels[self.streamPacketOffset] != 31:
                         # do signed
