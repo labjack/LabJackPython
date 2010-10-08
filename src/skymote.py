@@ -117,6 +117,36 @@ class Bridge(Device):
         self.mainFWVersion = "%s.%02d" % (left, right)
         return "%s.%02d" % (left, right)
     
+    def energyScan(self):
+        return self.readRegister(59410, numReg = 8, format = ">"+"B"*16)
+        
+    def getNetworkPassword(self):
+        results = self.readRegister(50120, numReg = 8, format = ">"+"B"*16)
+        
+        returnDict = dict()
+        returnDict['enabled'] = True if results[0] != 0 else False
+        returnDict['password'] = struct.pack("B"*15, *results[1:])
+        
+        return returnDict
+        
+    def setNetworkPassword(self, password, enable = True):
+        if len(password) > 15:
+            password = password[:15]
+            
+        if len(password) < 15:
+            password += "\x00" * ( 15 - len(password) )
+        
+        byteList = list(struct.unpack("B" * 15, password))
+        
+        if enable:
+            byteList = [ 1 ] + byteList
+        else:
+            byteList = [ 0 ] + byteList
+            
+        byteList = list(struct.unpack(">"+"H" * 8, struct.pack("B"*16, *byteList)))
+        
+        self.writeRegister(50120, byteList)
+    
     def usbBufferStatus(self):
         return self.readRegister(57001)
     
@@ -350,3 +380,32 @@ class Mote(object):
         
     def sleepTime(self):
         return self.readRegister(50100, numReg = 2, format = ">I")
+        
+    def getNetworkPassword(self):
+        results = self.readRegister(50120, numReg = 8, format = ">"+"B"*16)
+        
+        returnDict = dict()
+        returnDict['enabled'] = True if results[0] != 0 else False
+        returnDict['password'] = struct.pack("B"*15, *results[1:])
+        
+        return returnDict
+        
+    def setNetworkPassword(self, password, enable = True):
+        if len(password) > 15:
+            password = password[:15]
+            
+        if len(password) < 15:
+            password += "\x00" * ( 15 - len(password) )
+        
+        byteList = list(struct.unpack("B" * 15, password))
+        
+        if enable:
+            byteList = [ 1 ] + byteList
+        else:
+            byteList = [ 0 ] + byteList
+            
+        byteList = list(struct.unpack(">"+"H" * 8, struct.pack("B"*16, *byteList)))
+        
+        print "Writing:", byteList
+        
+        self.writeRegister(50120, byteList)
