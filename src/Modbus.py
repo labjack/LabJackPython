@@ -310,3 +310,21 @@ def getProtocolId(packet):
         return unpack(">H", pack("BB", *packet[2:4]) )[0]
     else:
         return unpack(">H", packet[2:4])[0]
+        
+def parseIntoPackets(packet):
+    while True:
+        if isinstance(packet, list):
+            firstLength = packet[5]+6
+        else:
+            firstLength = ord(packet[5])+6
+        
+        if len(packet) == firstLength:
+            yield packet
+            raise StopIteration
+        else:
+            yield packet[:firstLength]
+            packet = packet[firstLength:]
+    
+
+
+
