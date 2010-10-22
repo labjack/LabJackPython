@@ -328,11 +328,11 @@ def parseIntoPackets(packet):
 def parseSpontaneousDataPacket(packet):
     if isinstance(packet, list):
         localId = packet[6]
-        packet = struct.pack("B"*len(packet), *packet)
+        packet = pack("B"*len(packet), *packet)
     else:
         localId = ord(packet[6])
-    transId = struct.unpack(">H", packet[0:2])[0]
-    report = struct.unpack(">HBBfHH"+"f"*8, packet[9:53])
+    transId = unpack(">H", packet[0:2])[0]
+    report = unpack(">HBBfHH"+"f"*8, packet[9:53])
     
     results = dict()
     results['unitId'] = localId
