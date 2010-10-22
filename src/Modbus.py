@@ -324,7 +324,28 @@ def parseIntoPackets(packet):
         else:
             yield packet[:firstLength]
             packet = packet[firstLength:]
+
+def parseSpontaneousDataPacket(packet):
+    if isinstance(packet, list):
+        localId = packet[6]
+        packet = struct.pack("B"*len(packet), *packet)
+    else:
+        localId = ord(packet[6])
+    transId = struct.unpack(">H", packet[0:2])[0]
+    report = struct.unpack(">HBBfHH"+"f"*8, packet[9:53])
     
+    results = dict()
+    results['unitId'] = localId
+    results['transId'] = transId
+    results['Rxlqi'] = report[1]
+    results['Txlqi'] = report[2]
+    results['Battery'] = report[3]
+    results['Temperature'] = report[6]
+    results['Light'] = report[7]
+    results['Bump'] = report[4]
+    results['Sound'] = report[11]
+    
+    return results
 
 
 
