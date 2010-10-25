@@ -431,7 +431,7 @@ class U12(object):
                 for i in range(numDevices):
                     handle = openDev(i+1, 0, devType)
                     
-                    if handle != 0:
+                    if handle != 0 and handle is not None:
                         self.handle = ctypes.c_void_p(handle)
                         
                         try:
@@ -444,8 +444,8 @@ class U12(object):
                         else:
                             self.close()
                     
-                    if self.handle is None:
-                        raise U12Exception("Couldn't find a U12 with a serial number matching %s" % serialNumber)
+                if self.handle is None:
+                    raise U12Exception("Couldn't find a U12 with a serial number matching %s" % serialNumber)
                 
             elif id != -1:
                 numDevices = staticLib.LJUSB_GetDevCount(devType)
@@ -453,7 +453,7 @@ class U12(object):
                 for i in range(numDevices):
                     handle = openDev(i+1, 0, devType)
                     
-                    if handle != 0:
+                    if handle != 0 and handle is not None:
                         self.handle = ctypes.c_void_p(handle)
                         
                         try:
@@ -466,12 +466,12 @@ class U12(object):
                         else:
                             self.close()
                             
-                    if self.handle is None:
-                        raise U12Exception("Couldn't find a U12 with a local ID matching %s" % id)
+                if self.handle is None:
+                    raise U12Exception("Couldn't find a U12 with a local ID matching %s" % id)
             elif id == -1:
                 handle = openDev(1, 0, devType)
                 
-                if handle == 0:
+                if handle == 0 or handle is None:
                     raise Exception("Couldn't open a U12. Check that one is connected and try again.")
                 else:
                     self.handle = ctypes.c_void_p(handle)
