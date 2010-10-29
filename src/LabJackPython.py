@@ -1085,9 +1085,14 @@ def listAll(deviceType, connectionType = 1):
             
             deviceList = dict()
             
-            # TODO: Actually read the serial number and stuff.
             for i in range(num):
-                deviceList[str(i)] = i
+               try:
+                   device = openLabJack(0x501, 1, firstFound = False,
+pAddress = None, devNumber = i+1)
+                   device.close()
+                   deviceList[str(device.serialNumber)] = device.__dict__
+               except LabJackException:
+                   pass
             
             return deviceList
             
@@ -1528,14 +1533,14 @@ def _makeDeviceFromHandle(handle, deviceType):
         device.changed['bootloaderVersion'] = device.bootloaderVersion
         
     elif deviceType == 0x501:
-        pkt, readlen = device._buildReadRegisterPacket(65001, 2, 0)
+        pkt, readlen = device._buildReadRegisterPacket(65104, 4, 0)
         device.modbusPrependZeros = False
         device.write(pkt, modbus = True, checksum = False)
         for i in range(5):
             try:
                 serial = None
                 response = device.read(64, False, True)
-                serial = device._parseReadRegisterResponse(response[:readlen], readlen, 59200, '>I', numReg = 2)
+                serial = device._parseReadRegisterResponse(response[:readlen], readlen, 65104, '>Q', numReg = 4)
                 break
             except Modbus.ModbusException:
                 pass

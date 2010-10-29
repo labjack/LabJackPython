@@ -9,8 +9,23 @@ if os.name == "nt":
     if skymoteLib is None:
         raise ImportError("Couldn't load liblabjackusb.dll. Please install, and try again.")
         
+def serialToDotHex(serial):
+    bytes = struct.unpack("BBBBBBBB", struct.pack(">Q", serial))
+    line = ""
+    for i in range(7):
+        line += "%02x:" % bytes[i]
+    line += "%02x" % bytes[7]
     
-
+    return line
+    
+def dotHexToSerial(dothex):
+    bytes = [ int(i, 16) for i in dothex.split(":") ]
+    
+    serial = 0
+    for i, byte in enumerate(bytes):
+        serial += byte << (8 * (7-i))
+    
+    return serial
 
 class Bridge(Device):
     """
@@ -33,9 +48,11 @@ class Bridge(Device):
             self.localId = None
         
         if 'serial' in kargs:
-            self.serialNumber = kargs['serial']
+            self.serialNumber = int(kargs['serial'])
+            self.serialString = serialToDotHex(self.serialNumber)
         else:
             self.serialNumber = None
+            self.serialString = None
         
         self.ethernetFWVersion = None
         self.usbFWVersion = None
@@ -96,7 +113,8 @@ class Bridge(Device):
     # ------------------ Convenience Functions ------------------
     # These functions call read register for you. 
     def readSerialNumber(self):
-        self.serialNumber = self.readRegister(65001)
+        self.serialNumber = self.readRegister(65104, numReg = 4, format = ">Q")
+        self.serialString = serialToDotHex(self.serialNumber)
         return self.serialNumber
         
     def readNumberOfMotes(self):
@@ -223,6 +241,7 @@ class Mote(object):
         self.mainFWVersion = None
         self.devType = None
         self.serialNumber = None
+        self.serialString = None
         
     def __repr__(self):
         return str(self)
@@ -331,7 +350,8 @@ class Mote(object):
     # These functions call read register for you.
     
     def readSerialNumber(self):
-        self.serialNumber = self.readRegister(65001)
+        self.serialNumber = self.readRegister(65104, numReg = 4, format = ">Q")
+        self.serialString = serialToDotHex(self.serialNumber)
         return self.serialNumber
     
     def startRapidMode(self, minutes = 3):
