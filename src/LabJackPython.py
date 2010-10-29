@@ -609,7 +609,9 @@ class Device(object):
         if isinstance(self.handle, UE9TCPHandle) or isinstance(self.handle, LJSocketHandle):
             self.handle.close()
         elif os.name == 'posix':
-                staticLib.LJUSB_CloseDevice(self.handle);
+            staticLib.LJUSB_CloseDevice(self.handle)
+        elif self.devType == 0x501:
+            skymoteLib.LJUSB_CloseDevice(self.handle)
             
         self.handle = None
 
@@ -1087,8 +1089,7 @@ def listAll(deviceType, connectionType = 1):
             
             for i in range(num):
                try:
-                   device = openLabJack(0x501, 1, firstFound = False,
-pAddress = None, devNumber = i+1)
+                   device = openLabJack(0x501, 1, firstFound = False, pAddress = None, devNumber = i+1)
                    device.close()
                    deviceList[str(device.serialNumber)] = device.__dict__
                except LabJackException:
@@ -1409,6 +1410,7 @@ def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, 
         #If windows operating system then use the UD Driver
         if deviceType == 0x501:
             handle = _openWirelessBridgeOnWindows(firstFound, pAddress, devNumber)
+            handle = ctypes.c_void_p(handle)
         elif staticLib is not None:
             handle = _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, devNumber ) 
     elif connectionType == LJ_ctETHERNET and deviceType == LJ_dtUE9 :
