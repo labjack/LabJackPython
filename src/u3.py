@@ -1567,20 +1567,26 @@ class U3(Device):
         self.calData['vRef1.5AtCal'] = toDouble(calData[16:24])
         self.calData['vRegAtCal'] = toDouble(calData[24:32])
         
-        calData = self.readCal(3)
+        try:
+            #these blocks do not exist on hardware revisions < 1.30
+            calData = self.readCal(3)
         
-        self.calData['hvAIN0Slope'] = toDouble(calData[0:8])
-        self.calData['hvAIN1Slope'] = toDouble(calData[8:16])
-        self.calData['hvAIN2Slope'] = toDouble(calData[16:24])
-        self.calData['hvAIN3Slope'] = toDouble(calData[24:32])
-        
-        calData = self.readCal(4)
-        
-        self.calData['hvAIN0Offset'] = toDouble(calData[0:8])
-        self.calData['hvAIN1Offset'] = toDouble(calData[8:16])
-        self.calData['hvAIN2Offset'] = toDouble(calData[16:24])
-        self.calData['hvAIN3Offset'] = toDouble(calData[24:32])
-        
+            self.calData['hvAIN0Slope'] = toDouble(calData[0:8])
+            self.calData['hvAIN1Slope'] = toDouble(calData[8:16])
+            self.calData['hvAIN2Slope'] = toDouble(calData[16:24])
+            self.calData['hvAIN3Slope'] = toDouble(calData[24:32])
+            
+            calData = self.readCal(4)
+            
+            self.calData['hvAIN0Offset'] = toDouble(calData[0:8])
+            self.calData['hvAIN1Offset'] = toDouble(calData[8:16])
+            self.calData['hvAIN2Offset'] = toDouble(calData[16:24])
+            self.calData['hvAIN3Offset'] = toDouble(calData[24:32])
+        except LowlevelErrorException as ex:
+            if ex.errorCode != 26:
+                #not an invalid block error, so do not disregard
+                raise ex
+
         return self.calData
     getCalibrationData.section = 3
     
