@@ -1582,7 +1582,7 @@ class U3(Device):
             self.calData['hvAIN1Offset'] = toDouble(calData[8:16])
             self.calData['hvAIN2Offset'] = toDouble(calData[16:24])
             self.calData['hvAIN3Offset'] = toDouble(calData[24:32])
-        except LowlevelErrorException as ex:
+        except LowlevelErrorException, ex:
             if ex.errorCode != 26:
                 #not an invalid block error, so do not disregard
                 raise ex
