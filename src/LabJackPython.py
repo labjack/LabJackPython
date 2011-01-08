@@ -767,8 +767,10 @@ class Device(object):
                     if self.debug and e != 60 and e != 59: print e
                     if e == 60:
                         missed += struct.unpack('<I', result[6+(i*numBytes):10+(i*numBytes)] )[0]
-            
-            returnDict = dict(numPackets = numPackets, result = result, errors = errors, missed = missed, firstPacket = firstPacket )
+           
+            backlog = ord(result[-2])
+
+            returnDict = dict(numPackets = numPackets, result = result, errors = errors, missed = missed, firstPacket = firstPacket, backlog = backlog)
             
             if convert:
                 returnDict.update(self.processStreamData(result, numBytes = numBytes))
