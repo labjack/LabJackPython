@@ -221,7 +221,17 @@ class Device(object):
             if(writeBytes != len(writeBuffer)):
                 raise LabJackException( "Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
         else:
-            if modbus is True and self.modbusPrependZeros:
+            if modbus is True and self.devType == 9:
+                dataWords = len(writeBuffer)
+                writeBuffer = [0, 0xF8, 0, 0x07, 0, 0] + writeBuffer #modbus low-level function
+                if dataWords % 2 != 0:
+                    datawords = (dataWords+1)/2
+                    writeBuffer.append(0)
+                else:
+                    dataWords = dataWords/2
+                writeBuffer[2] = dataWords
+                setChecksum(writeBuffer)
+            elif modbus is True and self.modbusPrependZeros:
                 writeBuffer = [ 0, 0 ] + writeBuffer
             
             eGetRaw(self.handle, LJ_ioRAW_OUT, 0, len(writeBuffer), writeBuffer)
@@ -239,8 +249,6 @@ class Device(object):
 
         if checksum:
             setChecksum(writeBuffer)
-
-        
 
         if(isinstance(self.handle, LJSocketHandle)):
             wb = self._writeToLJSocketHandle(writeBuffer, modbus)
@@ -274,7 +282,7 @@ class Device(object):
                 return self._readFromExodriver(numBytes, stream, modbus)
             elif os.name == 'nt':
                 return self._readFromUDDriver(numBytes, stream, modbus)
-                
+        
     def _readFromLJSocketHandle(self, numBytes, modbus, spont = False):
         """
         Reads from LJSocket. Returns the result as a list.
@@ -323,6 +331,23 @@ class Device(object):
             readBytes = skymoteLib.LJUSB_IntRead(self.handle, 0x81, ctypes.byref(newA), numBytes)
             return [(newA[i] & 0xff) for i in range(readBytes)]
         else:
+            if modbus is True and self.devType == 9:
+                tempBuff = [0] * (8 + numBytes + numBytes%2)
+                eGetBuff = list()
+                eGetBuff = eGetRaw(self.handle, LJ_ioRAW_IN, 0, len(tempBuff), tempBuff)[1]
+
+                #parse the modbus response out (reponse is the Modbus extended low=level function)
+                retBuff = list()
+                if len(eGetBuff) >= 9 and eGetBuff[1] == 0xF8 and eGetBuff[3] == 0x07:
+                    #figuring out the length of the modbus response
+                    mbSize = len(eGetBuff) - 8
+                    if len(eGetBuff) >= 14:
+                        mbSize = min(mbSize, eGetBuff[13] + 6)
+                    i = min(mbSize, numBytes)
+                    i = max(i, 0)                    
+                    retBuff = eGetBuff[8:8+i] #getting the response only
+                return retBuff
+
             tempBuff = [0] * numBytes
             if stream:
                 return eGetRaw(self.handle, LJ_ioRAW_IN, 1, numBytes, tempBuff)[1]
