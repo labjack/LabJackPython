@@ -47,7 +47,9 @@ class LJTickDAC(Tk):
     AIN_PIN_DEFAULT = -1 # AIN must be configured
     DAC_PIN_DEFAULT = 0
     U3_DAC_PIN_OFFSET = 4
-
+    EEPROM_ADDRESS = 0x50
+    DAC_ADDRESS = 0x12
+    
     def __init__(self):
         # Create the window
         Tk.__init__(self)
@@ -121,8 +123,8 @@ class LJTickDAC(Tk):
 
         # Make requests
         try:
-            self.device.i2c(18, [48, int(((voltageA*self.aSlope)+self.aOffset)/256), int(((voltageA*self.aSlope)+self.aOffset)%256)], SDAPinNum = sdaPin, SCLPinNum = sclPin)
-            self.device.i2c(18, [49, int(((voltageB*self.bSlope)+self.bOffset)/256), int(((voltageB*self.bSlope)+self.bOffset)%256)], SDAPinNum = sdaPin, SCLPinNum = sclPin)
+            self.device.i2c(LJTickDAC.DAC_ADDRESS, [48, int(((voltageA*self.aSlope)+self.aOffset)/256), int(((voltageA*self.aSlope)+self.aOffset)%256)], SDAPinNum = sdaPin, SCLPinNum = sclPin)
+            self.device.i2c(LJTickDAC.DAC_ADDRESS, [49, int(((voltageB*self.bSlope)+self.bOffset)/256), int(((voltageB*self.bSlope)+self.bOffset)%256)], SDAPinNum = sdaPin, SCLPinNum = sclPin)
         except:
             self.showErrorWindow("I2C Error", "Whoops! Something went wrong when setting the LJTickDAC. Is the device detached?\n\nPython error:" + str(sys.exc_info()[1]))
             self.showSetup()
@@ -242,7 +244,7 @@ class LJTickDAC(Tk):
             sdaPin = sclPin + 1
 
         # Make request
-        data = self.device.i2c(80, [64], NumI2CBytesToReceive=36, SDAPinNum = sdaPin, SCLPinNum = sclPin)
+        data = self.device.i2c(LJTickDAC.EEPROM_ADDRESS, [64], NumI2CBytesToReceive=36, SDAPinNum = sdaPin, SCLPinNum = sclPin)
         response = data['I2CBytes']
         self.aSlope = toDouble(response[0:8])
         self.aOffset = toDouble(response[8:16])
