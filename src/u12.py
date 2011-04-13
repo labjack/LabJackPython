@@ -391,7 +391,7 @@ class U12(object):
     u12 = U12()
     
     """
-    def __init__(self, id = -1, serialNumber = None, debug = True):
+    def __init__(self, id = -1, serialNumber = None, debug = False):
         self.id = id
         self.serialNumber = serialNumber
         self.deviceName = "U12"
