@@ -665,9 +665,9 @@ class U6(Device):
                 if j >= len(self.streamChannelNumbers):
                     j = 0
                 
-                if self.streamChannelNumbers[j] == 193:
+                if self.streamChannelNumbers[j] in (193, 194):
                     value = struct.unpack('<BB', sample )
-                elif self.streamChannelNumbers[j] in (200, 201, 210, 211, 224):
+                elif self.streamChannelNumbers[j] >= 200:
                     value = struct.unpack('<H', sample )[0]
                 else:                
                     if (self.streamChannelOptions[j] >> 7) == 1:
@@ -1172,8 +1172,6 @@ class U6(Device):
             return (center - bits) * negSlope
         else:
             return (bits - center) * posSlope
-            
-            
     
     def binaryToCalibratedAnalogTemperature(self, bytesTemperature):
         voltage = self.binaryToCalibratedAnalogVoltage(0, bytesTemperature)
