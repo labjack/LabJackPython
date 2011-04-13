@@ -133,4 +133,18 @@ Version History
     - Updated streamTest-threading.py to use streamData() and be less confusing.
     - Added a work-around for UE9s and Transaction IDs 64768 and 64769
     - Various improvements to skymote support, including spontaneous data.
-    - Fixed a bug in U12.py's eDigitalOut
+    - Fixed a bug in U12.py's eDigitalOut.
+- April 13, 2011
+    - Added AddressByte to i2c function in ue9.py.
+    - Added better support for special channels in streaming.
+    - Fixed a typo in SetNetworkPassword.
+    - Added a function for pulling a big chuck of commands into individual packets.
+    - Added how to parse a spontaneous data packet to Modbus.py.
+    - Fixed no U12 connected problems.
+    - Fixed ListAll for SkyMotes. Moved from serial number to MAC Address for SkyMotes.
+    - Fixed some errors relating to SkyMote devices on Windows.
+    - Added U3 timer mode 14 support.
+    - Fixed getting calibration constants for U3s with hardware revisions < 1.30.
+    - Fixed UE9 Modbus over TCP on Windows.
+    - Added DAC and EEPROM address variables to LJTickDAC example.
+    - Turned off debugging by default in U12 class.
