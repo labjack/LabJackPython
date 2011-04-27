@@ -2135,7 +2135,7 @@ class TimerConfig(FeedbackCommand):
         if timer not in range(4):
             raise LabJackException("Timer should be either 0-3.")
         
-        if TimerMode > 13 or TimerMode < 0:
+        if TimerMode > 14 or TimerMode < 0:
             raise LabJackException("Invalid Timer Mode.")
         
         self.timer = timer
