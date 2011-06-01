@@ -1313,6 +1313,14 @@ def _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber):
     raise LabJackException(LJE_LABJACK_NOT_FOUND) 
 
 def _openUE9OverEthernet(firstFound, pAddress, devNumber):
+    if firstFound is not True and pAddress is not None:
+        #Check if valid IP address and attempt to get TCP handle
+        try:
+            socket.inet_aton(pAddress)
+            return UE9TCPHandle(pAddress)
+        except:
+            pass
+
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     s.settimeout(BROADCAST_SOCKET_TIMEOUT)
