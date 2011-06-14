@@ -1314,7 +1314,7 @@ class U3(Device):
         return { 'AsynchBytes' : result[8:], 'NumAsynchBytesInRXBuffer' : result[7] }
     asynchRX.section = 2
     
-    def i2c(self, Address, I2CBytes, ResetAtStart = False, EnableClockStretching = False, SpeedAdjust = 0, SDAPinNum = 6, SCLPinNum = 7, NumI2CBytesToReceive = 0, AddressByte = None):
+    def i2c(self, Address, I2CBytes, EnableClockStretching = False, NoStopWhenRestarting = False, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 6, SCLPinNum = 7, NumI2CBytesToReceive = 0, AddressByte = None):
         """
         Name: U3.i2c(Address, I2CBytes, ResetAtStart = False, 
                      EnableClockStretching = False, SpeedAdjust = 0,
@@ -1354,6 +1354,8 @@ class U3(Device):
         #command[5] = Checksum16 (MSB)
         if ResetAtStart:
             command[6] |= (1 << 1)
+        if NoStopWhenRestarting:
+            command[6] |= (1 << 2)
         if EnableClockStretching:
             command[6] |= (1 << 3)
         
