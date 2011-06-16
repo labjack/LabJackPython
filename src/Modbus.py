@@ -272,7 +272,7 @@ def calcNumberOfRegistersAndFormat(addr, numReg = None):
 
     if numReg:
         if (numReg%minNumReg) == 0:
-            return (numReg, '>' + ( format * (numReg/minNumReg) ))
+            return (numReg, '>' + ( format * (numReg//minNumReg) ))
         else:
             raise ModbusException("For address %s, the number of registers must be divisible by %s" % (addr, minNumReg))
     else:
