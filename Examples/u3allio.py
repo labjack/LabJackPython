@@ -31,6 +31,12 @@ try:
     feedbackArguments.append(u3.DAC0_8(Value = 125))
     feedbackArguments.append(u3.PortStateRead())
     
+    #Check if the U3 is an HV
+    if d.configU3()['VersionInfo']&18 == 18:
+        isHV = True
+    else:
+        isHV = False
+
     for i in range(numChannels):
         feedbackArguments.append( u3.AIN(i, 31, QuickSample = quickSample, LongSettling = longSettling ) )
     
@@ -43,7 +49,12 @@ try:
         results = d.getFeedback( feedbackArguments )
         #print results
         for j in range(numChannels):
-            latestAinValues[j] = d.binaryToCalibratedAnalogVoltage(results[ 2 + j ], isLowVoltage = False, isSingleEnded = True)
+            #Figure out if the channel is low or high voltage to use the correct calibration
+            if isHV == True and j < 4:
+                lowVoltage = False
+            else:
+                lowVoltage = True
+            latestAinValues[j] = d.binaryToCalibratedAnalogVoltage(results[ 2 + j ], isLowVoltage = lowVoltage, isSingleEnded = True)
         i += 1
 
     end = datetime.now()
