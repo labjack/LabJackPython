@@ -1592,7 +1592,7 @@ def _makeDeviceFromHandle(handle, deviceType):
         
     return device
 
-def AddRequest(handle, IOType, Channel, Value, x1, UserData):
+def AddRequest(Handle, IOType, Channel, Value, x1, UserData):
     """AddRequest(handle, ioType, channel, value, x1, userData)
         
     Windows Only
