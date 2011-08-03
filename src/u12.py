@@ -519,7 +519,7 @@ class U12(object):
             writeBytes = staticLib.LJUSB_Write(self.handle, ctypes.byref(newA), len(writeBuffer))
             
             if(writeBytes != len(writeBuffer)):
-                raise LabJackException( "Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
+                raise U12Exception( "Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
                 
             return writeBuffer
             
