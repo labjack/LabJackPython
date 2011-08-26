@@ -1,6 +1,6 @@
 LabJackPython: Cross-platform (Windows, Linux, Mac OS X) Python module and
 examples for LabJack devices.
-04/21/2011
+08/26/2011
 support@labjack.com
 
 Python 2.5 or higher is required to use LabJackPython. To use the UE9
