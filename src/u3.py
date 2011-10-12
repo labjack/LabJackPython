@@ -963,8 +963,12 @@ class U3(Device):
         
         freq = freq/ScanInterval
         
-        self.packetsPerRequest = max(1, int(freq/SamplesPerPacket))
-        self.packetsPerRequest = min(self.packetsPerRequest, 48)
+        if SamplesPerPacket < 25:
+            #limit to one packet
+            self.packetsPerRequest = 1
+        else:
+            self.packetsPerRequest = max(1, int(freq/SamplesPerPacket))
+            self.packetsPerRequest = min(self.packetsPerRequest, 48)
     streamConfig.section = 2
     
     def processStreamData(self, result, numBytes = None):
