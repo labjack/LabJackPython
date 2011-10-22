@@ -12,7 +12,7 @@ On a Mac OS 10.5 machine with a 1.42 GHz G4 Processor, we saw max speeds of
 about 40kHz.
 """
 
-import u3, u6, LabJackPython
+import u3, u6, ue9, LabJackPython
 from time import sleep
 from datetime import datetime
 import struct
@@ -21,7 +21,6 @@ import Queue
 import ctypes, copy, sys
 
 # MAX_REQUESTS is the number of packets to be read.
-# At high frequencies ( >5 kHz), the number of samples will be MAX_REQUESTS times 48 (packets per request) times 25 (samples per packet)
 MAX_REQUESTS = 2500
 
 d = None
@@ -30,6 +29,7 @@ d = None
 ## U3 
 ## Uncomment these lines to stream from a U3
 ################################################################################
+## At high frequencies ( >5 kHz), the number of samples will be MAX_REQUESTS times 48 (packets per request) times 25 (samples per packet)
 #d = u3.U3()
 #
 ## to learn the if the U3 is an HV
@@ -39,12 +39,13 @@ d = None
 #d.configIO(FIOAnalog = 1)
 #
 #print "configuring U3 stream"
-#d.streamConfig( NumChannels = 1, PChannels = [ 0 ], NChannels = [ 31 ], Resolution = 3, SampleFrequency = 50000 )
+#d.streamConfig( NumChannels = 1, PChannels = [ 0 ], NChannels = [ 31 ], Resolution = 3, SampleFrequency = 20000 )
 
 ################################################################################
 ## U6
 ## Uncomment these lines to stream from a U6
 ################################################################################
+## At high frequencies ( >5 kHz), the number of samples will be MAX_REQUESTS times 48 (packets per request) times 25 (samples per packet)
 #d = u6.U6()
 #
 ## For applying the proper calibration to readings.
@@ -52,6 +53,21 @@ d = None
 #
 #print "configuring U6 stream"
 #d.streamConfig( NumChannels = 1, ChannelNumbers = [ 0 ], ChannelOptions = [ 0 ], SettlingFactor = 1, ResolutionIndex = 1, SampleFrequency = 50000 )
+
+################################################################################
+## UE9
+## Uncomment these lines to stream from a UE9
+################################################################################
+# At 150 Hz or higher frequencies, the number of samples will be MAX_REQUESTS times 10 (packets per request) times 16 (samples per packet).
+#d = ue9.UE9()
+#
+## For applying the proper calibration to readings.
+#d.getCalibrationData()
+#
+#print "configuring UE9 stream"
+#
+#d.streamConfig( NumChannels = 1, ChannelNumbers = [ 0 ], ChannelOptions = [ 0 ], SettlingTime = 0, Resolution = 12, SampleFrequency = 50000 )
+
 
 if d is None:
     print "Configure a device first.\nPlease open streamTest-threading.py in a text editor and uncomment the lines for your device, starting at about line 16.\n\nExiting..."
@@ -64,7 +80,7 @@ class StreamDataReader(object):
         self.dataCount = 0
         self.missed = 0
         self.running = False
-        
+
     def readStreamData(self):
         self.running = True
         
@@ -84,7 +100,7 @@ class StreamDataReader(object):
         print "stream stopped."
         self.device.streamStop()
         stop = datetime.now()
-        
+
         total = self.dataCount * self.device.packetsPerRequest * self.device.streamSamplesPerPacket
         print "%s requests with %s packets per request with %s samples per packet = %s samples total." % ( self.dataCount, d.packetsPerRequest, d.streamSamplesPerPacket, total )
         

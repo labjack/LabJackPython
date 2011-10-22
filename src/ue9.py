@@ -61,6 +61,7 @@ class UE9(Device):
         self.debug = debug
         self.calData = None
         self.controlFWVersion = self.commFWVersion = None
+        self.ethernet = False
 
         if autoOpen:
             self.open(**kargs)
@@ -81,6 +82,7 @@ class UE9(Device):
         >>> myUe9 = ue9.UE9(autoOpen = False)
         >>> myUe9.open()
         """
+        self.ethernet = ethernet
         Device.open(self, 9, Ethernet = ethernet, firstFound = firstFound, serial = serial, localId = localId, devNumber = devNumber, ipAddress = ipAddress, handleOnly = handleOnly, LJSocket = LJSocket)
         
     def commConfig(self, LocalID = None, IPAddress = None, Gateway = None, Subnet = None, PortA = None, PortB = None, DHCPEnabled = None):
@@ -204,7 +206,7 @@ class UE9(Device):
         >>> myUe9.flushBuffer()
         """
         command = [ 0x08, 0x08 ]
-        self._writeRead(command, 2, [], False)
+        self._writeRead(command, 2, [], False, False, False)
     
     def discoveryUDP(self):
         """
@@ -789,6 +791,285 @@ class UE9(Device):
         
         self._writeRead(command, 8, [0xF8, 0x01, command[3]])
 
+    def streamClearData(self):
+        """
+        Name: UE9.streamClearData()
+        Args: None
+        Desc: Clears the streaming data on the stream USB endpoint or TCP socket
+              that was left over from a previous stream.
+        Note: Use before and/or after streaming.  Timeout delay can occur occur.
+        """
+        try:
+            for i in range(0, 10):
+                res = self.read(192, stream = True)
+                if len(res) == 192:
+                    if all([ ord(b) == 0 for b in res ]):
+                        #stream data cleared (Windows)
+                        break
+                else:
+                    if isinstance(self.handle, UE9TCPHandle):
+                        if len(res):
+                            #Probably only got 46.  Continue reading.
+                            continue
+                    #stream data cleared
+                    break
+        except:
+            #probably a timeout, but expected
+            pass
+
+    def streamConfig(self, NumChannels = 1, Resolution = 12, SettlingTime = 0, InternalStreamClockFrequency = 0, DivideClockBy256 = False, EnableExternalScanTrigger = False, EnableScanPulseOutput = False, ScanInterval = 1, ChannelNumbers = [0], ChannelOptions = [0], SampleFrequency = None):
+        """
+        Name: UE9.streamConfig(
+                 NumChannels = 1, Resolution = 12,
+                 SettlingTime = 0, InternalStreamClockFrequency = 0,
+                 DivideClockBy256 = False, ScanInterval = 1, 
+                 EnableExternalScanTrigger = False, EnableScanPulseOutput = False,
+                 ChannelNumbers = [0], ChannelOptions = [0],
+                 SampleFrequency = None )
+        Args: NumChannels, the number of channels to stream
+              Resolution, the resolution of the samples (12 - 16)
+              SettlingTime, the settling time to be used 
+                            (SettlingTime * 5 microseconds)
+              ChannelNumbers, a list of channel numbers to stream
+              ChannelOptions, a list of channel options bytes.
+                              Option byte values (BipGain):
+                                  0 = Unipolar Gain 1, 1 = Unipolar Gain 2,
+                                  2 = Unipolar Gain 4, 3 = Unipolar Gain 8,
+                                  8 = Bipolar Gain 1
+              EnableExternalScanTrigger, enable external scan trigger.  The UE9 
+                                         scans the table each time it detects a
+                                         falling edge on Counter 1 (slave mode).
+              EnableScanPulseOutput, enable scan pulse output.  Counter 1 will
+                                     pulse low just before every scan (master 
+                                     mode).
+
+              Set Either:
+              
+              SampleFrequency, the frequency in Hz to sample
+              
+              -- OR --
+              
+              InternalStreamClockFrequency, 0 = 4 MHz, 1 = 48 MHz, 2 = 750 kHz,
+                                            3 = 24 MHz
+              DivideClockBy256, True = divide the clock by 256
+              ScanInterval, clock/ScanInterval = scan frequency.
+              See Section 5.3.6 of the User's Guide for more details.
+        Desc: Configures streaming on the UE9.
+        """
+        if NumChannels != len(ChannelNumbers) or NumChannels != len(ChannelOptions):
+            raise LabJackException("NumChannels must match length of ChannelNumbers and ChannelOptions")
+        if len(ChannelNumbers) != len(ChannelOptions):
+            raise LabJackException("len(ChannelNumbers) doesn't match len(ChannelOptions)")
+
+        if SampleFrequency != None:
+            if SampleFrequency < 1000:
+                DivideClockBy256 = True
+                ScanInterval = 15625/(SampleFrequency/NumChannels)
+            else:
+                DivideClockBy256 = False
+                ScanInterval = 4000000/(SampleFrequency/NumChannels)
+            InternalStreamClockFrequency = 0
+                
+        SamplesPerPacket = 16
+
+        # Force Scan Interval into correct range
+        ScanInterval = min( ScanInterval, 65535 )
+        ScanInterval = int( ScanInterval )
+        ScanInterval = max( ScanInterval, 1 )
+        
+        # Only want the first 2 bit of data
+        InternalStreamClockFrequency = InternalStreamClockFrequency & 3
+
+        command = [ 0 ] * (12 + NumChannels*2)
+        #command[0] = Checksum8
+        command[1] = 0xF8
+        command[2] = NumChannels+3
+        command[3] = 0x11
+        #command[4] = Checksum16 (LSB)
+        #command[5] = Checksum16 (MSB)
+        command[6] = NumChannels
+        command[7] = Resolution
+        command[8] = SettlingTime
+        command[9] = InternalStreamClockFrequency << 3
+        if DivideClockBy256:
+            command[9] |= 0x02
+        if EnableExternalScanTrigger:
+            command[9] |= 0x40
+        if EnableScanPulseOutput:
+            command[9] |= 0x80
+        t = struct.pack("<H", ScanInterval)
+        command[10] = ord(t[0])
+        command[11] = ord(t[1])
+        for i in range(NumChannels):
+            command[12+(i*2)] = ChannelNumbers[i]
+            command[13+(i*2)] = ChannelOptions[i]
+
+        self._writeRead(command, 8, [0xF8, 0x01, 0x11])
+
+        # Set up the variables for future use.
+        self.streamSamplesPerPacket = SamplesPerPacket
+        self.streamChannelNumbers = ChannelNumbers
+        self.streamChannelOptions = ChannelOptions
+        self.streamConfiged = True
+
+        if InternalStreamClockFrequency == 1:
+            freq = float(48000000)
+        elif InternalStreamClockFrequency == 2:
+            freq = float(750000)
+        elif InternalStreamClockFrequency == 3:
+            freq = float(24000000)
+        else:
+            freq = float(4000000)
+
+        if DivideClockBy256:
+            freq /= 256
+
+        freq = freq/ScanInterval
+
+        #packetsPerRequest needs to be a multiple of 4 for Linux/Mac OS X USB.
+        #For Windows it needs to be under 11.
+        self.packetsPerRequest = max(4, int(freq/SamplesPerPacket))
+        self.packetsPerRequest = min(self.packetsPerRequest, 8)
+        self.packetsPerRequest = int(4 * round(float(self.packetsPerRequest)/4))
+
+        if self.ethernet:
+            self.streamPacketSize = 46
+            if isinstance(self.handle, UE9TCPHandle):
+                #On Linux/Mac OS X TCP, limiting to 1 packetsPerRequest since we
+                #can't read multiple packets per 1 TCP read for some reason.
+                self.packetsPerRequest = 1
+        else:
+            #USB stream packets have an additonal 2 bytes [0, 0] appended to the end
+            self.streamPacketSize = 48
+
+    def streamStart(self, clearData=False):
+        """
+        Name: UE9.streamStart(clearData=False)
+        Args: clearData, clears left over stream data over USB or TCP
+        Desc: Starts streaming on the UE9.
+        Note: You must call streamConfig() before calling this function.
+        """
+        self.flushBuffer()
+        if self.streamStarted == False and clearData == True:
+            self.streamClearData()
+        Device.streamStart(self)
+
+    def streamData(self, convert=True):
+        """
+        Name: UE9.streamData(convert=True)
+        Args: convert, should the packets be converted as they are read.
+                       set to False to get much faster speeds, but you will 
+                       have to process the results later.
+        Desc: Reads stream data from a UE9. See our stream example to get an
+              idea of how this function should be called. The return value of
+              streamData is a dictionary with the following keys:
+              * errors: The number of errors in this block.
+              * numPackets: The number of USB packets collected to return this
+                            block.
+              * missed: The number of readings that were missed because of
+                        buffer overflow on the LabJack.  Not supported on UE9.
+              * firstPacket: The PacketCounter value in the first USB packet.
+              * result: The raw bytes returned from read(). The only way to get
+                        data if called with convert = False.
+              * AINi, where i is an entry in the passed in PChannels. If called
+                        with convert = True, this is a list of all the readings
+                        in this block.
+        Note: You must start the stream by calling streamStart() before calling
+              this function.
+        """
+        if not self.streamStarted:
+            raise LabJackException("Please start streaming before reading.")
+
+        numBytes = self.streamPacketSize
+
+        while True:
+            result = self.read(numBytes * self.packetsPerRequest, stream = True)
+            if len(result) == 0:
+                yield None
+                continue
+
+            numPackets = len(result) // numBytes
+
+            errors = 0
+            missed = 0
+            firstPacket = ord(result[10])
+            i = 0
+            while i < numPackets:
+                offset = (i*numBytes)
+                #Check for empty data
+                if ord(result[1+offset]) == 0:
+                    if all([ ord(b) == 0 for b in result[offset:(offset+numBytes)]]):
+                        if i+1 >= numPackets:
+                            result = result[0:offset]
+                        else:
+                            result = result[0:offset] + result[offset+numBytes:]
+                        numPackets = numPackets - 1
+                        continue
+
+                e = ord(result[11+offset])
+                if e != 0:
+                    errors += 1
+                    if self.debug: print e
+                i+=1
+
+            returnDict = dict(numPackets = numPackets, result = result, errors = errors, missed = missed, firstPacket = firstPacket )
+
+            if convert:
+                returnDict.update(self.processStreamData(result, numBytes = numBytes))
+
+            yield returnDict
+
+    def streamStop(self, clearData=True):
+        """
+        Name: UE9.streamStop(clearData = True)
+        Args: clearData, clears left over stream data over USB or TCP
+        Desc: Stops streaming on the UE9.
+        """
+        Device.streamStop(self)
+        self.flushBuffer()
+        if self.streamStarted == False and clearData == True:
+            self.streamClearData()
+
+    def processStreamData(self, result, numBytes=None):
+        """
+        Name: UE9.processStreamData(result, numBytes = None)
+        Args: result, the string returned from streamData()
+              numBytes, the number of bytes per packet
+        Desc: Breaks stream data into individual channels and applies
+              calibrations.
+              
+        >>> reading = d.streamData(convert = False)
+        >>> print proccessStreamData(reading['result'])
+        defaultDict(list, {'AIN0' : [3.123, 3.231, 3.232, ...]})
+        """
+        if numBytes is None:
+            numBytes = self.streamPacketSize
+
+        returnDict = collections.defaultdict(list)
+
+        j = self.streamPacketOffset
+        for packet in self.breakupPackets(result, numBytes):
+            if self.ethernet == False:
+                packet = packet[:-2] #remove the extra bytes
+            for sample in self.samplesFromPacket(packet):
+                if j >= len(self.streamChannelNumbers):
+                    j = 0
+
+                if self.streamChannelNumbers[j] in (193, 194):
+                    value = struct.unpack('<BB', sample )
+                elif self.streamChannelNumbers[j] >= 200:
+                    value = struct.unpack('<H', sample )[0]
+                else:
+                    value = struct.unpack('<H', sample )[0]
+                    gain = self.streamChannelOptions[j] & 0x0F
+                    value = self.binaryToCalibratedAnalogVoltage(value, gain)
+
+                returnDict["AIN%s" % self.streamChannelNumbers[j]].append(value)
+                j += 1
+
+            self.streamPacketOffset = j
+        return returnDict
+
     def watchdogConfig(self, ResetCommonTimeout = False, ResetControlonTimeout = False, UpdateDigitalIOB = False, UpdateDigitalIOA = False, UpdateDAC1onTimeout = False, UpdateDAC0onTimeout = False, TimeoutPeriod = 60, DIOConfigA = 0, DIOConfigB = 0, DAC0Enabled = False, DAC0 = 0, DAC1Enabled = False, DAC1 = 0):
         command = [ 0 ] * 16
         
@@ -859,7 +1140,7 @@ class UE9(Device):
         Desc: Sends and receives serial data using SPI synchronous
               communication.
         """
-        print SPIBytes
+        #print SPIBytes
         if not isinstance(SPIBytes, list):
             raise LabJackException("SPIBytes MUST be a list of bytes")
         

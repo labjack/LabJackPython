@@ -1,16 +1,17 @@
-import u3, u6
+import u3, u6, ue9
 from time import sleep
 from datetime import datetime
 import struct
+import traceback
 
 # MAX_REQUESTS is the number of packets to be read.
-# At high frequencies ( >5 kHz), the number of samples will be MAX_REQUESTS times 48 (packets per request) times 25 (samples per packet)
 MAX_REQUESTS = 75
 
 ################################################################################
 ## U3 
 ## Uncomment these lines to stream from a U3
 ################################################################################
+## At high frequencies ( >5 kHz), the number of samples will be MAX_REQUESTS times 48 (packets per request) times 25 (samples per packet).
 #d = u3.U3()
 #
 ## to learn the if the U3 is an HV
@@ -26,6 +27,7 @@ MAX_REQUESTS = 75
 ## U6
 ## Uncomment these lines to stream from a U6
 ################################################################################
+## At high frequencies ( >5 kHz), the number of samples will be MAX_REQUESTS times 48 (packets per request) times 25 (samples per packet).
 #d = u6.U6()
 #
 ## For applying the proper calibration to readings.
@@ -34,19 +36,34 @@ MAX_REQUESTS = 75
 #print "configuring U6 stream"
 #
 #d.streamConfig( NumChannels = 1, ChannelNumbers = [ 0 ], ChannelOptions = [ 0 ], SettlingFactor = 1, ResolutionIndex = 1, SampleFrequency = 10000 )
-    
+
+################################################################################
+## UE9
+## Uncomment these lines to stream from a UE9
+################################################################################
+# At 96 Hz or higher frequencies, the number of samples will be MAX_REQUESTS times 8 (packets per request) times 16 (samples per packet).
+# Currently over ethernet packets per request is 1.
+#d = ue9.UE9() #ethernet=True, ipAddress="192.168.1.209")
+#
+## For applying the proper calibration to readings.
+#d.getCalibrationData()
+#
+#print "configuring UE9 stream"
+#
+#d.streamConfig( NumChannels = 1, ChannelNumbers = [ 0 ], ChannelOptions = [ 0 ], SettlingTime = 0, Resolution = 12, SampleFrequency = 10000 )
+
+
 try:
     start = datetime.now()
     print "start stream", start
     d.streamStart()
     
     missed = 0
-    start = datetime.now()
     dataCount = 0
     byteCount = 0
+    start = datetime.now()
     
     for r in d.streamData():
-        
         if r is not None:
             # Our stop condition
             if dataCount > MAX_REQUESTS:
@@ -63,20 +80,19 @@ try:
                 print "+++ Missed ", r['missed']
 
             # Comment out this print and do something with r
-            print "Average of", len(r['AIN0']), "reading(s):", sum(r['AIN0'])/len(r['AIN0'])
+            print "Average of" , len(r['AIN0']), "reading(s):", sum(r['AIN0'])/len(r['AIN0'])
 
             dataCount += 1
-
-
         else:
             # Got no data back from our read.
             # This only happens if your stream isn't faster than the 
             # the USB read timeout, ~1 sec.
             print "No data", datetime.now()
-    
+except:
+    print "".join(i for i in traceback.format_exc())
 finally:
-    print "stream stopped."
     stop = datetime.now()
+    print "stream stopped."
     d.streamStop()
     d.close()
 
@@ -89,5 +105,3 @@ finally:
     runTime = (stop-start).seconds + float((stop-start).microseconds)/1000000
     print "The experiment took %s seconds." % runTime
     print "%s samples / %s seconds = %s Hz" % ( total, runTime, float(total)/runTime )
-    
-    
