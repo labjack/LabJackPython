@@ -210,7 +210,7 @@ class Device(object):
             
         return writeBuffer
             
-    def _writeToUDDriver(self, writeBuffer, modbus):        
+    def _writeToUDDriver(self, writeBuffer, modbus):
         if self.devType == 0x501:
             newA = (ctypes.c_byte*len(writeBuffer))(0) 
             for i in range(len(writeBuffer)):
@@ -301,6 +301,7 @@ class Device(object):
     def _readFromUE9TCPHandle(self, numBytes, stream, modbus):
         if stream is True:
             rcvString = self.handle.stream.recv(numBytes)
+            return rcvString
         else:
             if modbus is True:
                 rcvString = self.handle.modbus.recv(numBytes)
