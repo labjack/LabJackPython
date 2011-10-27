@@ -867,7 +867,7 @@ class U3(Device):
     reset.section = 2
 
     def streamConfig(self, NumChannels = 1, SamplesPerPacket = 25, InternalStreamClockFrequency = 0, DivideClockBy256 = False, Resolution = 3, ScanInterval = 1, PChannels = [30], NChannels = [31], SampleFrequency = None):
-        """        
+        """
         Name: U3.streamConfig(NumChannels = 1, SamplesPerPacket = 25,
                               InternalStreamClockFrequency = 0,
                               DivideClockBy256 = False, Resolution = 3,
@@ -892,7 +892,7 @@ class U3(Device):
               at the specified scan rate. Before starting a stream, you need 
               to call this function to configure the table and scan clock.
         
-        Note: Requires U3 hardware version 1.21 or greater. 
+        Note: Requires U3 hardware version 1.21 or greater.
         """
         if len(PChannels) != NumChannels:
             raise LabJackException("Length of PChannels didn't match NumChannels")
@@ -900,7 +900,7 @@ class U3(Device):
             raise LabJackException("Length of NChannels didn't match NumChannels")
         if len(PChannels) != len(NChannels):
             raise LabJackException("Length of PChannels didn't match the length of NChannels")
-            
+        
         if SampleFrequency != None:
             if SampleFrequency < 1000:
                 if SampleFrequency < 25:
@@ -944,8 +944,11 @@ class U3(Device):
         
         for i in range(NumChannels):
             command[12+(i*2)] = PChannels[i]
-            command[13+(i*2)] = NChannels[i]
-             
+            if NChannels[i] == 32:
+                command[13+(i*2)] = 30
+            else:
+                command[13+(i*2)] = NChannels[i]
+        
         self._writeRead(command, 8, [0xF8, 0x01, 0x11])
         
         self.streamSamplesPerPacket = SamplesPerPacket
@@ -998,20 +1001,24 @@ class U3(Device):
                 elif self.streamChannelNumbers[self.streamPacketOffset] >= 200:
                     value = struct.unpack('<H', sample )[0]
                 else:  
-                    if self.streamNegChannels[self.streamPacketOffset] != 31:
-                        # do signed
-                        value = struct.unpack('<H', sample )[0]
-                        singleEnded = False
-                    else:
+                    if self.streamNegChannels[self.streamPacketOffset] == 31:
                         # do unsigned
                         value = struct.unpack('<H', sample )[0]
                         singleEnded = True
+                    else:
+                        # do signed
+                        value = struct.unpack('<H', sample )[0]
+                        singleEnded = False
                     
                     lvChannel = True
                     if self.deviceName.lower().endswith('hv') and self.streamChannelNumbers[self.streamPacketOffset] < 4:
                         lvChannel = False
-                   
-                    value = self.binaryToCalibratedAnalogVoltage(value, isLowVoltage = lvChannel, isSingleEnded = singleEnded, channelNumber = self.streamChannelNumbers[self.streamPacketOffset])
+                    
+                    isSpecial = False
+                    if self.streamNegChannels[self.streamPacketOffset] == 32:
+                        isSpecial = True
+
+                    value = self.binaryToCalibratedAnalogVoltage(value, isLowVoltage = lvChannel, isSingleEnded = singleEnded, channelNumber = self.streamChannelNumbers[self.streamPacketOffset], isSpecialSetting = isSpecial)
                 
                 returnDict["AIN%s" % self.streamChannelNumbers[self.streamPacketOffset]].append(value)
             
@@ -1472,7 +1479,6 @@ class U3(Device):
         0.046464288000000006
         """
         hasCal = self.calData is not None
-        
         if isLowVoltage:
             if isSingleEnded and not isSpecialSetting:
                 if hasCal:
