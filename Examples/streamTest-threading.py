@@ -35,6 +35,9 @@ d = None
 ## to learn the if the U3 is an HV
 #d.configU3()
 #
+## For applying the proper calibration to readings.
+#d.getCalibrationData()
+#
 ## Set the FIO0 to Analog
 #d.configIO(FIOAnalog = 1)
 #
