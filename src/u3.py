@@ -1530,18 +1530,18 @@ class U3(Device):
         Args: volts, the voltage you would like to set the DAC to.
               dacNumber, 0 or 1, helps apply the correct calibration
               is16Bits, True if you are going to use the 16-bit DAC command
-              
+        
         Desc: Takes a voltage, and turns it into the bits needed for the DAC 
               Feedback commands.
         """
         if self.calData is not None:
-            if is16Bits:
-                bits = ( volts * self.calData['dac%sSlope' % dacNumber] * 256) + self.calData['dac%sOffset' % dacNumber] * 256
-            else:
-                bits = ( volts * self.calData['dac%sSlope' % dacNumber] ) + self.calData['dac%sOffset' % dacNumber]
+            bits = ( volts * self.calData['dac%sSlope' % dacNumber] ) + self.calData['dac%sOffset' % dacNumber]
         else:
-            bits = ( volts / 4.95 ) * 256
-            
+            bits = volts * 51.717
+        
+        if is16Bits:
+            bits *= 256
+        
         return int(bits)
     voltageToDACBits.section = 3
     
