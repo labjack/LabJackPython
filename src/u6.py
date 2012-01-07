@@ -1264,7 +1264,7 @@ class U6(Device):
         Args: positiveChannel, resolutionIndex = 0, gainIndex = 0, settlingFactor = 0, differential = False
         Desc: Reads an AIN and applies the calibration constants to it.
         
-        >>> myU6.getAIN(14)d.getTemperature
+        >>> myU6.getAIN(14)
         299.87723471224308
         """
         result = self.getFeedback(AIN24AR(positiveChannel, resolutionIndex, gainIndex, settlingFactor, differential))
