@@ -131,6 +131,9 @@ class CalibrationInfo(object):
         self.proAin10mvSlope = 3.1580578 * (10 ** -7)
         self.proAin10mvOffset = -0.0105869565220
         
+        self.proAinSlope = [self.proAin10vSlope, self.proAin1vSlope, self.proAin100mvSlope, self.proAin10mvSlope]
+        self.proAinOffset = [self.proAin10vOffset, self.proAin1vOffset, self.proAin100mvOffset, self.proAin10mvOffset]
+        
         # Negative Channel calibration
         self.proAin10vNegSlope = -3.15805800 * (10 ** -4)
         self.proAin10vCenter = 33523.0
@@ -140,7 +143,11 @@ class CalibrationInfo(object):
         self.proAin100mvCenter = 33523.0
         self.proAin10mvNegSlope = -3.15805800 * (10 ** -7)
         self.proAin10mvCenter = 33523.0
-    
+        
+        self.proAinNegSlope = [self.proAin10vNegSlope, self.proAin1vNegSlope, self.proAin100mvNegSlope, self.proAin10mvNegSlope]
+        self.proAinCenter = [self.proAin10vCenter, self.proAin1vCenter, self.proAin100mvCenter, self.proAin10mvCenter]
+
+
     def __str__(self):
         return str(self.__dict__)
 
@@ -179,7 +186,7 @@ class U6(Device):
         self.dac0 = 0
         self.dac1 = 0
         self.calInfo = CalibrationInfo()
-        self.productName = "U6"
+        self.deviceName = 'U6'
         self.debug = debug
         
         if autoOpen:
@@ -662,7 +669,7 @@ class U6(Device):
             numBytes = 14 + (self.streamSamplesPerPacket * 2)
         
         returnDict = collections.defaultdict(list)
-                
+        
         j = self.streamPacketOffset
         for packet in self.breakupPackets(result, numBytes):
             for sample in self.samplesFromPacket(packet):
@@ -673,7 +680,7 @@ class U6(Device):
                     value = struct.unpack('<BB', sample )
                 elif self.streamChannelNumbers[j] >= 200:
                     value = struct.unpack('<H', sample )[0]
-                else:                
+                else:
                     if (self.streamChannelOptions[j] >> 7) == 1:
                         # do signed
                         value = struct.unpack('<H', sample )[0]
@@ -682,10 +689,10 @@ class U6(Device):
                         value = struct.unpack('<H', sample )[0]
                     
                     gainIndex = (self.streamChannelOptions[j] >> 4) & 0x3
-                    value = self.binaryToCalibratedAnalogVoltage(gainIndex, value, is16Bits=True)
+                    value = self.binaryToCalibratedAnalogVoltage(gainIndex, value, is16Bits = True, resolutionIndex = 0)
                 
                 returnDict["AIN%s" % self.streamChannelNumbers[j]].append(value)
-            
+                
                 j += 1
             
             self.streamPacketOffset = j
@@ -1105,7 +1112,7 @@ class U6(Device):
         self.calInfo.temperatureSlope = toDouble(rcvBuffer[16:24])
         self.calInfo.temperatureOffset = toDouble(rcvBuffer[24:])
         
-        if self.productName == "U6-Pro":
+        if self.deviceName.endswith("Pro"):
             # Hi-Res ADC stuff
             
             #reading block 6 from memory
@@ -1144,16 +1151,18 @@ class U6(Device):
             self.calInfo.proAin100mvCenter = toDouble(rcvBuffer[8:16])
             self.calInfo.proAin10mvNegSlope = toDouble(rcvBuffer[16:24])
             self.calInfo.proAin10mvCenter = toDouble(rcvBuffer[24:])
-        
+            
             self.calInfo.proAinNegSlope = [ self.calInfo.proAin10vNegSlope, self.calInfo.proAin1vNegSlope, self.calInfo.proAin100mvNegSlope, self.calInfo.proAin10mvNegSlope ]
             self.calInfo.proAinCenter = [ self.calInfo.proAin10vCenter, self.calInfo.proAin1vCenter, self.calInfo.proAin100mvCenter, self.calInfo.proAin10mvCenter ]
 
-    def binaryToCalibratedAnalogVoltage(self, gainIndex, bytesVoltage, is16Bits=False):
+    def binaryToCalibratedAnalogVoltage(self, gainIndex, bytesVoltage, is16Bits=False, resolutionIndex=0):
         """
-        Name: binaryToCalibratedAnalogVoltage(gainIndex, bytesVoltage, is16Bits = False)
-        Args: gainIndex, which gain did you use?
+        Name: binaryToCalibratedAnalogVoltage(gainIndex, bytesVoltage, is16Bits = False, resolutionIndex = 0)
+        Args: gainIndex, which gain index did you use?
               bytesVoltage, bytes returned from the U6
               is16bits, set to True if bytesVolotage is 16 bits (not 24)
+              resolutionIndex, which resolution index did you use?  Set this for
+                               U6-Pro devices to ensure proper hi-res conversion.
         Desc: Converts binary voltage to an analog value.
         
         """
@@ -1161,26 +1170,27 @@ class U6(Device):
             bits = float(bytesVoltage)/256
         else:
             bits = float(bytesVoltage)
-        
-        center = self.calInfo.ainCenter[gainIndex]
-        negSlope = self.calInfo.ainNegSlope[gainIndex]
-        posSlope = self.calInfo.ainSlope[gainIndex]
-        
-        if self.productName == "U6-Pro":
+
+        if self.deviceName.endswith("Pro") and (resolutionIndex > 8 or resolutionIndex == 0):
+            #Use hi-res calibration constants
             center = self.calInfo.proAinCenter[gainIndex]
             negSlope = self.calInfo.proAinNegSlope[gainIndex]
             posSlope = self.calInfo.proAinSlope[gainIndex]
-        
-        
+        else:
+            #Use normal calibration constants
+            center = self.calInfo.ainCenter[gainIndex]
+            negSlope = self.calInfo.ainNegSlope[gainIndex]
+            posSlope = self.calInfo.ainSlope[gainIndex]
+
         if bits < center:
             return (center - bits) * negSlope
         else:
             return (bits - center) * posSlope
-    
-    def binaryToCalibratedAnalogTemperature(self, bytesTemperature):
-        voltage = self.binaryToCalibratedAnalogVoltage(0, bytesTemperature)
+
+    def binaryToCalibratedAnalogTemperature(self, bytesTemperature, is16Bits=False):
+        voltage = self.binaryToCalibratedAnalogVoltage(0, bytesTemperature, is16Bits, 1)
         return self.calInfo.temperatureSlope * float(voltage) + self.calInfo.temperatureOffset
-        
+
     def softReset(self):
         """
         Name: softReset
@@ -1254,12 +1264,12 @@ class U6(Device):
         Args: positiveChannel, resolutionIndex = 0, gainIndex = 0, settlingFactor = 0, differential = False
         Desc: Reads an AIN and applies the calibration constants to it.
         
-        >>> myU6.getAIN(14)
+        >>> myU6.getAIN(14)d.getTemperature
         299.87723471224308
         """
         result = self.getFeedback(AIN24AR(positiveChannel, resolutionIndex, gainIndex, settlingFactor, differential))
         
-        return self.binaryToCalibratedAnalogVoltage(result[0]['GainIndex'], result[0]['AIN'])
+        return self.binaryToCalibratedAnalogVoltage(result[0]['GainIndex'], result[0]['AIN'], resolutionIndex = resolutionIndex)
 
     def readDefaultsConfig(self):
         """
