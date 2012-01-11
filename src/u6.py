@@ -5,7 +5,8 @@ Desc: Defines the U6 class, which makes working with a U6 much easier. All of
       class. There are also a handful additional functions which improve upon
       the interface provided by the low-level functions.
 
-To learn about the low-level functions, please see Section 5.2 of the U6 User's Guide:
+To learn about the low-level functions, please see Section 5.2 of the U6 User's 
+Guide:
 
 http://labjack.com/support/u6/users-guide/5.2
 """
@@ -93,7 +94,7 @@ class CalibrationInfo(object):
         self.ain10mvOffset = -0.0105869565220
         
         self.ainSlope = [self.ain10vSlope, self.ain1vSlope, self.ain100mvSlope, self.ain10mvSlope]
-        self.ainOffset = [ self.ain10vOffset, self.ain1vOffset, self.ain100mvOffset, self.ain10mvOffset ]
+        self.ainOffset = [self.ain10vOffset, self.ain1vOffset, self.ain100mvOffset, self.ain10mvOffset]
         
         # Negative Channel calibration
         self.ain10vNegSlope = -3.15805800 * (10 ** -4)
@@ -105,8 +106,8 @@ class CalibrationInfo(object):
         self.ain10mvNegSlope = -3.15805800 * (10 ** -7)
         self.ain10mvCenter = 33523.0
         
-        self.ainNegSlope = [ self.ain10vNegSlope, self.ain1vNegSlope, self.ain100mvNegSlope, self.ain10mvNegSlope ]
-        self.ainCenter = [ self.ain10vCenter, self.ain1vCenter, self.ain100mvCenter, self.ain10mvCenter ]
+        self.ainNegSlope = [self.ain10vNegSlope, self.ain1vNegSlope, self.ain100mvNegSlope, self.ain10mvNegSlope]
+        self.ainCenter = [self.ain10vCenter, self.ain1vCenter, self.ain100mvCenter, self.ain10mvCenter]
         
         # Miscellaneous
         self.dac0Slope = 13200.0
@@ -114,6 +115,9 @@ class CalibrationInfo(object):
         self.dac1Slope = 13200.0
         self.dac1Offset = 0
         
+        self.dacSlope = [self.dac0Slope, self.dac1Slope]
+        self.dacOffset = [self.dac0Offset, self.dac1Offset]
+
         self.currentOutput0 = 0.0000100000
         self.currentOutput1 = 0.0002000000
         
@@ -208,7 +212,7 @@ class U6(Device):
         >>> myU6.open()
         """
         Device.open(self, 6, firstFound = firstFound, serial = serial, localId = localId, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket )
-    
+
     def configU6(self, LocalID = None):
         """
         Name: U6.configU6(LocalID = None)
@@ -250,7 +254,6 @@ class U6(Device):
             else:
                 raise e
         
-        
         self.firmwareVersion = "%s.%02d" % (result[10], result[9])
         self.bootloaderVersion = "%s.%02d" % (result[12], result[11]) 
         self.hardwareVersion = "%s.%02d" % (result[14], result[13])
@@ -266,7 +269,8 @@ class U6(Device):
         
     def configIO(self, NumberTimersEnabled = None, EnableCounter1 = None, EnableCounter0 = None, TimerCounterPinOffset = None, EnableUART = None):
         """
-        Name: U6.configIO(NumberTimersEnabled = None, EnableCounter1 = None, EnableCounter0 = None, TimerCounterPinOffset = None)
+        Name: U6.configIO(NumberTimersEnabled = None, EnableCounter1 = None,
+                          EnableCounter0 = None, TimerCounterPinOffset = None)
         Args: NumberTimersEnabled, Number of timers to enable
               EnableCounter1, Set to True to enable counter 1, F to disable
               EnableCounter0, Set to True to enable counter 0, F to disable
@@ -319,10 +323,11 @@ class U6(Device):
         result = self._writeRead(command, 16, [0xf8, 0x05, 0x0B])
         
         return { 'NumberTimersEnabled' : result[8], 'Counter0Enabled' : bool(result[9] & 1), 'Counter1Enabled' : bool( (result[9] >> 1) & 1), 'TimerCounterPinOffset' : result[10] }
-        
+
     def configTimerClock(self, TimerClockBase = None, TimerClockDivisor = None):
         """
-        Name: U6.configTimerClock(TimerClockBase = None, TimerClockDivisor = None)
+        Name: U6.configTimerClock(TimerClockBase = None,
+                                  TimerClockDivisor = None)
         Args: TimerClockBase, which timer base to use
               TimerClockDivisor, set the divisor
               
@@ -380,9 +385,10 @@ class U6(Device):
 
     def getFeedback(self, *commandlist):
         """
-        Name: getFeedback(commandlist)
+        Name: U6.getFeedback(commandlist)
         Args: the FeedbackCommands to run
-        Desc: Forms the commandlist into a packet, sends it to the U6, and reads the response.
+        Desc: Forms the commandlist into a packet, sends it to the U6, and reads
+              the response.
         
         >>> myU6 = U6()
         >>> ledCommand = u6.LED(False)
@@ -398,9 +404,7 @@ class U6(Device):
         >>> commandList = [ ledCommand, internalTempCommand ]
         >>> myU6.getFeedback(commandList)
         [None, 23200]
-        
         """
-        
         sendBuffer = [0] * 7
         sendBuffer[1] = 0xF8
         readLen = 9
@@ -552,17 +556,21 @@ class U6(Device):
     
     def streamConfig(self, NumChannels = 1, ResolutionIndex = 0, SamplesPerPacket = 25, SettlingFactor = 0, InternalStreamClockFrequency = 0, DivideClockBy256 = False, ScanInterval = 1, ChannelNumbers = [0], ChannelOptions = [0], SampleFrequency = None):
         """
-        Name: U6.streamConfig(
-                 NumChannels = 1, ResolutionIndex = 0,
+        Name: U6.streamConfig(NumChannels = 1, ResolutionIndex = 0,
                  SamplesPerPacket = 25, SettlingFactor = 0,
                  InternalStreamClockFrequency = 0, DivideClockBy256 = False,
                  ScanInterval = 1, ChannelNumbers = [0],
                  ChannelOptions = [0], SampleFrequency = None )
         Args: NumChannels, the number of channels to stream
-              ResolutionIndex, the resolution of the samples
+              ResolutionIndex, the resolution index of the samples (0-8)
               SettlingFactor, the settling factor to be used
               ChannelNumbers, a list of channel numbers to stream
-              ChannelOptions, a list of channel options bytes
+              ChannelOptions, a list of channel options bytes.
+                              ChannelOptions byte:  bit 7 = Differential,
+                                                    bit 4-5 = GainIndex
+                                Set bit 7 for differential reading.
+                                GainIndex: 0(b00)=x1,  1(b01)=x10, 2(b10)=x100,
+                                           3(b11)=x1000
               
               Set Either:
               
@@ -577,7 +585,6 @@ class U6(Device):
         Desc: Configures streaming on the U6. On a decent machine, you can
               expect to stream a range of 0.238 Hz to 15 Hz. Without the
               conversion, you can get up to 55 Hz.
-        
         """
         if NumChannels != len(ChannelNumbers) or NumChannels != len(ChannelOptions):
             raise LabJackException("NumChannels must match length of ChannelNumbers and ChannelOptions")
@@ -701,7 +708,9 @@ class U6(Device):
         
     def watchdog(self, Write = False, ResetOnTimeout = False, SetDIOStateOnTimeout = False, TimeoutPeriod = 60, DIOState = 0, DIONumber = 0):
         """
-        Name: U6.watchdog(Write = False, ResetOnTimeout = False, SetDIOStateOnTimeout = False, TimeoutPeriod = 60, DIOState = 0, DIONumber = 0)
+        Name: U6.watchdog(Write = False, ResetOnTimeout = False,
+                          SetDIOStateOnTimeout = False, TimeoutPeriod = 60,
+                          DIOState = 0, DIONumber = 0)
         Args: Write, Set to True to write new values to the watchdog.
               ResetOnTimeout, True means reset the device on timeout
               SetDIOStateOnTimeout, True means set the sate of a DIO on timeout
@@ -766,9 +775,9 @@ class U6(Device):
     SPIModes = { 'A' : 0, 'B' : 1, 'C' : 2, 'D' : 3 }
     def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 0, CLKPinNum = 1, MISOPinNum = 2, MOSIPinNum = 3):
         """
-        Name: U6.spi(SPIBytes, AutoCS=True, DisableDirConfig = False, 
-                 SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 0, 
-                 CLKPinNum = 1, MISOPinNum = 2, MOSIPinNum = 3)
+        Name: U6.spi(SPIBytes, AutoCS=True, DisableDirConfig = False,
+                     SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 0, 
+                     CLKPinNum = 1, MISOPinNum = 2, MOSIPinNum = 3)
         Args: SPIBytes, A list of bytes to send.
               AutoCS, If True, the CS line is automatically driven low
                       during the SPI communication and brought back high
@@ -918,7 +927,11 @@ class U6(Device):
     
     def i2c(self, Address, I2CBytes, EnableClockStretching = False, NoStopWhenRestarting = False, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 0, SCLPinNum = 1, NumI2CBytesToReceive = 0, AddressByte = None):
         """
-        Name: U6.i2c(Address, I2CBytes, EnableClockStretching = False, NoStopWhenRestarting = False, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 0, SCLPinNum = 1, NumI2CBytesToReceive = 0, AddressByte = None)
+        Name: U6.i2c(Address, I2CBytes,
+                     EnableClockStretching = False, NoStopWhenRestarting = False,
+                     ResetAtStart = False, SpeedAdjust = 0,
+                     SDAPinNum = 0, SCLPinNum = 1, 
+                     NumI2CBytesToReceive = 0, AddressByte = None)
         Args: Address, the address (Not shifted over)
               I2CBytes, a list of bytes to send
               EnableClockStretching, True enables clock stretching
@@ -988,12 +1001,12 @@ class U6(Device):
         Name: U6.sht1x(DataPinNum = 0, ClockPinNum = 1, SHTOptions = 0xc0)
         Args: DataPinNum, Which pin is the Data line
               ClockPinNum, Which line is the Clock line
-        SHTOptions (and proof people read documentation):
-            bit 7 = Read Temperature
-            bit 6 = Read Realtive Humidity
-            bit 2 = Heater. 1 = on, 0 = off
-            bit 1 = Reserved at 0
-            bit 0 = Resolution. 1 = 8 bit RH, 12 bit T; 0 = 12 RH, 14 bit T
+              SHTOptions (and proof people read documentation):
+                bit 7 = Read Temperature
+                bit 6 = Read Realtive Humidity
+                bit 2 = Heater. 1 = on, 0 = off
+                bit 1 = Reserved at 0
+                bit 0 = Resolution. 1 = 8 bit RH, 12 bit T; 0 = 12 RH, 14 bit T
         Desc: Reads temperature and humidity from a Sensirion SHT1X sensor.
               Section 5.2.22 of the User's Guide.
         """
@@ -1020,13 +1033,13 @@ class U6(Device):
         humid = (temp - 25)*(0.01 + 0.00008*val) + humid
         
         return { 'StatusReg' : result[8], 'StatusCRC' : result[9], 'Temperature' : temp, 'TemperatureCRC' : result[12], 'Humidity' : humid, 'HumidityCRC' : result[15] }
-            
+        
     # --------------------------- Old U6 code -------------------------------
 
     def _readCalDataBlock(self, n):
         """
         Internal routine to read the specified calibration block (0-2)
-        """ 
+        """
         sendBuffer = [0] * 8
         sendBuffer[1] = 0xF8  # command byte
         sendBuffer[2] = 0x01  #  number of data words
@@ -1039,7 +1052,7 @@ class U6(Device):
 
     def getCalibrationData(self):
         """
-        Name: getCalibrationData(self)
+        Name: U6.getCalibrationData()
         Args: None
         Desc: Gets the slopes and offsets for AIN and DACs,
               as well as other calibration data
@@ -1059,7 +1072,7 @@ class U6(Device):
         
         # Positive Channel calibration
         self.calInfo.ain10vSlope = toDouble(rcvBuffer[:8])
-        self.calInfo.ain10vOffset = toDouble(rcvBuffer[8:16])    
+        self.calInfo.ain10vOffset = toDouble(rcvBuffer[8:16])
         self.calInfo.ain1vSlope = toDouble(rcvBuffer[16:24])
         self.calInfo.ain1vOffset = toDouble(rcvBuffer[24:])
         
@@ -1072,7 +1085,7 @@ class U6(Device):
         self.calInfo.ain10mvOffset = toDouble(rcvBuffer[24:])
         
         self.calInfo.ainSlope = [self.calInfo.ain10vSlope, self.calInfo.ain1vSlope, self.calInfo.ain100mvSlope, self.calInfo.ain10mvSlope]
-        self.calInfo.ainOffset = [ self.calInfo.ain10vOffset, self.calInfo.ain1vOffset, self.calInfo.ain100mvOffset, self.calInfo.ain10mvOffset ]
+        self.calInfo.ainOffset = [self.calInfo.ain10vOffset, self.calInfo.ain1vOffset, self.calInfo.ain100mvOffset, self.calInfo.ain10mvOffset]
         
         #reading block 2 from memory
         rcvBuffer = self._readCalDataBlock(2)
@@ -1091,8 +1104,8 @@ class U6(Device):
         self.calInfo.ain10mvNegSlope = toDouble(rcvBuffer[16:24])
         self.calInfo.ain10mvCenter = toDouble(rcvBuffer[24:])
         
-        self.calInfo.ainNegSlope = [ self.calInfo.ain10vNegSlope, self.calInfo.ain1vNegSlope, self.calInfo.ain100mvNegSlope, self.calInfo.ain10mvNegSlope ]
-        self.calInfo.ainCenter = [ self.calInfo.ain10vCenter, self.calInfo.ain1vCenter, self.calInfo.ain100mvCenter, self.calInfo.ain10mvCenter ]
+        self.calInfo.ainNegSlope = [self.calInfo.ain10vNegSlope, self.calInfo.ain1vNegSlope, self.calInfo.ain100mvNegSlope, self.calInfo.ain10mvNegSlope]
+        self.calInfo.ainCenter = [self.calInfo.ain10vCenter, self.calInfo.ain1vCenter, self.calInfo.ain100mvCenter, self.calInfo.ain10mvCenter]
         
         #reading block 4 from memory
         rcvBuffer = self._readCalDataBlock(4)
@@ -1102,6 +1115,9 @@ class U6(Device):
         self.calInfo.dac0Offset = toDouble(rcvBuffer[8:16])
         self.calInfo.dac1Slope = toDouble(rcvBuffer[16:24])
         self.calInfo.dac1Offset = toDouble(rcvBuffer[24:])
+        
+        self.caliInfo.dacSlope = [self.calInfo.dac0Slope, self.calInfo.dac1Slope]
+        self.caliInfo.dacOffset = [self.calInfo.dac0Offset, self.calInfo.dac1Offset]
         
         #reading block 5 from memory
         rcvBuffer = self._readCalDataBlock(5)
@@ -1133,7 +1149,7 @@ class U6(Device):
             self.calInfo.proAin10mvOffset = toDouble(rcvBuffer[24:])
             
             self.calInfo.proAinSlope = [self.calInfo.proAin10vSlope, self.calInfo.proAin1vSlope, self.calInfo.proAin100mvSlope, self.calInfo.proAin10mvSlope]
-            self.calInfo.proAinOffset = [ self.calInfo.proAin10vOffset, self.calInfo.proAin1vOffset, self.calInfo.proAin100mvOffset, self.calInfo.proAin10mvOffset ]
+            self.calInfo.proAinOffset = [self.calInfo.proAin10vOffset, self.calInfo.proAin1vOffset, self.calInfo.proAin100mvOffset, self.calInfo.proAin10mvOffset]
             
             #reading block 8 from memory
             rcvBuffer = self._readCalDataBlock(8)
@@ -1152,19 +1168,19 @@ class U6(Device):
             self.calInfo.proAin10mvNegSlope = toDouble(rcvBuffer[16:24])
             self.calInfo.proAin10mvCenter = toDouble(rcvBuffer[24:])
             
-            self.calInfo.proAinNegSlope = [ self.calInfo.proAin10vNegSlope, self.calInfo.proAin1vNegSlope, self.calInfo.proAin100mvNegSlope, self.calInfo.proAin10mvNegSlope ]
-            self.calInfo.proAinCenter = [ self.calInfo.proAin10vCenter, self.calInfo.proAin1vCenter, self.calInfo.proAin100mvCenter, self.calInfo.proAin10mvCenter ]
+            self.calInfo.proAinNegSlope = [self.calInfo.proAin10vNegSlope, self.calInfo.proAin1vNegSlope, self.calInfo.proAin100mvNegSlope, self.calInfo.proAin10mvNegSlope]
+            self.calInfo.proAinCenter = [self.calInfo.proAin10vCenter, self.calInfo.proAin1vCenter, self.calInfo.proAin100mvCenter, self.calInfo.proAin10mvCenter]
 
     def binaryToCalibratedAnalogVoltage(self, gainIndex, bytesVoltage, is16Bits=False, resolutionIndex=0):
         """
-        Name: binaryToCalibratedAnalogVoltage(gainIndex, bytesVoltage, is16Bits = False, resolutionIndex = 0)
+        Name: U6.binaryToCalibratedAnalogVoltage(gainIndex, bytesVoltage, 
+                                                 is16Bits = False, resolutionIndex = 0)
         Args: gainIndex, which gain index did you use?
               bytesVoltage, bytes returned from the U6
-              is16bits, set to True if bytesVolotage is 16 bits (not 24)
+              is16Bits, set to True if bytesVoltage is 16 bits (not 24)
               resolutionIndex, which resolution index did you use?  Set this for
                                U6-Pro devices to ensure proper hi-res conversion.
         Desc: Converts binary voltage to an analog value.
-        
         """
         if not is16Bits:
             bits = float(bytesVoltage)/256
@@ -1188,12 +1204,33 @@ class U6(Device):
             return (bits - center) * posSlope
 
     def binaryToCalibratedAnalogTemperature(self, bytesTemperature, is16Bits=False):
+        """
+        Name: U6.binaryToCalibratedAnalogTemperature(bytesTemperature, is16Bits = False)
+        Args: bytesTemperature, bytes returned from the U6
+              is16Bits, set to True if bytesTemperature is 16 bits (not 24)
+        Desc: Converts binary temperature to Kelvin.
+        """
         voltage = self.binaryToCalibratedAnalogVoltage(0, bytesTemperature, is16Bits, 1)
         return self.calInfo.temperatureSlope * float(voltage) + self.calInfo.temperatureOffset
 
+    def voltageToDACBits(self, volts, dacNumber = 0, is16Bits = False):
+        """
+        Name: U6.voltageToDACBits(volts, dacNumber = 0, is16Bits = False)
+        Args: volts, the voltage you would like to set the DAC to.
+              dacNumber, 0 or 1, helps apply the correct calibration
+              is16Bits, True if you are going to use the 16-bit DAC command
+        Desc: Takes a voltage, and turns it into the bits needed for the DAC
+              Feedback commands.
+        """
+        bits = ( volts * self.calInfo.dacSlope[dacNumber] ) + self.calInfo.dacOffset[dacNumber]
+        if not is16Bits:
+            bits = bits/256
+        
+        return int(bits)
+
     def softReset(self):
         """
-        Name: softReset
+        Name: U6.softReset()
         Args: none
         Desc: Send a soft reset.
         
@@ -1208,10 +1245,10 @@ class U6(Device):
         
         if results[3] != 0:
             raise LowlevelErrorException(results[3], "The softReset command returned an error:\n    %s" % lowlevelErrorToString(results[3]))
-        
+
     def hardReset(self):
         """
-        Name: hardReset
+        Name: U6.hardReset()
         Args: none
         Desc: Send a hard reset.
         
@@ -1231,7 +1268,7 @@ class U6(Device):
 
     def setLED(self, state):
         """
-        Name: setLED(self, state)
+        Name: U6.setLED(state)
         Args: state: 1 = On, 0 = Off
         Desc: Sets the state of the LED. (5.2.5.4 of user's guide)
         
@@ -1243,7 +1280,7 @@ class U6(Device):
 
     def getTemperature(self):
         """
-        Name: getTemperature
+        Name: U6.getTemperature()
         Args: none
         Desc: Reads the U6's internal temperature sensor in Kelvin. 
               See Section 2.6.4 of the U6 User's Guide.
@@ -1257,11 +1294,21 @@ class U6(Device):
         
         result = self.getFeedback(AIN24AR(14))
         return self.binaryToCalibratedAnalogTemperature(result[0]['AIN'])
-        
-    def getAIN(self, positiveChannel, resolutionIndex = 0, gainIndex = 0, settlingFactor = 0, differential = False):
+
+    def getAIN(self, positiveChannel, resolutionIndex=0, gainIndex=0, settlingFactor=0, differential=False):
         """
-        Name: getAIN
-        Args: positiveChannel, resolutionIndex = 0, gainIndex = 0, settlingFactor = 0, differential = False
+        Name: U6.getAIN(positiveChannel, resolutionIndex = 0, gainIndex = 0,
+                        settlingFactor = 0, differential = False)
+        Args: positiveChannel, the positive channel to read from
+              resolutionIndex, the resolution index.  0 = default, 1-8 = high-speed
+                               ADC, 9-12 = high-res ADC (U6-Pro only).
+              gainIndex, the gain index.  0=x1, 1=x10, 2=x100, 3=x1000,
+                         15=autorange.
+              settlingFactor, the settling factor.  0=Auto, 1=20us, 2=50us,
+                              3=100us, 4=200us, 5=500us, 6=1ms, 7=2ms, 8=5ms, 
+                              9=10ms.
+              differential, set to True for differential reading.  Negative
+                            channel is positiveChannel+1.
         Desc: Reads an AIN and applies the calibration constants to it.
         
         >>> myU6.getAIN(14)
@@ -1273,7 +1320,7 @@ class U6(Device):
 
     def readDefaultsConfig(self):
         """
-        Name: U6.readDefaultsConfig( ) 
+        Name: U6.readDefaultsConfig()
         Args: None
         Desc: Reads the power-up defaults stored in flash.
         """
@@ -1327,11 +1374,10 @@ class U6(Device):
             results["AIN%sOptions" % i] = defaults[i+16]
         
         return results
-        
 
     def exportConfig(self):
         """
-        Name: U6.exportConfig( ) 
+        Name: U6.exportConfig()
         Args: None
         Desc: Takes a configuration and puts it into a ConfigParser object.
         """
@@ -1400,7 +1446,7 @@ class U6(Device):
 
     def loadConfig(self, configParserObj):
         """
-        Name: U6.loadConfig( configParserObj ) 
+        Name: U6.loadConfig(configParserObj)
         Args: configParserObj, A Config Parser object to load in
         Desc: Takes a configuration and updates the U6 to match it.
         """
@@ -1445,7 +1491,7 @@ class U6(Device):
                 ciostates = parser.getint(section, "cios states")
             
             self.getFeedback( PortStateWrite([fiostates, eiostates, ciostates]), PortDirWrite([fiodirs, eiodirs, ciodirs]) )
-                
+            
         # Set DACs:
         section = "DACs"
         if parser.has_section(section):
@@ -1544,7 +1590,8 @@ class AIN24(FeedbackCommand):
     '''
     Analog Input 24-bit Feedback command
 
-    ainCommand = AIN24(PositiveChannel, ResolutionIndex = 0, GainIndex = 0, SettlingFactor = 0, Differential = False)
+    ainCommand = AIN24(PositiveChannel, ResolutionIndex = 0, GainIndex = 0,
+                       SettlingFactor = 0, Differential = False)
     
     See section 5.2.5.2 of the user's guide.
     
@@ -1552,18 +1599,18 @@ class AIN24(FeedbackCommand):
           the AIN24AR command instead. 
     
     positiveChannel : The positive channel to use
-    resolutionIndex : 0=default, 1-8 for high-speed ADC, 
+    resolutionIndex : 0=default, 1-8 for high-speed ADC,
                       9-12 for high-res ADC on U6-Pro.
     gainIndex : 0=x1, 1=x10, 2=x100, 3=x1000, 15=autorange
-    settlingFactor : 0=5us, 1=10us, 2=100us, 3=1ms, 4=10ms
+    settlingFactor : 0=Auto, 1=20us, 2=50us, 3=100us, 4=200us, 5=500us, 6=1ms,
+                     7=2ms, 8=5ms, 9=10ms.
     differential : If this bit is set, a differential reading is done where
                    the negative channel is positiveChannel+1
     
-
     returns 24-bit unsigned int sample
     
-    >>> d.getFeedback( u6.AIN24(PositiveChannel, ResolutionIndex = 0, 
-                                GainIndex = 0, SettlingFactor = 0, 
+    >>> d.getFeedback( u6.AIN24(PositiveChannel, ResolutionIndex = 0,
+                                GainIndex = 0, SettlingFactor = 0,
                                 Differential = False ) )
     [ 193847 ]
     '''
@@ -1597,7 +1644,8 @@ class AIN24AR(FeedbackCommand):
     '''
     Autorange Analog Input 24-bit Feedback command
 
-    ainARCommand = AIN24AR(0, ResolutionIndex = 0, GainIndex = 0, SettlingFactor = 0, Differential = False)
+    ainARCommand = AIN24AR(0, ResolutionIndex = 0, GainIndex = 0, 
+                           SettlingFactor = 0, Differential = False)
     
     See section 5.2.5.3 of the user's guide
     
@@ -1605,10 +1653,11 @@ class AIN24AR(FeedbackCommand):
     ResolutionIndex : 0=default, 1-8 for high-speed ADC, 
                       9-13 for high-res ADC on U6-Pro.
     GainIndex : 0=x1, 1=x10, 2=x100, 3=x1000, 15=autorange
-    SettlingFactor : 0=5us, 1=10us, 2=100us, 3=1ms, 4=10ms
+    SettlingFactor : 0=Auto, 1=20us, 2=50us, 3=100us, 4=200us, 5=500us, 6=1ms,
+                     7=2ms, 8=5ms, 9=10ms.
     Differential : If this bit is set, a differential reading is done where
                    the negative channel is positiveChannel+1
-
+    
     returns a dictionary:
         { 
         'AIN' : < 24-bit binary reading >, 
@@ -1616,7 +1665,7 @@ class AIN24AR(FeedbackCommand):
         'GainIndex' : < actual gain used for the reading >,
         'Status' : < reserved for future use >
         }
-        
+    
     >>> d.getFeedback( u6.AIN24AR( PositiveChannel, ResolutionIndex = 0,
                                    GainIndex = 0, SettlingFactor = 0,
                                    Differential = False ) )
@@ -1706,8 +1755,8 @@ class BitStateRead(FeedbackCommand):
     '''
     BitStateRead Feedback command
 
-    read the state of a single bit of digital I/O.  Only digital
-    lines return valid readings.
+    read the state of a single bit of digital I/O.  Only digital lines return
+    valid readings.
 
     IONumber: 0-7=FIO, 8-15=EIO, 16-19=CIO
     return 0 or 1
@@ -1731,8 +1780,8 @@ class BitStateWrite(FeedbackCommand):
     '''
     BitStateWrite Feedback command
 
-    write a single bit of digital I/O.  The direction of the 
-    specified line is forced to output.
+    write a single bit of digital I/O.  The direction of the specified line is
+    forced to output.
 
     IONumber: 0-7=FIO, 8-15=EIO, 16-19=CIO
     State: 0 or 1
@@ -1793,6 +1842,7 @@ class BitDirWrite(FeedbackCommand):
 class PortStateRead(FeedbackCommand):
     """
     PortStateRead Feedback command
+
     Reads the state of all digital I/O.
     
     >>> d.getFeedback( u6.PortStateRead() )
@@ -1817,7 +1867,7 @@ class PortStateWrite(FeedbackCommand):
     WriteMask: A list of 3 bytes, representing which to update.
                The Default is all ones.
     
-    >>> d.getFeedback( u6.PortStateWrite( State, 
+    >>> d.getFeedback( u6.PortStateWrite( State,
                                           WriteMask = [ 0xff, 0xff, 0xff] ) )
     [ None ]
     """
@@ -1982,7 +2032,7 @@ class Timer(FeedbackCommand):
     ( Section 5.2.5.17 of the User's Guide)
     
     timer: Either 0 or 1 for counter0 or counter1
-     
+    
     UpdateReset: Set True if you want to update the value
     
     Value: Only updated if the UpdateReset bit is 1.  The meaning of this
@@ -2029,10 +2079,10 @@ class Timer(FeedbackCommand):
 
 class Timer0(Timer):
     """
-    For reading the value of the Timer0. It provides the ability to
-    update/reset Timer0, and read the timer value.
-    ( Section 5.2.5.17 of the User's Guide)
-     
+    For reading the value of the Timer0. It provides the ability to update/reset
+    Timer0, and read the timer value.
+    (Section 5.2.5.17 of the User's Guide)
+    
     UpdateReset: Set True if you want to update the value
     
     Value: Only updated if the UpdateReset bit is 1.  The meaning of this
@@ -2053,10 +2103,10 @@ class Timer0(Timer):
 
 class Timer1(Timer):
     """
-    For reading the value of the Timer1. It provides the ability to
-    update/reset Timer1, and read the timer value.
-    ( Section 5.2.5.17 of the User's Guide)
-     
+    For reading the value of the Timer1. It provides the ability to update/reset
+    Timer1, and read the timer value.
+    (Section 5.2.5.17 of the User's Guide)
+    
     UpdateReset: Set True if you want to update the value
     
     Value: Only updated if the UpdateReset bit is 1.  The meaning of this
@@ -2094,7 +2144,6 @@ class QuadratureInputTimer(Timer):
     >>> # Read the value
     >>> d.getFeedback( u6.QuadratureInputTimer() )
     [-21]
-    
     """
     def __init__(self, UpdateReset = False, Value = 0):
         Timer.__init__(self, 0, UpdateReset, Value, Mode = 8)
@@ -2122,7 +2171,6 @@ class TimerStopInput1(Timer1):
     >>> # Read the timer
     >>> d.getFeedback( u6.TimerStopInput1() )
     [(0, 30)]
-    
     """
     def __init__(self, UpdateReset = False, Value = 0):
         Timer.__init__(self, 1, UpdateReset, Value, Mode = 9)
@@ -2134,11 +2182,11 @@ class TimerConfig(FeedbackCommand):
     """
     This IOType configures a particular timer.
     
-    timer = # of the timer to configure
+    timer: # of the timer to configure
     
-    TimerMode = See Section 2.9 for more information about the available modes.
+    TimerMode: See Section 2.9 for more information about the available modes.
     
-    Value = The meaning of this parameter varies with the timer mode.
+    Value: The meaning of this parameter varies with the timer mode.
     
     >>> d.getFeedback( u6.TimerConfig( timer, TimerMode, Value = 0 ) )
     [ None ]
@@ -2165,9 +2213,9 @@ class Timer0Config(TimerConfig):
     """
     This IOType configures Timer0.
     
-    TimerMode = See Section 2.9 for more information about the available modes.
+    TimerMode: See Section 2.9 for more information about the available modes.
     
-    Value = The meaning of this parameter varies with the timer mode.
+    Value: The meaning of this parameter varies with the timer mode.
     
     >>> d.getFeedback( u6.Timer0Config( TimerMode, Value = 0 ) )
     [ None ]
@@ -2182,9 +2230,9 @@ class Timer1Config(TimerConfig):
     """
     This IOType configures Timer1.
     
-    TimerMode = See Section 2.9 for more information about the available modes.
+    TimerMode: See Section 2.9 for more information about the available modes.
     
-    Value = The meaning of this parameter varies with the timer mode.
+    Value: The meaning of this parameter varies with the timer mode.
     
     >>> d.getFeedback( u6.Timer1Config( TimerMode, Value = 0 ) )
     [ None ]
@@ -2263,7 +2311,7 @@ class Counter1(Counter):
     
     def __repr__(self):
         return "<u6.Counter1( Reset = %s )>" % self.reset
-        
+
 class DSP(FeedbackCommand):
     '''
     DSP Feedback command
