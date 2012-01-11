@@ -1116,8 +1116,8 @@ class U6(Device):
         self.calInfo.dac1Slope = toDouble(rcvBuffer[16:24])
         self.calInfo.dac1Offset = toDouble(rcvBuffer[24:])
         
-        self.caliInfo.dacSlope = [self.calInfo.dac0Slope, self.calInfo.dac1Slope]
-        self.caliInfo.dacOffset = [self.calInfo.dac0Offset, self.calInfo.dac1Offset]
+        self.calInfo.dacSlope = [self.calInfo.dac0Slope, self.calInfo.dac1Slope]
+        self.calInfo.dacOffset = [self.calInfo.dac0Offset, self.calInfo.dac1Offset]
         
         #reading block 5 from memory
         rcvBuffer = self._readCalDataBlock(5)
