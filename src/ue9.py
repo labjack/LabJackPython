@@ -36,7 +36,7 @@ def unpackInt(bytes):
 def unpackShort(bytes):
     return struct.unpack("<H", struct.pack("BB", *bytes))[0]
 
-DEFAULT_CAL_CONSTANTS = { "AINSlopes" : { '0' : 0.000077503, '1' : 0.000038736, '2' : 0.000019353, '3' : 0.0000096764, '8' : 0.00015629  }, "AINOffsets" : { '0' : -0.012000, '1' : -0.012000, '2' : -0.012000, '3' : -0.012000, '8' : -5.1760 }, "TempSlope" : 0.012968 }
+DEFAULT_CAL_CONSTANTS = { "AINSlopes" : { '0' : 0.000077503, '1' : 0.000038736, '2' : 0.000019353, '3' : 0.0000096764, '8' : 0.00015629  }, "AINOffsets" : { '0' : -0.012000, '1' : -0.012000, '2' : -0.012000, '3' : -0.012000, '8' : -5.1760 }, "TempSlope" : 0.012968, "DACSlopes" : { '0' : 842.59, '1' : 842.59}, "DACOffsets" : { '0' : 0.0, '1': 0.0} }
 
 class UE9(Device):
     """
@@ -446,13 +446,13 @@ class UE9(Device):
             command[16] = DAC0 & 0xff
             command[17] |= (DAC0 >> 8) & 0xf
         
-        if DAC0Update:
-            if DAC0Enabled:
+        if DAC1Update:
+            if DAC1Enabled:
                 command[19] = 1 << 7
             command[19] |= 1 << 6
             
-            command[18] = DAC0 & 0xff
-            command[19] |= (DAC0 >> 8) & 0xf
+            command[18] = DAC1 & 0xff
+            command[19] |= (DAC1 >> 8) & 0xf
         
         command[20] = AINMask & 0xff
         command[21] = (AINMask >> 8) & 0xff
@@ -1462,7 +1462,24 @@ class UE9(Device):
             return bits * self.calData['TempSlope']
         else:
             return bits * DEFAULT_CAL_CONSTANTS['TempSlope']
+
+    def voltageToDACBits(self, volts, dacNumber = 0):
+        """
+        Name: UE9.voltageToDACBits(volts, dacNumber = 0)
+        Args: volts, the voltage you would like to set the DAC to.
+              dacNumber, 0 or 1, helps apply the correct calibration
+        Desc: Takes a voltage, and turns it into the bits needed for setting
+              the DAC in commands.
+        """
+        if self.calData is not None:
+            slope = self.calData['DACSlopes'][str(dacNumber)]
+            offset = self.calData['DACOffsets'][str(dacNumber)]
+        else:
+            slope = DEFAULT_CAL_CONSTANTS['DACSlopes'][str(dacNumber)]
+            offset = DEFAULT_CAL_CONSTANTS['DACOffsets'][str(dacNumber)]
         
+        return int((volts * slope) + offset)
+
     def getCalibrationData(self):
         """ Name: UE9.getCalibrationData()
             Args: None
