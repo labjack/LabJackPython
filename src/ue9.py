@@ -1071,6 +1071,17 @@ class UE9(Device):
         return returnDict
 
     def watchdogConfig(self, ResetCommonTimeout = False, ResetControlonTimeout = False, UpdateDigitalIOB = False, UpdateDigitalIOA = False, UpdateDAC1onTimeout = False, UpdateDAC0onTimeout = False, TimeoutPeriod = 60, DIOConfigA = 0, DIOConfigB = 0, DAC0Enabled = False, DAC0 = 0, DAC1Enabled = False, DAC1 = 0):
+        """
+        Name: UE9.watchdogConfig(ResetCommonTimeout = False, ResetControlonTimeout = False,
+                                 UpdateDigitalIOB = False, UpdateDigitalIOA = False,
+                                 UpdateDAC1onTimeout = False, UpdateDAC0onTimeout = False,
+                                 TimeoutPeriod = 60, DIOConfigA = 0,
+                                 DIOConfigB = 0, DAC0Enabled = False,
+                                 DAC0 = 0, DAC1Enabled = False,
+                                 DAC1 = 0):
+        Args: See section 5.3.13.1 of the user's guide.
+        Desc: Writes the configuration of the watchdog.
+        """
         command = [ 0 ] * 16
         
         command[1] = 0xF8
@@ -1079,22 +1090,22 @@ class UE9(Device):
         
         if ResetCommonTimeout:
             command[7] |= (1 << 6)
-            
+        
         if ResetControlonTimeout:
             command[7] |= (1 << 5)
-            
+        
         if UpdateDigitalIOB:
             command[7] |= (1 << 4)
-            
+        
         if UpdateDigitalIOA:
             command[7] |= (1 << 3)
-            
+        
         if UpdateDAC1onTimeout:
             command[7] |= (1 << 1)
-            
+        
         if UpdateDAC0onTimeout:
             command[7] |= (1 << 0)
-            
+        
         t = struct.pack("<H", TimeoutPeriod)
         command[8] = ord(t[0])
         command[9] = ord(t[1])
@@ -1103,15 +1114,14 @@ class UE9(Device):
         command[11] = DIOConfigB
         
         command[12] = DAC0 & 0xff
-        command[13] = (int(DAC0Enabled) << 7) + (DAC0 & 0xf)
+        command[13] = (int(DAC0Enabled) << 7) + ((DAC0 >> 8) & 0xf)
         
         command[14] = DAC1 & 0xff
-        command[15] = (int(DAC1Enabled) << 7) + (DAC1 & 0xf)
+        command[15] = (int(DAC1Enabled) << 7) + ((DAC1 >> 8) & 0xf)
         
         result = self._writeRead(command, 8, [0xF8, 0x01, 0x09])
         
-        return { 'UpdateDAC0onTimeout' : bool(result[7]& 1), 'UpdateDAC1onTimeout' : bool((result[7] >> 1) & 1), 'UpdateDigitalIOBonTimeout' : bool((result[7] >> 3) & 1), 'UpdateDigitalIOBonTimeout' : bool((result[7] >> 4) & 1), 'ResetControlOnTimeout' : bool((result[7] >> 5) & 1), 'ResetCommOnTimeout' : bool((result[7] >> 6) & 1) }
-        
+        return { 'UpdateDAC0onTimeout' : bool(result[7]& 1), 'UpdateDAC1onTimeout' : bool((result[7] >> 1) & 1), 'UpdateDigitalIOAonTimeout' : bool((result[7] >> 3) & 1), 'UpdateDigitalIOBonTimeout' : bool((result[7] >> 4) & 1), 'ResetControlOnTimeout' : bool((result[7] >> 5) & 1), 'ResetCommOnTimeout' : bool((result[7] >> 6) & 1) }
 
     def watchdogRead(self):
         """
@@ -1127,7 +1137,7 @@ class UE9(Device):
         command = setChecksum8(command, 6)
         
         result = self._writeRead(command, 16, [0xF8, 0x05, 0x09], checksum = False)
-        return { 'UpdateDAC0onTimeout' : bool(result[7]& 1), 'UpdateDAC1onTimeout' : bool((result[7] >> 1) & 1), 'UpdateDigitalIOBonTimeout' : bool((result[7] >> 3) & 1), 'UpdateDigitalIOBonTimeout' : bool((result[7] >> 4) & 1), 'ResetControlOnTimeout' : bool((result[7] >> 5) & 1), 'ResetCommOnTimeout' : bool((result[7] >> 6) & 1), 'TimeoutPeriod' : struct.unpack('<H', struct.pack("BB", *result[8:10]))[0], 'DIOConfigA' : result[10], 'DIOConfigB' : result[11], 'DAC0' : struct.unpack('<H', struct.pack("BB", *result[8:10]))[0], 'DAC1' : struct.unpack('<H', struct.pack("BB", *result[8:10]))[0]  }
+        return { 'UpdateDAC0onTimeout' : bool(result[7]& 1), 'UpdateDAC1onTimeout' : bool((result[7] >> 1) & 1), 'UpdateDigitalIOAonTimeout' : bool((result[7] >> 3) & 1), 'UpdateDigitalIOBonTimeout' : bool((result[7] >> 4) & 1), 'ResetControlOnTimeout' : bool((result[7] >> 5) & 1), 'ResetCommOnTimeout' : bool((result[7] >> 6) & 1), 'TimeoutPeriod' : struct.unpack('<H', struct.pack("BB", *result[8:10]))[0], 'DIOConfigA' : result[10], 'DIOConfigB' : result[11], 'DAC0' : struct.unpack('<H', struct.pack("BB", *result[12:14]))[0], 'DAC1' : struct.unpack('<H', struct.pack("BB", *result[14:16]))[0] }
 
     SPIModes = { 'A' : 0, 'B' : 1, 'C' : 2, 'D' : 3 }
     def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 1, CLKPinNum = 0, MISOPinNum = 3, MOSIPinNum = 2):
