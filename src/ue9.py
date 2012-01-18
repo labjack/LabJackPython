@@ -468,7 +468,7 @@ class UE9(Device):
         command[31] = AIN11_10_BipGain
         command[32] = AIN13_12_BipGain
         command[33] = AIN15_14_BipGain
-    
+        
         result = self._writeRead(command, 64, [ 0xF8, 0x1D, 0x00], checkBytes = False)
         
         returnDict = { 'FIODir' : result[6], 'FIOState' : result[7], 'EIODir' : result[8], 'EIOState' : result[9], 'CIODir' : (result[10] >> 4) & 0xf, 'CIOState' : result[10] & 0xf, 'MIODir' : (result[11] >> 4) & 7, 'MIOState' : result[11] & 7, 'Counter0' : unpackInt(result[44:48]), 'Counter1' : unpackInt(result[48:52]), 'TimerA' : unpackInt(result[52:56]), 'TimerB' : unpackInt(result[56:60]), 'TimerC' : unpackInt(result[60:]) }
@@ -1425,16 +1425,15 @@ class UE9(Device):
         humid = (temp - 25)*(0.01 + 0.00008*val) + humid
          
         return { 'StatusReg' : result[8], 'StatusCRC' : result[9], 'Temperature' : temp, 'TemperatureCRC' : result[12], 'Humidity' : humid, 'HumidityCRC' : result[15] }
-    
-        
+
     def getAIN(self, channel, BipGain = 0x00, Resolution = 12, SettlingTime = 0):
         """
         Name: UE9.getAIN(channel, BipGain = 0x00, Resolution = 12,
                          SettlingTime = 0)
         """
         bits = self.singleIO(4, channel, BipGain = BipGain, Resolution = Resolution, SettlingTime = SettlingTime )
-        return self.binaryToCalibratedAnalogVoltage(bits["AIN%s"%channel], BipGain)
-        
+        return self.binaryToCalibratedAnalogVoltage(bits["AIN%s"%channel], BipGain, Resolution)
+
     def getTemperature(self):
         """
         Name: UE9.getTemperature()
@@ -1444,29 +1443,37 @@ class UE9(Device):
         
         bits = self.singleIO(4, 133, BipGain = 0x00, Resolution = 12, SettlingTime = 0 )
         return self.binaryToCalibratedAnalogTemperature(bits["AIN133"])
-    
-    def binaryToCalibratedAnalogVoltage(self, bits, gain):
-        """ Name: UE9.binaryToCalibratedAnalogVoltage( bits, gain )
-            Args: bits, the binary value to be converted
-                  gain, the gain used. Please use the values from 5.3.3 of the
-                        UE9's user's guide.
-            Desc: Converts the binary value returned from Feedback and SingleIO
-                  to a calibrated, analog voltage.
-            
-            >>> print d.singleIO(4, 1, BipGain = 0x01, Resolution = 12 )
-            {'AIN1': 65520.0}
-            >>> print d.binaryToCalibratedAnalogVoltage(65520.0, 0x01)
-            2.52598272
+
+    def binaryToCalibratedAnalogVoltage(self, bits, gain, resolution = 0):
+        """
+        Name: UE9.binaryToCalibratedAnalogVoltage(bits, gain, resolution = 0)
+        Args: bits, the binary value to be converted
+              gain, the gain used. Please use the values from 5.3.3 of the
+                    UE9's user's guide.
+              resolution, which resolution did you use?  Set this for UE9-Pro
+                          devices to ensure proper conversion.
+        Desc: Converts the binary value returned from Feedback and SingleIO
+              to a calibrated, analog voltage.
+        
+        >>> print d.singleIO(4, 1, BipGain = 0x01, Resolution = 12)
+        {'AIN1': 65520.0}
+        >>> print d.binaryToCalibratedAnalogVoltage(65520.0, 0x01, 12)
+        2.52598272
         """
         if self.calData is not None:
-            slope = self.calData['AINSlopes'][str(gain)]
-            offset = self.calData['AINOffsets'][str(gain)]
+            if self.deviceName.endswith("Pro") and resolution > 17:
+                slope = self.calData['ProAINSlopes'][str(gain)]
+                offset = self.calData['ProAINOffsets'][str(gain)]
+            else:
+                slope = self.calData['AINSlopes'][str(gain)]
+                offset = self.calData['AINOffsets'][str(gain)]
         else:
+            #Nornal and hi-res nominal calibration values are the same.
             slope = DEFAULT_CAL_CONSTANTS['AINSlopes'][str(gain)]
             offset = DEFAULT_CAL_CONSTANTS['AINOffsets'][str(gain)]
         
         return (bits * slope) + offset
-        
+
     def binaryToCalibratedAnalogTemperature(self, bits):
         if self.calData is not None:
             return bits * self.calData['TempSlope']
@@ -1491,16 +1498,16 @@ class UE9(Device):
         return int((volts * slope) + offset)
 
     def getCalibrationData(self):
-        """ Name: UE9.getCalibrationData()
-            Args: None
-            Desc: Reads the calibration constants off the UE9, and stores them
-                  for use with binaryToCalibratedAnalogVoltage.
-            
-            Note: Please note that this function calls controlConfig to check
-                  if the device is a UE9 or not. It also makes calls to
-                  readMem, so please don't call this while streaming.
         """
+        Name: UE9.getCalibrationData()
+        Args: None
+        Desc: Reads the calibration constants off the UE9, and stores them
+              for use with binaryToCalibratedAnalogVoltage.
         
+        Note: Please note that this function calls controlConfig to check
+              if the device is a UE9 or not. It also makes calls to
+              readMem, so please don't call this while streaming.
+        """
         # Insure that we know if we are dealing with a Pro or not.
         self.controlConfig()
         
@@ -1508,6 +1515,8 @@ class UE9(Device):
         
         ainslopes = { '0' : None, '1' : None, '2' : None, '3' : None, '8' : None }
         ainoffsets = { '0' : None, '1' : None, '2' : None, '3' : None, '8' : None }
+        proainslopes = { '0' : None, '8' : None }
+        proainoffsets = { '0' : None, '8' : None }
         dacslopes = { '0' : None, '1' : None }
         dacoffsets = { '0' : None, '1' : None }
         
@@ -1542,14 +1551,14 @@ class UE9(Device):
         
         if self.deviceName.endswith("Pro"):
             memBlock = self.readMem(3)
-            ainslopes['0'] = toDouble(memBlock[:8])
-            ainoffsets['0'] = toDouble(memBlock[8:16])
+            proainslopes['0'] = toDouble(memBlock[:8])
+            proainoffsets['0'] = toDouble(memBlock[8:16])
             
             memBlock = self.readMem(4)
-            ainslopes['8'] = toDouble(memBlock[:8])
-            ainoffsets['8'] = toDouble(memBlock[8:16])
+            proainslopes['8'] = toDouble(memBlock[:8])
+            proainoffsets['8'] = toDouble(memBlock[8:16])
         
-        self.calData = { "AINSlopes" : ainslopes, "AINOffsets" : ainoffsets, 'TempSlope' : tempslope, "DACSlopes" : dacslopes, "DACOffsets" : dacoffsets }
+        self.calData = { "AINSlopes" : ainslopes, "AINOffsets" : ainoffsets, "ProAINSlopes" : proainslopes, "ProAINOffsets" : proainoffsets, 'TempSlope' : tempslope, "DACSlopes" : dacslopes, "DACOffsets" : dacoffsets }
         
         return self.calData
     
