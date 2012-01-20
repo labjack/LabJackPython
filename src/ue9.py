@@ -817,15 +817,14 @@ class UE9(Device):
             #probably a timeout, but expected
             pass
 
-    def streamConfig(self, NumChannels = 1, Resolution = 12, SettlingTime = 0, InternalStreamClockFrequency = 0, DivideClockBy256 = False, EnableExternalScanTrigger = False, EnableScanPulseOutput = False, ScanInterval = 1, ChannelNumbers = [0], ChannelOptions = [0], SampleFrequency = None):
+    def streamConfig(self, NumChannels = 1, Resolution = 12, SettlingTime = 0, InternalStreamClockFrequency = 0, DivideClockBy256 = False, EnableExternalScanTrigger = False, EnableScanPulseOutput = False, ScanInterval = 1, ChannelNumbers = [0], ChannelOptions = [0], SampleFrequency = None, ScanFrequency = None):
         """
-        Name: UE9.streamConfig(
-                 NumChannels = 1, Resolution = 12,
-                 SettlingTime = 0, InternalStreamClockFrequency = 0,
-                 DivideClockBy256 = False, ScanInterval = 1, 
-                 EnableExternalScanTrigger = False, EnableScanPulseOutput = False,
-                 ChannelNumbers = [0], ChannelOptions = [0],
-                 SampleFrequency = None )
+        Name: UE9.streamConfig(NumChannels = 1, Resolution = 12,
+                               SettlingTime = 0, InternalStreamClockFrequency = 0,
+                               DivideClockBy256 = False, ScanInterval = 1, 
+                               EnableExternalScanTrigger = False, EnableScanPulseOutput = False,
+                               ChannelNumbers = [0], ChannelOptions = [0],
+                               SampleFrequency = None, ScanFrequency = None )
         Args: NumChannels, the number of channels to stream
               Resolution, the resolution of the samples (12 - 16)
               SettlingTime, the settling time to be used 
@@ -842,10 +841,11 @@ class UE9(Device):
               EnableScanPulseOutput, enable scan pulse output.  Counter 1 will
                                      pulse low just before every scan (master 
                                      mode).
-
-              Set Either:
               
-              SampleFrequency, the frequency in Hz to sample
+              Set:
+              
+              ScanFrequency, the frequency in Hz to scan the channel list (ChannelNumbers).
+                             sample rate (Hz) = ScanFrequency * NumChannels
               
               -- OR --
               
@@ -853,7 +853,14 @@ class UE9(Device):
                                             3 = 24 MHz
               DivideClockBy256, True = divide the clock by 256
               ScanInterval, clock/ScanInterval = scan frequency.
+              
               See Section 5.3.6 of the User's Guide for more details.
+              
+              Deprecated:
+              
+              SampleFrequency, the frequency in Hz to sample.  Setting
+                               ScanFrequency instead is recommended.
+        
         Desc: Configures streaming on the UE9.
         """
         if NumChannels != len(ChannelNumbers) or NumChannels != len(ChannelOptions):
@@ -861,13 +868,15 @@ class UE9(Device):
         if len(ChannelNumbers) != len(ChannelOptions):
             raise LabJackException("len(ChannelNumbers) doesn't match len(ChannelOptions)")
 
-        if SampleFrequency != None:
-            if SampleFrequency < 1000:
+        if ScanFrequency != None or SampleFrequency != None:
+            if ScanFrequency == None:
+                ScanFrequency = SampleFrequency/NumChannels
+            if ScanFrequency < 1000:
                 DivideClockBy256 = True
-                ScanInterval = 15625/(SampleFrequency/NumChannels)
+                ScanInterval = 15625/ScanFrequency
             else:
                 DivideClockBy256 = False
-                ScanInterval = 4000000/(SampleFrequency/NumChannels)
+                ScanInterval = 4000000/ScanFrequency
             InternalStreamClockFrequency = 0
                 
         SamplesPerPacket = 16

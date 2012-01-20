@@ -866,13 +866,13 @@ class U3(Device):
         self._writeRead(command, 4, [], False, False, False)
     reset.section = 2
 
-    def streamConfig(self, NumChannels = 1, SamplesPerPacket = 25, InternalStreamClockFrequency = 0, DivideClockBy256 = False, Resolution = 3, ScanInterval = 1, PChannels = [30], NChannels = [31], SampleFrequency = None):
+    def streamConfig(self, NumChannels = 1, SamplesPerPacket = 25, InternalStreamClockFrequency = 0, DivideClockBy256 = False, Resolution = 3, ScanInterval = 1, PChannels = [30], NChannels = [31], ScanFrequency = None, SampleFrequency = None):
         """
         Name: U3.streamConfig(NumChannels = 1, SamplesPerPacket = 25,
-                              InternalStreamClockFrequency = 0,
-                              DivideClockBy256 = False, Resolution = 3,
-                              ScanInterval = 1, PChannels = [30], 
-                              NChannels = [31], SampleFrequency = None)
+                              InternalStreamClockFrequency = 0, DivideClockBy256 = False,
+                              Resolution = 3, ScanInterval = 1,
+                              PChannels = [30], NChannels = [31],
+                              ScanFrequency = None, SampleFrequency = None)
         Args: NumChannels, the number of channels to stream
               Resolution, the resolution of the samples (0 - 3)
               PChannels, a list of channel numbers to stream
@@ -880,7 +880,8 @@ class U3(Device):
               
               Set Either:
               
-              SampleFrequency, the frequency in Hz to sample
+              ScanFrequency, the frequency in Hz to scan the channel list (PChannels).
+                             sample rate (Hz) = ScanFrequency * NumChannels
               
               -- OR --
               
@@ -888,6 +889,15 @@ class U3(Device):
               InternalStreamClockFrequency, 0 = 4 MHz, 1 = 48 MHz
               DivideClockBy256, True = divide the clock by 256
               ScanInterval, clock/ScanInterval = frequency.
+              
+              See Section 5.2.10 of the User's Guide for more details.
+              
+              Deprecated:
+              
+              SampleFrequency, the frequency in Hz to sample.  Use ScanFrequency
+                               since SampleFrequency has always set the scan
+                               frequency and the name is confusing.
+        
         Desc: Stream mode operates on a table of channels that are scanned
               at the specified scan rate. Before starting a stream, you need 
               to call this function to configure the table and scan clock.
@@ -901,15 +911,17 @@ class U3(Device):
         if len(PChannels) != len(NChannels):
             raise LabJackException("Length of PChannels didn't match the length of NChannels")
         
-        if SampleFrequency != None:
-            if SampleFrequency < 1000:
-                if SampleFrequency < 25:
-                    SamplesPerPacket = SampleFrequency
+        if ScanFrequency != None or SampleFrequency != None:
+            if ScanFrequency == None:
+                ScanFrequency = SampleFrequency
+            if ScanFrequency < 1000:
+                if ScanFrequency < 25:
+                    SamplesPerPacket = ScanFrequency
                 DivideClockBy256 = True
-                ScanInterval = 15625/SampleFrequency
+                ScanInterval = 15625/ScanFrequency
             else:
                 DivideClockBy256 = False
-                ScanInterval = 4000000/SampleFrequency
+                ScanInterval = 4000000/ScanFrequency
         
         # Force Scan Interval into correct range
         ScanInterval = min( ScanInterval, 65535 )

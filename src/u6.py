@@ -554,13 +554,14 @@ class U6(Device):
     def eraseCal(self):
         return self.eraseMem(EraseCal=True)
     
-    def streamConfig(self, NumChannels = 1, ResolutionIndex = 0, SamplesPerPacket = 25, SettlingFactor = 0, InternalStreamClockFrequency = 0, DivideClockBy256 = False, ScanInterval = 1, ChannelNumbers = [0], ChannelOptions = [0], SampleFrequency = None):
+    def streamConfig(self, NumChannels = 1, ResolutionIndex = 0, SamplesPerPacket = 25, SettlingFactor = 0, InternalStreamClockFrequency = 0, DivideClockBy256 = False, ScanInterval = 1, ChannelNumbers = [0], ChannelOptions = [0], ScanFrequency = None, SampleFrequency = None):
         """
         Name: U6.streamConfig(NumChannels = 1, ResolutionIndex = 0,
-                 SamplesPerPacket = 25, SettlingFactor = 0,
-                 InternalStreamClockFrequency = 0, DivideClockBy256 = False,
-                 ScanInterval = 1, ChannelNumbers = [0],
-                 ChannelOptions = [0], SampleFrequency = None )
+                              SamplesPerPacket = 25, SettlingFactor = 0,
+                              InternalStreamClockFrequency = 0, DivideClockBy256 = False,
+                              ScanInterval = 1, ChannelNumbers = [0],
+                              ChannelOptions = [0], ScanFrequency = None,
+                              SampleFrequency = None )
         Args: NumChannels, the number of channels to stream
               ResolutionIndex, the resolution index of the samples (0-8)
               SettlingFactor, the settling factor to be used
@@ -574,7 +575,8 @@ class U6(Device):
               
               Set Either:
               
-              SampleFrequency, the frequency in Hz to sample
+              ScanFrequency, the frequency in Hz to scan the channel list (ChannelNumbers).
+                             sample rate (Hz) = ScanFrequency * NumChannels
               
               -- OR --
               
@@ -582,6 +584,15 @@ class U6(Device):
               InternalStreamClockFrequency, 0 = 4 MHz, 1 = 48 MHz
               DivideClockBy256, True = divide the clock by 256
               ScanInterval, clock/ScanInterval = frequency.
+              
+              See Section 5.2.12 of the User's Guide for more details.
+              
+              Deprecated:
+              
+              SampleFrequency, the frequency in Hz to sample.  Use ScanFrequency
+                               since SampleFrequency has always set the scan
+                               frequency and the name is confusing.
+        
         Desc: Configures streaming on the U6. On a decent machine, you can
               expect to stream a range of 0.238 Hz to 15 Hz. Without the
               conversion, you can get up to 55 Hz.
@@ -590,17 +601,18 @@ class U6(Device):
             raise LabJackException("NumChannels must match length of ChannelNumbers and ChannelOptions")
         if len(ChannelNumbers) != len(ChannelOptions):
             raise LabJackException("len(ChannelNumbers) doesn't match len(ChannelOptions)")
-            
-            
-        if SampleFrequency != None:
-            if SampleFrequency < 1000:
-                if SampleFrequency < 25:
-                    SamplesPerPacket = SampleFrequency
+        
+        if ScanFrequency != None or SampleFrequency != None:
+            if ScanFrequency == None:
+                ScanFrequency = SampleFrequency
+            if ScanFrequency < 1000:
+                if ScanFrequency < 25:
+                    SamplesPerPacket = ScanFrequency
                 DivideClockBy256 = True
-                ScanInterval = 15625/SampleFrequency
+                ScanInterval = 15625/ScanFrequency
             else:
                 DivideClockBy256 = False
-                ScanInterval = 4000000/SampleFrequency
+                ScanInterval = 4000000/ScanFrequency
         
         # Force Scan Interval into correct range
         ScanInterval = min( ScanInterval, 65535 )
