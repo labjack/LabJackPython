@@ -14,17 +14,17 @@ MAX_REQUESTS = 75
 ## At high frequencies ( >5 kHz), the number of samples will be MAX_REQUESTS times 48 (packets per request) times 25 (samples per packet).
 #d = u3.U3()
 #
-## to learn the if the U3 is an HV
+## To learn the if the U3 is an HV
 #d.configU3()
 #
 ## For applying the proper calibration to readings.
 #d.getCalibrationData()
 #
 ## Set the FIO0 to Analog
-#d.configIO(FIOAnalog = 1)
+#d.configIO(FIOAnalog = 3)
 #
 #print "configuring U3 stream"
-#d.streamConfig( NumChannels = 1, PChannels = [ 0 ], NChannels = [ 31 ], Resolution = 3, SampleFrequency = 10000 )
+#d.streamConfig( NumChannels = 2, PChannels = [ 0, 1 ], NChannels = [ 31, 31 ], Resolution = 3, ScanFrequency = 5000 )
 
 ################################################################################
 ## U6
@@ -38,14 +38,14 @@ MAX_REQUESTS = 75
 #
 #print "configuring U6 stream"
 #
-#d.streamConfig( NumChannels = 1, ChannelNumbers = [ 0 ], ChannelOptions = [ 0 ], SettlingFactor = 1, ResolutionIndex = 1, SampleFrequency = 10000 )
+#d.streamConfig( NumChannels = 2, ChannelNumbers = [ 0, 1 ], ChannelOptions = [ 0, 0 ], SettlingFactor = 1, ResolutionIndex = 1, ScanFrequency = 5000 )
 
 ################################################################################
 ## UE9
 ## Uncomment these lines to stream from a UE9
 ################################################################################
-# At 96 Hz or higher frequencies, the number of samples will be MAX_REQUESTS times 8 (packets per request) times 16 (samples per packet).
-# Currently over ethernet packets per request is 1.
+## At 96 Hz or higher frequencies, the number of samples will be MAX_REQUESTS times 8 (packets per request) times 16 (samples per packet).
+## Currently over ethernet packets per request is 1.
 #d = ue9.UE9() #ethernet=True, ipAddress="192.168.1.209")
 #
 ## For applying the proper calibration to readings.
@@ -53,7 +53,7 @@ MAX_REQUESTS = 75
 #
 #print "configuring UE9 stream"
 #
-#d.streamConfig( NumChannels = 1, ChannelNumbers = [ 0 ], ChannelOptions = [ 0 ], SettlingTime = 0, Resolution = 12, SampleFrequency = 10000 )
+#d.streamConfig( NumChannels = 2, ChannelNumbers = [ 0, 1 ], ChannelOptions = [ 0, 0 ], SettlingTime = 0, Resolution = 12, ScanFrequency = 5000 )
 
 
 try:
@@ -69,7 +69,7 @@ try:
     for r in d.streamData():
         if r is not None:
             # Our stop condition
-            if dataCount > MAX_REQUESTS:
+            if dataCount >= MAX_REQUESTS:
                 break
             
             if r['errors'] != 0:
@@ -82,8 +82,9 @@ try:
                 missed += r['missed']
                 print "+++ Missed ", r['missed']
 
-            # Comment out this print and do something with r
-            print "Average of" , len(r['AIN0']), "reading(s):", sum(r['AIN0'])/len(r['AIN0'])
+            # Comment out these prints and do something with r
+            print "Average of" , len(r['AIN0']), "AIN0," , len(r['AIN1']) , "AIN1 reading(s):", 
+            print sum(r['AIN0'])/len(r['AIN0']) , "," , sum(r['AIN1'])/len(r['AIN1'])
 
             dataCount += 1
         else:
@@ -99,12 +100,14 @@ finally:
     d.streamStop()
     d.close()
 
-    total = dataCount * d.packetsPerRequest * d.streamSamplesPerPacket
-    print "%s requests with %s packets per request with %s samples per packet = %s samples total." % ( dataCount, d.packetsPerRequest, d.streamSamplesPerPacket, total )
+    sampleTotal = dataCount * d.packetsPerRequest * d.streamSamplesPerPacket
+    scanTotal = sampleTotal / 2 #sampleTotal / NumChannels
+    print "%s requests with %s packets per request with %s samples per packet = %s samples total." % ( dataCount, d.packetsPerRequest, d.streamSamplesPerPacket, sampleTotal )
     print "%s samples were lost due to errors." % missed
-    total -= missed
-    print "Adjusted number of samples = %s" % total
+    sampleTotal -= missed
+    print "Adjusted number of samples = %s" % sampleTotal
     
     runTime = (stop-start).seconds + float((stop-start).microseconds)/1000000
     print "The experiment took %s seconds." % runTime
-    print "%s samples / %s seconds = %s Hz" % ( total, runTime, float(total)/runTime )
+    print "Scan Rate : %s scans / %s seconds = %s Hz" % ( scanTotal, runTime, float(scanTotal)/runTime )
+    print "Sample Rate : %s samples / %s seconds = %s Hz" % ( sampleTotal, runTime, float(sampleTotal)/runTime )
