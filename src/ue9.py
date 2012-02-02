@@ -12,6 +12,7 @@ http://labjack.com/support/ue9/users-guide/5.2
 from LabJackPython import *
 
 import struct, socket, select, ConfigParser
+from datetime import datetime
 
 def openAllUE9():
     """
@@ -871,14 +872,36 @@ class UE9(Device):
         if ScanFrequency != None or SampleFrequency != None:
             if ScanFrequency == None:
                 ScanFrequency = SampleFrequency/NumChannels
-            if ScanFrequency < 1000:
-                DivideClockBy256 = True
-                ScanInterval = 15625/ScanFrequency
-            else:
+            
+            if ScanFrequency >= 11.5:
                 DivideClockBy256 = False
-                ScanInterval = 4000000/ScanFrequency
-            InternalStreamClockFrequency = 0
-                
+                if ScanFrequency >= 733:
+                    InternalStreamClockFrequency = 1
+                    ScanInterval = 48000000/ScanFrequency
+                elif ScanFrequency >= 367:
+                    InternalStreamClockFrequency = 3
+                    ScanInterval = 24000000/ScanFrequency
+                elif ScanFrequency >= 61.1:
+                    InternalStreamClockFrequency = 0
+                    ScanInterval = 4000000/ScanFrequency
+                else:
+                    InternalStreamClockFrequency = 2
+                    ScanInterval = 750000/ScanFrequency
+            else:
+                DivideClockBy256 = True
+                if ScanFrequency >= 2.87:
+                    InternalStreamClockFrequency = 1
+                    ScanInterval = (48000000/256)/ScanFrequency
+                elif ScanFrequency >= 1.44:
+                    InternalStreamClockFrequency = 3
+                    ScanInterval = (24000000/256)/ScanFrequency
+                elif ScanFrequency >= 0.239:
+                    InternalStreamClockFrequency = 0
+                    ScanInterval = (4000000/256)/ScanFrequency
+                else:
+                    InternalStreamClockFrequency = 2
+                    ScanInterval = (750000/256)/ScanFrequency
+        
         SamplesPerPacket = 16
 
         # Force Scan Interval into correct range
@@ -890,12 +913,9 @@ class UE9(Device):
         InternalStreamClockFrequency = InternalStreamClockFrequency & 3
 
         command = [ 0 ] * (12 + NumChannels*2)
-        #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = NumChannels+3
         command[3] = 0x11
-        #command[4] = Checksum16 (LSB)
-        #command[5] = Checksum16 (MSB)
         command[6] = NumChannels
         command[7] = Resolution
         command[8] = SettlingTime
@@ -912,15 +932,15 @@ class UE9(Device):
         for i in range(NumChannels):
             command[12+(i*2)] = ChannelNumbers[i]
             command[13+(i*2)] = ChannelOptions[i]
-
+        
         self._writeRead(command, 8, [0xF8, 0x01, 0x11])
-
+        
         # Set up the variables for future use.
         self.streamSamplesPerPacket = SamplesPerPacket
         self.streamChannelNumbers = ChannelNumbers
         self.streamChannelOptions = ChannelOptions
         self.streamConfiged = True
-
+        
         if InternalStreamClockFrequency == 1:
             freq = float(48000000)
         elif InternalStreamClockFrequency == 2:
@@ -929,24 +949,21 @@ class UE9(Device):
             freq = float(24000000)
         else:
             freq = float(4000000)
-
+        
         if DivideClockBy256:
             freq /= 256
-
+        
         freq = freq/ScanInterval
-
+        
         #packetsPerRequest needs to be a multiple of 4 for Linux/Mac OS X USB.
         #For Windows it needs to be under 11.
-        self.packetsPerRequest = max(4, int(freq/SamplesPerPacket))
-        self.packetsPerRequest = min(self.packetsPerRequest, 8)
-        self.packetsPerRequest = int(4 * round(float(self.packetsPerRequest)/4))
-
+        if freq < 200:
+            self.packetsPerRequest = 4
+        else:
+            self.packetsPerRequest = 8
+        
         if self.ethernet:
             self.streamPacketSize = 46
-            if isinstance(self.handle, UE9TCPHandle):
-                #On Linux/Mac OS X TCP, limiting to 1 packetsPerRequest since we
-                #can't read multiple packets per 1 TCP read for some reason.
-                self.packetsPerRequest = 1
         else:
             #USB stream packets have an additonal 2 bytes [0, 0] appended to the end
             self.streamPacketSize = 48
@@ -988,20 +1005,21 @@ class UE9(Device):
         """
         if not self.streamStarted:
             raise LabJackException("Please start streaming before reading.")
-
+        
+        missed = 0 #Not available on UE9
+        errors = 0
+        newTimeLoop = True #Ethernet only
+        resultBuffer = "" #Ethernet only
         numBytes = self.streamPacketSize
-
+        
         while True:
+            if self.ethernet and newTimeLoop == True:
+                newTimeLoop = False
+                startTime = datetime.now()
+            
             result = self.read(numBytes * self.packetsPerRequest, stream = True)
-            if len(result) == 0:
-                yield None
-                continue
-
             numPackets = len(result) // numBytes
-
-            errors = 0
-            missed = 0
-            firstPacket = ord(result[10])
+            
             i = 0
             while i < numPackets:
                 offset = (i*numBytes)
@@ -1014,18 +1032,59 @@ class UE9(Device):
                             result = result[0:offset] + result[offset+numBytes:]
                         numPackets = numPackets - 1
                         continue
-
+                
                 e = ord(result[11+offset])
                 if e != 0:
                     errors += 1
                     if self.debug: print e
                 i+=1
-
-            returnDict = dict(numPackets = numPackets, result = result, errors = errors, missed = missed, firstPacket = firstPacket )
-
+            
+            if len(result) == 0  and self.ethernet == False:
+                #No data over USB:
+                yield None
+                continue
+            
+            if self.ethernet:
+                #Buffer new data
+                resultBuffer += result
+                packetsInBuffer = len(resultBuffer) // numBytes
+                
+                if packetsInBuffer >= self.packetsPerRequest:
+                    #We're done reading data
+                    newTimeLoop = True
+                    numPackets = self.packetsPerRequest
+                    result = resultBuffer[:(numBytes * self.packetsPerRequest)]
+                    
+                    #Adjust buffered data
+                    resultBuffer = resultBuffer[(numBytes * self.packetsPerRequest):]
+                else:
+                    curTime = datetime.now()
+                    timeElapsed = (curTime-startTime).seconds + float((curTime-startTime).microseconds)/1000000
+                    if timeElapsed > 1.10:
+                        newTimeLoop = True
+                        if packetsInBuffer < 4:
+                            #Group(s) of 4 packets not available
+                            yield None
+                            continue
+                        else:
+                            #Return packets in multiples of 4 like over USB
+                            numPackets = (packetsInBuffer // 4) * 4
+                            result = retResult[:(numBytes * numPackets)]
+                            firstPacket = ord(result[10])
+                            
+                            #Adjust buffered data
+                            resultBuffer = resultBuffer[(numBytes * numPackets):]
+                    else:
+                        continue
+            
+            firstPacket = ord(result[10])
+            
+            returnDict = dict(numPackets = numPackets, result = result, errors = errors, missed = missed, firstPacket = firstPacket)
             if convert:
                 returnDict.update(self.processStreamData(result, numBytes = numBytes))
-
+            
+            errors = 0  #reset error count
+            
             yield returnDict
 
     def streamStop(self, clearData=True):
