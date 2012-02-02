@@ -57,15 +57,15 @@ MAX_REQUESTS = 75
 
 
 try:
-    start = datetime.now()
-    print "start stream", start
+    print "start stream",
     d.streamStart()
+    start = datetime.now()
+    print start
     
     missed = 0
     dataCount = 0
-    byteCount = 0
-    start = datetime.now()
-    
+    packetCount = 0
+
     for r in d.streamData():
         if r is not None:
             # Our stop condition
@@ -87,6 +87,7 @@ try:
             print sum(r['AIN0'])/len(r['AIN0']) , "," , sum(r['AIN1'])/len(r['AIN1'])
 
             dataCount += 1
+            packetCount += r['numPackets']
         else:
             # Got no data back from our read.
             # This only happens if your stream isn't faster than the 
@@ -96,17 +97,18 @@ except:
     print "".join(i for i in traceback.format_exc())
 finally:
     stop = datetime.now()
-    print "stream stopped."
     d.streamStop()
+    print "stream stopped."
     d.close()
 
-    sampleTotal = dataCount * d.packetsPerRequest * d.streamSamplesPerPacket
+    sampleTotal = packetCount * d.streamSamplesPerPacket
+
     scanTotal = sampleTotal / 2 #sampleTotal / NumChannels
-    print "%s requests with %s packets per request with %s samples per packet = %s samples total." % ( dataCount, d.packetsPerRequest, d.streamSamplesPerPacket, sampleTotal )
+    print "%s requests with %s packets per request with %s samples per packet = %s samples total." % ( dataCount, (float(packetCount) / dataCount), d.streamSamplesPerPacket, sampleTotal )
     print "%s samples were lost due to errors." % missed
     sampleTotal -= missed
     print "Adjusted number of samples = %s" % sampleTotal
-    
+
     runTime = (stop-start).seconds + float((stop-start).microseconds)/1000000
     print "The experiment took %s seconds." % runTime
     print "Scan Rate : %s scans / %s seconds = %s Hz" % ( scanTotal, runTime, float(scanTotal)/runTime )
