@@ -492,9 +492,8 @@ class Device(object):
             raise LabJackException(9002, "Modbus error number %s raised while writing to register. Make sure you're writing to an address that allows writes.\n\nThe packet you received: %s" % (response[8], hexWithoutQuotes(response)))
 
         return value
-        
     
-    def setDIOState(IOnum, state):
+    def setDIOState(self, IOnum, state):
         value = (int(state) & 0x01)
         self.writeRegister(6000+IOnum, value)
         return True
