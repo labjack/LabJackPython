@@ -2043,7 +2043,7 @@ class Timer(FeedbackCommand):
     a given timer, and read the timer value.
     ( Section 5.2.5.17 of the User's Guide)
     
-    timer: Either 0 or 1 for counter0 or counter1
+    timer: 0 to 3 for timer0 to timer3
     
     UpdateReset: Set True if you want to update the value
     
@@ -2062,8 +2062,8 @@ class Timer(FeedbackCommand):
     [ 12314 ]
     """
     def __init__(self, timer, UpdateReset = False, Value=0, Mode = None):
-        if timer != 0 and timer != 1:
-            raise LabJackException("Timer should be either 0 or 1.")
+        if timer not in range(4):
+            raise LabJackException("Timer should be 0-3.")
         if UpdateReset and Value == None:
             raise LabJackException("UpdateReset set but no value.")
         
@@ -2091,7 +2091,7 @@ class Timer(FeedbackCommand):
 
 class Timer0(Timer):
     """
-    For reading the value of the Timer0. It provides the ability to update/reset
+    For reading the value of Timer0. It provides the ability to update/reset
     Timer0, and read the timer value.
     (Section 5.2.5.17 of the User's Guide)
     
@@ -2115,7 +2115,7 @@ class Timer0(Timer):
 
 class Timer1(Timer):
     """
-    For reading the value of the Timer1. It provides the ability to update/reset
+    For reading the value of Timer1. It provides the ability to update/reset
     Timer1, and read the timer value.
     (Section 5.2.5.17 of the User's Guide)
     
@@ -2136,6 +2136,54 @@ class Timer1(Timer):
     
     def __repr__(self):
         return "<u6.Timer1( UpdateReset = %s, Value = %s, Mode = %s )>" % (self.updateReset, self.value, self.mode)
+
+class Timer2(Timer):
+    """
+    For reading the value of Timer2. It provides the ability to update/reset
+    Timer2, and read the timer value.
+    (Section 5.2.5.17 of the User's Guide)
+    
+    UpdateReset: Set True if you want to update the value
+    
+    Value: Only updated if the UpdateReset bit is 1.  The meaning of this
+           parameter varies with the timer mode.
+
+    Mode: Set to the timer mode to handle any special processing. See classes
+          QuadratureInputTimer and TimerStopInput1.
+
+    >>> d.getFeedback( u6.Timer2( UpdateReset = False, Value = 0, \
+    ... Mode = None ) )
+    [ 12314 ]
+    """
+    def __init__(self, UpdateReset = False, Value = 0, Mode = None):
+        Timer.__init__(self, 2, UpdateReset, Value, Mode)
+    
+    def __repr__(self):
+        return "<u6.Timer2( UpdateReset = %s, Value = %s, Mode = %s )>" % (self.updateReset, self.value, self.mode)
+
+class Timer3(Timer):
+    """
+    For reading the value of Timer3. It provides the ability to update/reset
+    Timer3, and read the timer value.
+    (Section 5.2.5.17 of the User's Guide)
+    
+    UpdateReset: Set True if you want to update the value
+    
+    Value: Only updated if the UpdateReset bit is 1.  The meaning of this
+           parameter varies with the timer mode.
+
+    Mode: Set to the timer mode to handle any special processing. See classes
+          QuadratureInputTimer and TimerStopInput1.
+
+    >>> d.getFeedback( u6.Timer3( UpdateReset = False, Value = 0, \
+    ... Mode = None ) )
+    [ 12314 ]
+    """
+    def __init__(self, UpdateReset = False, Value = 0, Mode = None):
+        Timer.__init__(self, 3, UpdateReset, Value, Mode)
+    
+    def __repr__(self):
+        return "<u6.Timer3( UpdateReset = %s, Value = %s, Mode = %s )>" % (self.updateReset, self.value, self.mode)
 
 class QuadratureInputTimer(Timer):
     """
@@ -2204,10 +2252,9 @@ class TimerConfig(FeedbackCommand):
     [ None ]
     """
     def __init__(self, timer, TimerMode, Value=0):
-        '''Creates command bytes for configureing a Timer'''
-        #Conditions come from pages 33-34 of user's guide
+        '''Creates command bytes for configuring a Timer'''
         if timer not in range(4):
-            raise LabJackException("Timer should be either 0-3.")
+            raise LabJackException("Timer should be 0-3.")
         
         if TimerMode > 14 or TimerMode < 0:
             raise LabJackException("Invalid Timer Mode.")
@@ -2254,6 +2301,40 @@ class Timer1Config(TimerConfig):
     
     def __repr__(self):
         return "<u6.Timer1Config( TimerMode = %s, Value = %s )>" % (self.timerMode, self.value)
+
+class Timer2Config(TimerConfig):
+    """
+    This IOType configures Timer2.
+    
+    TimerMode: See Section 2.9 for more information about the available modes.
+    
+    Value: The meaning of this parameter varies with the timer mode.
+    
+    >>> d.getFeedback( u6.Timer2Config( TimerMode, Value = 0 ) )
+    [ None ]
+    """
+    def __init__(self, TimerMode, Value = 0):
+        TimerConfig.__init__(self, 2, TimerMode, Value)
+    
+    def __repr__(self):
+        return "<u6.Timer2Config( TimerMode = %s, Value = %s )>" % (self.timerMode, self.value)
+
+class Timer3Config(TimerConfig):
+    """
+    This IOType configures Timer3.
+    
+    TimerMode: See Section 2.9 for more information about the available modes.
+    
+    Value: The meaning of this parameter varies with the timer mode.
+    
+    >>> d.getFeedback( u6.Timer3Config( TimerMode, Value = 0 ) )
+    [ None ]
+    """
+    def __init__(self, TimerMode, Value = 0):
+        TimerConfig.__init__(self, 3, TimerMode, Value)
+    
+    def __repr__(self):
+        return "<u6.Timer3Config( TimerMode = %s, Value = %s )>" % (self.timerMode, self.value)
 
 class Counter(FeedbackCommand):
     '''
