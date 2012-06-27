@@ -189,6 +189,8 @@ class Device(object):
         tempString = struct.pack(packFormat, *writeBuffer)
         
         if modbus is True:
+            if self.handle.modbus is None:
+                raise LabJackException("Modbus port is not available.  Please upgrade to UE9 Comm firmware 1.43 or higher.")
             self.handle.modbus.send(tempString)
         else:
             self.handle.data.send(tempString)
@@ -297,13 +299,15 @@ class Device(object):
         packFormat = "B" * readBytes
         rcvDataBuff = struct.unpack(packFormat, rcvString)
         return list(rcvDataBuff)
-        
+
     def _readFromUE9TCPHandle(self, numBytes, stream, modbus):
         if stream is True:
             rcvString = self.handle.stream.recv(numBytes)
             return rcvString
         else:
             if modbus is True:
+                if self.handle.modbus is None:
+                    raise LabJackException("Modbus port is not available.  Please upgrade to UE9 Comm firmware 1.43 or higher.")
                 rcvString = self.handle.modbus.recv(numBytes)
             else:
                 rcvString = self.handle.data.recv(numBytes)
@@ -311,7 +315,7 @@ class Device(object):
         packFormat = "B" * readBytes
         rcvDataBuff = struct.unpack(packFormat, rcvString)
         return list(rcvDataBuff)
-        
+
     def _readFromExodriver(self, numBytes, stream, modbus):
         newA = (ctypes.c_byte*numBytes)()
         
@@ -2913,32 +2917,30 @@ def parseline(line):
 class UE9TCPHandle(object):
     """__UE9TCPHandle(ipAddress)
 
-    Creates two sockets for the streaming and non streaming port on the UE9.  
-    Only works on default ports (Data 52360, Stream 52361).
+    Creates two sockets for the streaming and non streaming ports on the UE9.
+    Also, tries to create a socket for the Modbus port.  Only works on
+    default ports (Data 52360, Stream 52361, Modbus 502).
     """
 
     def __init__(self, ipAddress, timeout = SOCKET_TIMEOUT):
         try:
             self.data = socket.socket()
-            self.data.connect((ipAddress, 52360))
             self.data.settimeout(timeout)
-        
+            self.data.connect((ipAddress, 52360))
+            
             self.stream = socket.socket()
-            self.stream.connect((ipAddress, 52361))
             self.stream.settimeout(timeout)
+            self.stream.connect((ipAddress, 52361))
             
             try:
                 self.modbus = socket.socket()
-                self.modbus.connect((ipAddress, 502))
                 self.modbus.settimeout(timeout)
+                self.modbus.connect((ipAddress, 502))
             except socket.error, e:
-                raise LabJackException("Couldn't connect to the Modbus port on the UE9. Please upgrade to UE9 Comm firmware to 1.43 or higher.")
-        except LabJackException, e:
-            raise e
+                self.modbus = None
         except Exception, e:
             print e
             raise LabJackException("Couldn't open sockets to the UE9 at IP Address %s. Error was: %s" % (ipAddress, e))
-        
 
     def close(self):
         try:
