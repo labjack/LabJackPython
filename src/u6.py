@@ -14,7 +14,6 @@ from LabJackPython import *
 
 import struct, ConfigParser
 
-
 def openAllU6():
     """
     A helpful function which will open all the connected U6s. Returns a 
@@ -192,7 +191,7 @@ class U6(Device):
         self.calInfo = CalibrationInfo()
         self.deviceName = 'U6'
         self.debug = debug
-        
+
         if autoOpen:
             self.open(**kargs)
 
@@ -1284,11 +1283,68 @@ class U6(Device):
         Args: state: 1 = On, 0 = Off
         Desc: Sets the state of the LED. (5.2.5.4 of user's guide)
         
-        >>> myU6 = U6()
-        >>> myU6.setLED(0)
+        >>> d = u6.U6()
+        >>> d.setLED(0)
         ... (LED turns off) ...
         """
         self.getFeedback(LED(state))
+
+    def setDOState(self, ioNum, state = 1):
+        """
+        Name: U6.setDOState(ioNum, state = 1)
+        Args: ioNum, which digital I/O to change
+                  0 - 7   = FIO0 - FIO7
+                  8 - 15  = EIO0 - EIO7
+                  16 - 19 = CIO0 - CIO3
+                  20 - 22 = MIO0 - MIO2
+              state, 1 = High, 0 = Low
+        Desc: A convenience function to set the state of a digital I/O. Will
+              also set the direction to output.
+        
+        Example:
+        >>> import u6
+        >>> d = u6.U6()
+        >>> d.setDOState(0, state = 1)
+        """
+        self.getFeedback(BitDirWrite(ioNum, 1), BitStateWrite(ioNum, state))
+
+    def getDIState(self, ioNum):
+        """
+        Name: U6.getDIState(ioNum)
+        Args: ioNum, which digital I/O to read
+                  0 - 7   = FIO0 - FIO7
+                  8 - 15  = EIO0 - EIO7
+                  16 - 19 = CIO0 - CIO3
+                  20 - 22 = MIO0 - MIO2
+        Desc: A convenience function to read the state of a digital I/O.  Will
+              also set the direction to input.
+        
+        Example:
+        >>> import u6
+        >>> d = u6.U6()
+        >>> print d.getDIState(0)
+        1
+        """
+        return self.getFeedback(BitDirWrite(ioNum, 0), BitStateRead(ioNum))[1]
+
+    def getDIOState(self, ioNum):
+        """
+        Name: U6.getDIOState(ioNum)
+        Args: ioNum, which digital I/O to read
+                  0 - 7   = FIO0 - FIO7
+                  8 - 15  = EIO0 - EIO7
+                  16 - 19 = CIO0 - CIO3
+                  20 - 22 = MIO0 - MIO2
+        Desc: A convenience function to read the state of a digital I/O.  Will
+              not change the direction.
+        
+        Example:
+        >>> import u6
+        >>> d = u6.U6()
+        >>> print d.getDIOState(0)
+        1
+        """
+        return self.getFeedback(BitStateRead(ioNum))[0]
 
     def getTemperature(self):
         """

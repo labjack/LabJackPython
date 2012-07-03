@@ -428,9 +428,11 @@ class U3(Device):
         Name: U3.setFIOState(fioNum, state = 1)
         Args: fioNum, which FIO to change
               state, 1 = High, 0 = Low
-        Desc: A convenience function to set the state of an FIO. Will also 
-              set the direction to output.
-              
+        Desc: A convenience function to set the state of an FIO. Will also
+              set the direction to output.  Note that this function can set
+              all digital I/O lines (FIO0 - CIO3), and is equivalent to using
+              the setDOState method.
+        
         Example:
         >>> import u3
         >>> d = u3.U3()
@@ -445,7 +447,9 @@ class U3(Device):
         
         Args: fioNum, which FIO to read
         
-        Desc: A convenience function to read the state of an FIO.
+        Desc: A convenience function to read the state of an FIO.  Note that
+              this function can read all digital I/O lines (FIO0 - CIO3), and
+              is equivalent to using the getDIOState method.
         
         Example:
         >>> import u3
@@ -455,7 +459,64 @@ class U3(Device):
         """
         return self.getFeedback(BitStateRead(fioNum))[0]
     getFIOState.section = 3
-    
+
+    def setDOState(self, ioNum, state = 1):
+        """
+        Name: U3.setDOState(ioNum, state = 1)
+        Args: ioNum, which digital I/O to change
+                  0 - 7   = FIO0 - FIO7
+                  8 - 15  = EIO0 - EIO7
+                  16 - 19 = CIO0 - CIO3
+              state, 1 = High, 0 = Low
+        Desc: A convenience function to set the state of a digital I/O. Will
+              also set the direction to output.
+        
+        Example:
+        >>> import u3
+        >>> d = u3.U3()
+        >>> d.setDOState(4, state = 1)
+        """
+        self.getFeedback(BitDirWrite(ioNum, 1), BitStateWrite(ioNum, state))
+    setDOState.section = 3
+
+    def getDIState(self, ioNum):
+        """
+        Name: U3.getDIState(ioNum)
+        Args: ioNum, which digital I/O to read
+                  0 - 7   = FIO0 - FIO7
+                  8 - 15  = EIO0 - EIO7
+                  16 - 19 = CIO0 - CIO3
+        Desc: A convenience function to read the state of a digital I/O.  Will
+              also set the direction to input.
+        
+        Example:
+        >>> import u3
+        >>> d = u3.U3()
+        >>> print d.getDIState(4)
+        1
+        """
+        return self.getFeedback(BitDirWrite(ioNum, 0), BitStateRead(ioNum))[1]
+    getDIState.section = 3
+
+    def getDIOState(self, ioNum):
+        """
+        Name: U3.getDIOState(ioNum)
+        Args: ioNum, which digital I/O to read
+                  0 - 7   = FIO0 - FIO7
+                  8 - 15  = EIO0 - EIO7
+                  16 - 19 = CIO0 - CIO3
+        Desc: A convenience function to read the state of a digital I/O.  Will
+              not change the direction.
+        
+        Example:
+        >>> import u3
+        >>> d = u3.U3()
+        >>> print d.getDIOState(4)
+        1
+        """
+        return self.getFeedback(BitStateRead(ioNum))[0]
+    getDIOState.section = 3
+
     def getTemperature(self):
         """
         Name: U3.getTemperature()
@@ -473,9 +534,7 @@ class U3(Device):
         bits, = self.getFeedback( AIN(30, 31) )
         
         return self.binaryToCalibratedAnalogTemperature(bits)
-        
-        
-    
+
     def getAIN(self, posChannel, negChannel = 31, longSettle=False, quickSample=False):
         """
         Name: U3.getAIN(posChannel, negChannel = 31, longSettle=False,
