@@ -2021,32 +2021,32 @@ class U12(object):
             state = ctypes.c_long(999)
             
             ecode = staticLib.EDigitalIn(ctypes.byref(ljid), demo, channel, readD, ctypes.byref(state))
-    
+            
             if ecode != 0: raise U12Exception(ecode)
-    
+            
             return {"idnum":ljid.value, "state":state.value}
         else:
             oldstate = self.rawDIO()
             
             if readD:
                 if channel > 7:
-                    channel = channel-7
-                    direction = BitField(rawByte = oldstate['D15toD8Directions'])
+                    channel = channel-8
+                    direction = BitField(rawByte = int(oldstate['D15toD8Directions']))
                     direction[7-channel] = 1
                     
                     results = self.rawDIO(D15toD8Directions = direction, UpdateDigital = True)
                     
-                    state = results["D15toD8States"][7-channel]
+                    state = results['D15toD8States'][7-channel]
                     
                 else:
-                    direction = BitField(rawByte = oldstate['D7toD0Directions'])
+                    direction = BitField(rawByte = int(oldstate['D7toD0Directions']))
                     direction[7-channel] = 1
-                    results = self.rawDIO(D7ToD0Directions = direction, UpdateDigital = True)
+                    results = self.rawDIO(D7toD0Directions = direction, UpdateDigital = True)
                     
-                    state = results["D15toD8States"][7-channel]
+                    state = results['D7toD0States'][7-channel]
             else:
                 results = self.rawDIO(IO3toIO0DirectionsAndStates = 255, UpdateDigital = True)
-                state = results["IO3toIO0States"][3-channel]
+                state = results['IO3toIO0States'][3-channel]
             
             return {"idnum" : self.id, "state" : state}
 
