@@ -159,9 +159,15 @@ class U3(Device):
         
         if DAC1Enable is not None or DAC0 is not None or DAC1 is not None:
             writeMask |= 4
-            
+        
         if LocalID is not None:
             writeMask |= 8
+        
+        if TimerClockConfig is not None or TimerClockDivisor is not None:
+            writeMask |= 16
+        
+        if CompatibilityOptions is not None:
+            writeMask |= 32
         
         command = [ 0 ] * 26
         
@@ -206,22 +212,21 @@ class U3(Device):
         
         if DAC1Enable is not None:
             command[18] = DAC1Enable
-            
+        
         if DAC0 is not None:
             command[19] = DAC0
-            
+        
         if DAC1 is not None:
             command[20] = DAC1
-            
+        
         if TimerClockConfig is not None:
             command[21] = TimerClockConfig
-            
+        
         if TimerClockDivisor is not None:
             command[22] = TimerClockDivisor
-            
+        
         if CompatibilityOptions is not None:
             command[23] = CompatibilityOptions
-        
         
         result = self._writeRead(command, 38, [0xF8, 0x10, 0x08])
         
