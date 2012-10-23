@@ -1,6 +1,6 @@
 from distutils.core import setup
 setup(name='LabJackPython',
-      version='8-26-2011',
+      version='10-22-2012',
       description='The LabJack python module.',
       url='http://www.labjack.com/support/labjackpython',
       author='The LabJack crew',

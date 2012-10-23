@@ -19,7 +19,7 @@ import Modbus
 import atexit # For auto-closing devices
 import threading # For a thread-safe device lock
 
-LABJACKPYTHON_VERSION = "8-26-2011"
+LABJACKPYTHON_VERSION = "10-22-2012"
 
 SOCKET_TIMEOUT = 3
 LJSOCKET_TIMEOUT = 62

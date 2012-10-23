@@ -1,15 +1,27 @@
 LabJackPython: Cross-platform (Windows, Linux, Mac OS X) Python module and
 examples for LabJack devices.
-08/26/2011
+10/22/2012
 support@labjack.com
 
-Python 2.5 or higher is required to use LabJackPython. To use the UE9
-over Ethernet, install comm firmware 1.50 or higher. At the moment it’s
-on the beta page:
+Python 2.5 or higher is required to use LabJackPython. Python 3.x is not
+supported.
+
+To use Modbus first check that your LabJack device meets the minimum required
+firmware version listed on this page:
+
+    http://labjack.com/support/modbus
+
+To upgrade firmware look at this page:
+
+    http://labjack.com/support/firmware
+
+To use Modbus on a UE9 over Ethernet, install Comm firmware 1.50 or higher.
+At the moment it’s on the beta page:
 
     http://labjack.com/support/firmware/ue9/beta
 
-Installation is easy:
+To install LabJackPython, run the following command in a terminal:
+
     $ sudo python setup.py install
 
 (Leave off the `sudo' on Windows.)
@@ -55,7 +67,8 @@ For U12:
 }
 >>> d.close()
 
-From there, check the Examples/ directory, especially the workingWithModbus.py file to get started.
+From there, check the Examples/ directory, especially the workingWithModbus.py
+file to get started.
 
 
 LICENSE

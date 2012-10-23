@@ -169,3 +169,43 @@ Version History
       conversions were taking place for channels > 3 on U3-HVs.
     - Fixed the Handle parameter name in the AddRequest method.
     - Fixed a LabJackException throw in U12.write. Now throws an U12Exception.
+- October 22, 2012
+    - Fixed a U3 and U6 stream bug when SamplesPerPacket was less than 25.
+    - Changed UE9 TCP stream reads on Linux/MacOS X to return the packet as a
+      a string. Makes it consistent with all other stream reads.
+    - Added streaming support to the UE9 class.
+    - Updated stream examples to include the UE9.
+    - Added negative channel 32 support to U3 streaming methods.
+    - In the U3 stream examples, added the getCalibrationData call for
+      calibrated readings.
+    - Fixed U3 voltageToDACBits method to handle uncalibrated 16 bit
+      conversions and changed the formula to use nominal slope and offset.
+    - Fixed broken U6-Pro hi-res support.
+    - Added voltageToDACBits function to UE9 and U6 classes.
+    - Cleaned up and added some U6 class documentation.
+    - Fixed UE9 feedback function for DAC1.
+    - Fixed UE9 watchdogConfig and watchdogRead functions.
+    - Fixed how UE9-Pro calibration constants are applied when BipGain = 0 or
+      8 and Resolution < 18.
+    - Added resolution parameter to UE9 binaryToCalibratedAnalogVoltage method.
+    - Updated streamConfig function in classes. Added ScanFrequency and
+      deprecated SampleFrequency parameters.
+    - Updated streamTest.py to use ScanFrequency, 2 channels, and take both
+      scan and sample rates into consideration.
+    - Tweaked UE9 streamConfig and streamData.
+    - In streamData over TCP, packet buffering was implemented to return
+      packetsPerRequest*16 samples like over USB.
+    - Updated stream example to count packets instead of assuming all expected
+      packets arrived.
+    - Fixed U6 Timer Feedback command classes so all timers can be used.
+    - Fixed setDIOState member in the LabJackPython class.
+    - Removed UE9 TCP requirement of opening the Modbus port on Linux/Mac OS X.
+    - Now setting the socket timeout before opening TCP ports for faster open
+      errors.
+    - Added setDOState, getDIState and getDIOState methods to U3 and U6
+      classes.
+    - Fixed the U12 eDigitalOut method when setting D8 to D15 states.
+    - Fixed the U12 eDigitalIn method when reading D lines.
+    - Updated the UD driver (v3.25) constants in the LabJackPython module.
+    - Fixed configU3 to set TimerClockConfig, TimerClockDivisor and
+      CompatibilityOptions settings properly.
