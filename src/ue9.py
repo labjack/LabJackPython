@@ -1213,12 +1213,16 @@ class UE9(Device):
         Name: UE9.spi(SPIBytes, AutoCS=True, DisableDirConfig = False,
                      SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 1,
                      CLKPinNum = 0, MISOPinNum = 3, MOSIPinNum = 2)
+        
         Args: SPIBytes, a list of bytes to be transferred.
               See Section 5.3.16 of the user's guide.
+        
         Desc: Sends and receives serial data using SPI synchronous
               communication.
+        
+        NOTE: The return has been changed to a dictionary with
+              NumSPIBytesTransferred and SPIBytes.
         """
-        #print SPIBytes
         if not isinstance(SPIBytes, list):
             raise LabJackException("SPIBytes MUST be a list of bytes")
         
@@ -1259,8 +1263,11 @@ class UE9(Device):
         command[14:] = SPIBytes
         
         result = self._writeRead(command, 8+numSPIBytes, [ 0xF8, 1+(numSPIBytes/2), 0x3A ])
-                
-        return result[8:]
+        
+        if result[6] != 0:
+            raise LowlevelErrorException(result[6], "The spi command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
+
+        return { 'NumSPIBytesTransferred' : result[7], 'SPIBytes' : result[8:] }
 
     def asynchConfig(self, Update = True, UARTEnable = True, DesiredBaud  = 9600):
         """

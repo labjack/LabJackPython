@@ -787,8 +787,9 @@ class U6(Device):
     def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 0, CLKPinNum = 1, MISOPinNum = 2, MOSIPinNum = 3):
         """
         Name: U6.spi(SPIBytes, AutoCS=True, DisableDirConfig = False,
-                     SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 0, 
+                     SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 0,
                      CLKPinNum = 1, MISOPinNum = 2, MOSIPinNum = 3)
+        
         Args: SPIBytes, A list of bytes to send.
               AutoCS, If True, the CS line is automatically driven low
                       during the SPI communication and brought back high
@@ -801,6 +802,7 @@ class U6(Device):
               CLKPinNum, which pin is CLK
               MISOPinNum, which pin is MISO
               MOSIPinNum, which pin is MOSI
+        
         Desc: Sends and receives serial data using SPI synchronous
               communication. See Section 5.2.17 of the user's guide.
         """
@@ -845,8 +847,11 @@ class U6(Device):
         
         result = self._writeRead(command, 8+numSPIBytes, [ 0xF8, 1+(numSPIBytes/2), 0x3A ])
         
+        if result[6] != 0:
+            raise LowlevelErrorException(result[6], "The spi command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
+
         return { 'NumSPIBytesTransferred' : result[7], 'SPIBytes' : result[8:] }
-    
+
     def asynchConfig(self, Update = True, UARTEnable = True, DesiredBaud = None, BaudFactor = 63036):
         """
         Name: U6.asynchConfig(Update = True, UARTEnable = True, 

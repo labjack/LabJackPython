@@ -1195,8 +1195,10 @@ class U3(Device):
         
         Desc: Sends and receives serial data using SPI synchronous
               communication.
-        
-        NOTE: Requires U3 hardware version 1.21 or greater.
+
+        NOTE: Requires U3 hardware version 1.21 or greater.  Also,
+              the return has been changed to a dictionary with
+              NumSPIBytesTransferred and SPIBytes.
         """
         if not isinstance(SPIBytes, list):
             raise LabJackException("SPIBytes MUST be a list of bytes")
@@ -1238,10 +1240,14 @@ class U3(Device):
         command[14:] = SPIBytes
         
         result = self._writeRead(command, 8+numSPIBytes, [ 0xF8, 1+(numSPIBytes/2), 0x3A ])
-                
-        return result[8:]
-    spi.section = 2
         
+        if result[6] != 0:
+            raise LowlevelErrorException(result[6], "The spi command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
+
+        return { 'NumSPIBytesTransferred' : result[7], 'SPIBytes' : result[8:] }
+
+    spi.section = 2
+
     def asynchConfig(self, Update = True, UARTEnable = True, DesiredBaud  = 9600, olderHardware = False, configurePins = True ):
         """
         Name: U3.asynchConfig(Update = True, UARTEnable = True, 
