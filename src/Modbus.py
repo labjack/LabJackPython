@@ -100,7 +100,7 @@ def readHoldingRegistersResponse(packet, payloadFormat=None):
         raise ModbusException("Packet length not valid. Expected %s, Got %s\n\nThe packet you received: %s" % (payloadLength + HEADER_LENGTH, len(packet), repr(packet)))
 
     if payloadFormat is None:
-        payloadFormat = '>' + 'H' * (payloadLength/2)
+        payloadFormat = '>' + 'H' * (payloadLength//2)
 
     # When we write '>s', we mean a variable-length string.
     # We just didn't know the length when we wrote it.
@@ -159,7 +159,7 @@ def readInputRegistersResponse(packet, payloadFormat=None):
         raise ModbusException("Packet length not valid.")
 
     if payloadFormat is None:
-        payloadFormat = '>' + 'H' * (payloadLength/2)
+        payloadFormat = '>' + 'H' * (payloadLength//2)
 
     # When we write '>s', we mean a variable-length string.
     # We just didn't know the length when we wrote it.
