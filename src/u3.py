@@ -742,7 +742,7 @@ class U3(Device):
         sendBuffer, readLen = self._buildBuffer(sendBuffer, readLen, commandlist)
         if len(sendBuffer) % 2:
             sendBuffer += [0]
-        sendBuffer[2] = len(sendBuffer) / 2 - 3
+        sendBuffer[2] = len(sendBuffer) // 2 - 3
         
         if readLen % 2:
             readLen += 1
@@ -1002,10 +1002,10 @@ class U3(Device):
                 if ScanFrequency < 25:
                     SamplesPerPacket = ScanFrequency
                 DivideClockBy256 = True
-                ScanInterval = 15625/ScanFrequency
+                ScanInterval = 15625//ScanFrequency
             else:
                 DivideClockBy256 = False
-                ScanInterval = 4000000/ScanFrequency
+                ScanInterval = 4000000//ScanFrequency
         
         # Force Scan Interval into correct range
         ScanInterval = min( ScanInterval, 65535 )
@@ -1235,7 +1235,7 @@ class U3(Device):
         
         #command[0] = Checksum8
         command[1] = 0xF8
-        command[2] = 4 + (numSPIBytes/2)
+        command[2] = 4 + (numSPIBytes//2)
         command[3] = 0x3A
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
@@ -1309,9 +1309,9 @@ class U3(Device):
         
         #command[8] = Reserved
         if olderHardware:
-            command[9] = (2**8) - self.timerClockBase/DesiredBaud
+            command[9] = (2**8) - self.timerClockBase//DesiredBaud
         else:
-            BaudFactor = (2**16) - 48000000/(2 * DesiredBaud)
+            BaudFactor = (2**16) - 48000000//(2 * DesiredBaud)
             t = struct.pack("<H", BaudFactor)
             command[8] = ord(t[0])
             command[9] = ord(t[1])
@@ -1374,7 +1374,7 @@ class U3(Device):
         
         #command[0] = Checksum8
         command[1] = 0xF8
-        command[2] = 1 + ( numBytes/2 )
+        command[2] = 1 + ( numBytes//2 )
         command[3] = 0x15
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
@@ -1461,7 +1461,7 @@ class U3(Device):
         
         #command[0] = Checksum8
         command[1] = 0xF8
-        command[2] = 4 + (numBytes/2)
+        command[2] = 4 + (numBytes//2)
         command[3] = 0x3B
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
