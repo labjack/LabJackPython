@@ -209,3 +209,5 @@ Version History
     - Updated the UD driver (v3.25) constants in the LabJackPython module.
     - Fixed configU3 to set TimerClockConfig, TimerClockDivisor and
       CompatibilityOptions settings properly.
+- February 22, 2013
+    - Added example for working with the BMA250 using SPI.
