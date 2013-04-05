@@ -91,7 +91,7 @@ class UE9(Device):
         Name: UE9.commConfig(LocalID = None, IPAddress = None, Gateway = None,
                 Subnet = None, PortA = None, PortB = None, DHCPEnabled = None)
         Args: LocalID, Set the LocalID
-              IPAddress, Set the IPAdress 
+              IPAddress, Set the IPAddress 
               Gateway, Set the Gateway
               Subnet, Set the Subnet
               PortA, Set Port A
@@ -143,7 +143,7 @@ class UE9(Device):
             gwbytes = [ int(x) for x in gwbytes ]
             gwbytes.reverse()
             command[14:18] = gwbytes
-            
+        
         if Subnet != None:
             command[6] |= (1 << 4)
             snbytes = Subnet.split('.')
@@ -169,14 +169,16 @@ class UE9(Device):
                 command[26] = 1
         
         result = self._writeRead(command, 38, [], checkBytes = False)
-        
-        if result[0] == 0xB8 and result[1] == 0xB8:
+
+        if len(result) == 0:
+            raise LabJackException("Got a zero length packet.")
+        elif result[0] == 0xB8 and result[1] == 0xB8:
             raise LabJackException("Device detected a bad checksum.")
         elif result[1:4] != [ 0x78, 0x10, 0x01 ]:
             raise LabJackException("Got incorrect command bytes.")
         elif not verifyChecksum(result):
             raise LabJackException("Checksum was incorrect.")
-        
+
         self.localId = result[8]
         self.powerLevel = result[9]
         self.ipAddress = parseIpAddress(result[10:14])
@@ -196,7 +198,7 @@ class UE9(Device):
         self.firmwareVersion = [self.controlFWVersion, self.commFWVersion]
 
         return { 'LocalID' : self.localId, 'PowerLevel' : self.powerLevel, 'IPAddress' : self.ipAddress, 'Gateway' : self.gateway, 'Subnet' : self.subnet, 'PortA' : self.portA, 'PortB' : self.portB, 'DHCPEnabled' : self.DHCPEnabled, 'ProductID' : self.productId, 'MACAddress' : self.macAddress, 'HWVersion' : self.hwVersion, 'CommFWVersion' : self.commFWVersion, 'SerialNumber' : self.serialNumber}
-    
+
     def flushBuffer(self):
         """
         Name: UE9.flushBuffer()
@@ -208,7 +210,7 @@ class UE9(Device):
         """
         command = [ 0x08, 0x08 ]
         self._writeRead(command, 2, [], False, False, False)
-    
+
     def discoveryUDP(self):
         """
         Name: UE9.discoveryUDP()
@@ -264,6 +266,64 @@ class UE9(Device):
             ue9s[ip] = ue9
         
         return ue9s
+
+    def ipAddressFilter(self, Write = 0, IP0 = None, IP1 = None, IP2 = None, IP3 = None, IP4 = None):
+        """
+        Name: UE9.ipAddressFilter(Write = 0, IP0 = None, IP1 = None, IP2 = None, IP3 = None, IP4 = None)
+        Args: Write, Set to non-zero if new values should be updated or
+                  0 if only reading. A value of non-zero will only
+                  work if the command is sent via USB.
+              IP0, First IP address allowed to connect. A value of
+                  '255.255.255.255' or None disables feature.
+              IP1, Second IP address allowed to connect.
+              IP2, Third IP address allowed to connect.
+              IP3, Fourth IP address allowed to connect.
+              IP4, Fifth IP address allowed to connect.
+        Desc: Sets a list of up to five IP addresses that are the only
+              IP addresses that can connect to the UE9. Any unused
+              Addresses can be set to '255.255.255.255' or None. If
+              IP0 is set to "255.255.255.255" or None than the feature
+              is disabled and any IP address can connect. Note that
+              setting an IP address to None defaults it to
+              '255.255.255.255'.
+              For low-level function details see section 5.2.4 of the
+              User's Guide.
+              Requires Comm. firmware 1.56 or newer.
+        """
+        command = [ 0 ] * 28
+        command[1] = 0x78
+        command[2] = 0x0B
+        command[3] = 0xAF
+
+        if Write != 0:
+            command[6] = 1
+        
+        ips = [IP0, IP1, IP2, IP3, IP4]
+        startbyte = 8
+        for ip in ips:
+            if ip != None:
+                ipbytes = ip.split('.')
+                ipbytes = [ int(x) for x in ipbytes ]
+                ipbytes.reverse()
+            else:
+                ipbytes = [255, 255, 255, 255]
+            command[startbyte:(startbyte+4)] = ipbytes
+            startbyte += 4
+
+        result = self._writeRead(command, 28, [], checkBytes = False)
+
+        if len(result) == 0:
+            raise LabJackException("Got a zero length packet.")
+        elif result[0] == 0xB8 and result[1] == 0xB8:
+            raise LabJackException("Device detected a bad checksum.")
+        elif result[1:4] != [ 0x78, 0x0B, 0xAF ]:
+            raise LabJackException("Got incorrect command bytes.")
+        elif not verifyChecksum(result):
+            raise LabJackException("Checksum was incorrect.")
+        elif result[7] != 0:
+            raise LowlevelErrorException(result[7], "\nThe %s returned an error:\n    %s" % (self.deviceName, lowlevelErrorToString(result[7])) )
+
+        return { 'IP0' : parseIpAddress(result[8:12]), 'IP1' : parseIpAddress(result[12:16]), 'IP2' : parseIpAddress(result[16:20]), 'IP3' : parseIpAddress(result[20:24]), 'IP4' : parseIpAddress(result[24:28]) }
 
     def controlConfig(self, PowerLevel = None, FIODir = None, FIOState = None, EIODir = None, EIOState = None, CIODirection = None, CIOState = None, MIODirection = None, MIOState = None, DoNotLoadDigitalIODefaults = None, DAC0Enable = None, DAC0 = None, DAC1Enable = None, DAC1 = None):
         """
