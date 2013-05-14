@@ -509,7 +509,7 @@ class U6(Device):
         command[7] = BlockNum
         command[8:] = Data
         
-        self._writeRead(command, 8, [0xF8, 0x11, command[3]])
+        self._writeRead(command, 8, [0xF8, 0x01, command[3]])
 
     def writeCal(self, BlockNum, Data):
         return self.writeMem(BlockNum, Data, WriteCal = True)
@@ -527,7 +527,7 @@ class U6(Device):
         
         NOTE: Do not call this function while streaming.
         """
-        if eraseCal:
+        if EraseCal:
             command = [ 0 ] * 8
             
             #command[0] = Checksum8

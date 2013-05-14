@@ -530,7 +530,7 @@ class Device(object):
             raise LabJackException("Checksum was incorrect.")
         elif results[6] != 0:
             raise LowlevelErrorException(results[6], "\nThe %s returned an error:\n    %s" % (self.deviceName , lowlevelErrorToString(results[6])) )
-            
+    
     def _writeRead(self, command, readLen, commandBytes, checkBytes = True, stream=False, checksum = True):
     
         # Acquire the device lock.
@@ -988,7 +988,7 @@ def setChecksum(command):
     @return: A command list with checksums in the proper locations.
     """  
     
-    if len(command) < 8:
+    if len(command) < 6:
         raise LabJackException("Command does not contain enough bytes.")
     
     try:        
