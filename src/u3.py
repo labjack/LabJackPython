@@ -1622,9 +1622,11 @@ class U3(Device):
             bits = volts * 51.717
         
         if is16Bits:
-            bits *= 256
-        
-        return int(bits)
+            bits = min(bits*256, 0xFFFF)
+        else:
+            bits = min(bits, 0xFF)
+
+        return int(max(bits, 0))
     voltageToDACBits.section = 3
     
     def getCalibrationData(self):

@@ -1630,7 +1630,9 @@ class UE9(Device):
             slope = DEFAULT_CAL_CONSTANTS['DACSlopes'][str(dacNumber)]
             offset = DEFAULT_CAL_CONSTANTS['DACOffsets'][str(dacNumber)]
         
-        return int((volts * slope) + offset)
+        bits = (volts * slope) + offset
+        
+        return int(max(min(bits, 0xFFF), 0))
 
     def getCalibrationData(self):
         """

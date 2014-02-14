@@ -1239,10 +1239,12 @@ class U6(Device):
               Feedback commands.
         """
         bits = ( volts * self.calInfo.dacSlope[dacNumber] ) + self.calInfo.dacOffset[dacNumber]
-        if not is16Bits:
-            bits = bits/256
+        if is16Bits:
+            bits = min(bits, 0xFFFF)
+        else:
+            bits = min(bits/256, 0xFF)
         
-        return int(bits)
+        return int(max(bits, 0))
 
     def softReset(self):
         """
