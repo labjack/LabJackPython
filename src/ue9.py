@@ -764,7 +764,6 @@ class UE9(Device):
         """
         Name: UE9.readMem(BlockNum)
         Args: BlockNum, which block to read
-              ReadCal, set to True to read the calibration data
         Desc: Reads 1 block (128 bytes) from the non-volatile user or 
               calibration memory. Please read section 5.3.10 of the user's
               guide before you do something you may regret.
@@ -792,7 +791,7 @@ class UE9(Device):
 
     def writeMem(self, BlockNum, Data):
         """
-        Name: UE9.writeMem(BlockNum, Data, WriteCal=False)
+        Name: UE9.writeMem(BlockNum, Data)
         Args: BlockNum, which block to write
               Data, a list of bytes to write
         Desc: Writes 1 block (128 bytes) from the non-volatile user or 
@@ -834,6 +833,9 @@ class UE9(Device):
         
         NOTE: Do not call this function while streaming.
         """
+        if not isinstance(EraseCal, bool):
+            raise LabJackException("EraseCal must be a Boolean value (True or False).")
+        
         command = [ 0 ] * 8
             
         #command[0] = Checksum8

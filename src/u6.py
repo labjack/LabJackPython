@@ -527,6 +527,9 @@ class U6(Device):
         
         NOTE: Do not call this function while streaming.
         """
+        if not isinstance(EraseCal, bool):
+            raise LabJackException("EraseCal must be a Boolean value (True or False).")
+        
         if EraseCal:
             command = [ 0 ] * 8
             

@@ -854,7 +854,7 @@ class U3(Device):
         """
         return self.writeMem(blockNum, data, writeCal = True)
     writeCal.section = 2
-        
+    
     def eraseMem(self, eraseCal=False):
         """
         Name: U3.eraseMem(eraseCal=False)
@@ -867,6 +867,9 @@ class U3(Device):
         
         Note: Do not call this function while streaming.
         """
+        if not isinstance(eraseCal, bool):
+            raise LabJackException("eraseCal must be a Boolean value (True or False).")
+        
         if eraseCal:
             command = [ 0 ] * 8
             
