@@ -840,7 +840,7 @@ class U3(Device):
         self._writeRead(command, 8, [0xF8, 0x01, command[3]])
     writeMem.section = 2
     
-    def writeCal(self, blockNum):
+    def writeCal(self, blockNum, data):
         """
         Name: U3.writeCal(blockNum, data)
         
