@@ -1274,8 +1274,14 @@ def _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, 
     pAddress = str(pAddress)
     ec = staticLib.OpenLabJack(deviceType, connectionType, 
                                 pAddress, firstFound, ctypes.byref(handle))
-
-    if ec != 0: raise LabJackException(ec)
+    
+    #Error codes > 0 are errors, < 0 are warnings and 0 is no error.
+    #Warnings return a valid device handle.
+    if ec > 0:
+        raise LabJackException(ec)
+    if ec < 0:
+        print "Warning: " + str(LabJackException(ec))
+    
     devHandle = handle.value
     
     return devHandle
