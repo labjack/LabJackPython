@@ -1,8 +1,11 @@
 """
-Multi-Platform Python wrapper that implements functions from the LabJack 
+Multi-Platform Python wrapper that implements functions from the LabJack
 Windows UD Driver, and the Exodriver.
 
-This python wrapper is intended to make working with your LabJack device easy. The functions contained in this module are helper and device agnostic functions. This module provides the base Device class which the U3, U6, and UE9 classes inherit from.
+This Python wrapper is intended to make working with your LabJack device easy.
+The functions contained in this module are helper and device agnostic functions.
+This module provides the base Device class which the U3, U6, and UE9 classes
+inherit from.
 
 A typical user should start with their device's module, such as u3.py.
 """
@@ -19,7 +22,7 @@ import Modbus
 import atexit # For auto-closing devices
 import threading # For a thread-safe device lock
 
-LABJACKPYTHON_VERSION = "10-22-2012"
+LABJACKPYTHON_VERSION = "4-24-2014"
 
 SOCKET_TIMEOUT = 3
 LJSOCKET_TIMEOUT = 62

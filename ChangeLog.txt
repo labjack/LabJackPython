@@ -209,3 +209,22 @@ Version History
     - Updated the UD driver (v3.25) constants in the LabJackPython module.
     - Fixed configU3 to set TimerClockConfig, TimerClockDivisor and
       CompatibilityOptions settings properly.
+- April 24, 2014
+    - Updated the U3 and UE9 spi methods to return a dictionary. Done for
+      consistency.
+    - Updated the spi methods to check for response errors.
+    - Added the UE9 ipAddressFilter method and ue9IPAddressFilter.py example.
+    - Fixed the U6 writeMem and eraseMem methods.
+    - Fixed the LabJackPython setChecksum function. It now accepts commands of
+      at least 6 bytes.
+    - Removed the U6 DSP Feedback command class. Experimental feature was
+      removed from U6 firmware.
+    - Added the spi_sca3000.py example.
+    - Updated the voltageToDACBits methods to have a max/min on the return
+      value.
+    - Updated PWM-looping.py with U3 low-level commands.
+    - Updated the eraseMem methods to only accept a Boolean value for the
+      eraseCal parameter.
+    - Fixed the U3 writeCal method.
+    - Updated the device open error checks on Windows. Warnings no longer raise
+      an exception.
