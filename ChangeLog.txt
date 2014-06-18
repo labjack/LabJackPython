@@ -230,4 +230,6 @@ Version History
       an exception.
 - Next Release
     - LabJackPython now refuses to install on unsupported Python versions.
+    - Fixed U12 watchdog method argument parsing.  If the stateDn argument was
+      invalid, it would try to raise Value (undefined) instead of ValueError.
 
