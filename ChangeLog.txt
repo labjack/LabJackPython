@@ -228,3 +228,6 @@ Version History
     - Fixed the U3 writeCal method.
     - Updated the device open error checks on Windows. Warnings no longer raise
       an exception.
+- Next Release
+    - LabJackPython now refuses to install on unsupported Python versions.
+
