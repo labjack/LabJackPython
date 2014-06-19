@@ -23,7 +23,6 @@ Desc: Defines the U12 class, which makes working with a U12 much easier. The
       
 """
 
-import platform
 import ctypes
 import os, atexit
 import math
