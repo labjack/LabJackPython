@@ -16,7 +16,6 @@ import collections
 import ctypes
 import os
 import struct
-from decimal import Decimal
 import socket
 import Modbus
 import atexit # For auto-closing devices
