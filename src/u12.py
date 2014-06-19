@@ -2362,7 +2362,6 @@ class U12(object):
         dataArray = [0] * 18
         for i in range(0, len(data)):
             dataArray[i] = data[i]
-        print dataArray
         dataArray = listToCArray(dataArray, ctypes.c_long)
         
         ecode = staticLib.Asynch(ctypes.byref(idNum), demo, portB, enableTE, enableTO, enableDel, baudrate, numWrite, numRead, ctypes.byref(dataArray))
@@ -2438,7 +2437,6 @@ class U12(object):
         stateIO = ctypes.c_long(999)
         count = ctypes.c_ulong(999)
         
-        print idNum
         ecode = staticLib.Counter(ctypes.byref(idNum), demo, ctypes.byref(stateD), ctypes.byref(stateIO), resetCounter, enableSTB, ctypes.byref(count))
 
         if ecode != 0: raise U12Exception(ecode)
