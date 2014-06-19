@@ -2749,7 +2749,7 @@ class U12(object):
         >>> dev.resetLJ()
         >>> {'idnum': 1}
         """
-        return reset(idNum)
+        return self.reset(idNum)
     
     def sht1X(self, idNum=None, demo=0, softComm=0, mode=0, statusReg=0):
         """

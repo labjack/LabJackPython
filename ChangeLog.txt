@@ -232,4 +232,6 @@ Version History
     - LabJackPython now refuses to install on unsupported Python versions.
     - Fixed U12 watchdog method argument parsing.  If the stateDn argument was
       invalid, it would try to raise Value (undefined) instead of ValueError.
+    - Fixed U12 resetLJ method.  This method was intended to call reset but
+      would always cause a NameError exception due to a typo.
 
