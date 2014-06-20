@@ -12,7 +12,7 @@ http://labjack.com/support/u6/users-guide/5.2
 """
 from LabJackPython import *
 
-import struct, ConfigParser
+import collections, struct, ConfigParser
 
 def openAllU6():
     """

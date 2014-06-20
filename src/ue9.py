@@ -11,7 +11,7 @@ http://labjack.com/support/ue9/users-guide/5.2
 """
 from LabJackPython import *
 
-import struct, socket, select, ConfigParser
+import collections, struct, socket, select, ConfigParser
 from datetime import datetime
 
 def openAllUE9():

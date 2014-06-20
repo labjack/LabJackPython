@@ -12,7 +12,6 @@ A typical user should start with their device's module, such as u3.py.
 # We use the 'with' keyword to manage the thread-safe device lock. It's built-in on 2.6; 2.5 requires an import.
 from __future__ import with_statement
 
-import collections
 import ctypes
 import os
 import struct
