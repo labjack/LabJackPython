@@ -17,7 +17,7 @@ Section Number Mapping:
 
 """
 from LabJackPython import *
-import struct, ConfigParser
+import collections, struct, ConfigParser
 
 FIO0, FIO1, FIO2, FIO3, FIO4, FIO5, FIO6, FIO7, \
 EIO0, EIO1, EIO2, EIO3, EIO4, EIO5, EIO6, EIO7, \
