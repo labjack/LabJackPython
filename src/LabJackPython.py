@@ -747,6 +747,7 @@ class Device(object):
         if results[2] != 0:
             raise LowlevelErrorException(results[2], "StreamStart returned an error:\n    %s" % lowlevelErrorToString(results[2]) )
         
+        self.streamPacketOffset = 0
         self.streamStarted = True
     
     def streamData(self, convert=True):

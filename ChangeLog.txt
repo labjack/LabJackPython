@@ -234,4 +234,6 @@ Version History
       invalid, it would try to raise Value (undefined) instead of ValueError.
     - Fixed U12 resetLJ method.  This method was intended to call reset but
       would always cause a NameError exception due to a typo.
-
+    - Fixed a stream bug where stopping and restarting the stream did not reset
+      the packet offset internal variable which could cause data processing for
+      incorrect channels.
