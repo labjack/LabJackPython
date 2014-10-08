@@ -237,3 +237,7 @@ Version History
     - Fixed a stream bug where stopping and restarting the stream did not reset
       the packet offset internal variable which could cause data processing for
       incorrect channels.
+    - Changed the operating system detection to use sys.platform instead of
+      os.name.
+    - Fixed getDevCounts, openAllLabJacks, and GetResultSS on Windows.
+    - Added Cygwin support.

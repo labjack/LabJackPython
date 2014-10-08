@@ -24,13 +24,12 @@ Desc: Defines the U12 class, which makes working with a U12 much easier. The
 """
 
 import ctypes
-import os, atexit
+import atexit
 import math
 from time import time
 import struct
 
-WINDOWS = "Windows"
-ON_WINDOWS = (os.name == 'nt')
+_os_name = "" #Set to "nt" or "posix" in _loadLibrary
 
 class U12Exception(Exception):
     """Custom Exception meant for dealing specifically with U12 Exceptions.
@@ -361,28 +360,50 @@ def _loadMacDylib():
     l.LJUSB_Read.errcheck = errcheck
     return l
 
-staticLib = None
-if os.name == 'posix':
-        try:
-            staticLib = _loadLinuxSo()
-        except OSError, e:
-            pass # We may be on Mac.
-        except Exception, e:
-            raise U12Exception("Could not load the Linux SO for some reason other than it not being installed. Ethernet connectivity only.\n\n    The error was: %s" % e)
-        
-        try:
-            if staticLib is None:
-                staticLib = _loadMacDylib()
-        except OSError, e:
-            raise U12Exception("Could not load the Exodriver driver. Ethernet connectivity only.\n\nCheck that the Exodriver is installed, and the permissions are set correctly.\nThe error message was: %s" % e)
-        except Exception, e:
-            raise U12Exception("Could not load the Mac Dylib for some reason other than it not being installed. Ethernet connectivity only.\n\n    The error was: %s" % e)   
-else:
+def _loadLibrary():
+    """_loadLibrary()
+    Returns a ctypes dll pointer to the library.
+    """
+    import sys
+    global _os_name
+
+    _os_name = "nt"
     try:
-        staticLib = ctypes.windll.LoadLibrary("ljackuw")
-    except:
-        raise Exception, "Could not load LabJack UW driver."
+        if(sys.platform.startswith("win32")):
+            #Windows detected
+            return ctypes.WinDLL("ljackuw")
+        if(sys.platform.startswith("cygwin")):
+            #Cygwin detected. WinDLL not available, but CDLL seems to work.
+            return ctypes.CDLL("ljackuw")
+    except Exception, e:
+        raise U12Exception("Could not load LabJack UW driver.\n\n    The error was: %s" % e)
+
+    _os_name = "posix"
+    addStr = "Exodriver"
+    try:
+        if(sys.platform.startswith("linux")):
+            #Linux detected
+            addStr = "Linux SO"
+            return _loadLinuxSo()
+        if(sys.platform.startswith("darwin")):
+            #Mac detected
+            addStr = "Mac Dylib"
+            return _loadMacDylib()
+        #Other OS? Just try to load the Exodriver like a Linux SO
+        addStr = "Other SO"
+        return _loadLinuxSo()
+    except OSError, e:
+        raise U12Exception("Could not load the Exodriver driver.\n\nCheck that the Exodriver is installed, and the permissions are set correctly.\nThe error message was: %s" % e)
+    except Exception, e:
+        raise U12Exception("Could not load the %s for some reason other than it not being installed.\n\n    The error was: %s" % (addStr, e))
+   
+try:
+    staticLib = _loadLibrary()
+except U12Exception, e:
+    print "%s: %s" % ( type(e), e )
+    staticLib = None
     
+
 class U12(object):
     """
     U12 Class for all U12 specific commands.
@@ -399,7 +420,7 @@ class U12(object):
         self.debug = debug
         self._autoCloseSetup = False
         
-        if not ON_WINDOWS:
+        if _os_name != "nt":
             # Save some variables to save state.
             self.pwmAVoltage = 0
             self.pwmBVoltage = 0
@@ -415,7 +436,7 @@ class U12(object):
         a handle. On Windows, this method does nothing. On Mac OS X and Linux,
         this method acquires a device handle and saves it to the U12 object.
         """
-        if ON_WINDOWS:
+        if _os_name == "nt":
             pass
         else:
             if self.debug: print "open called"
@@ -497,14 +518,14 @@ class U12(object):
                 self._autoCloseSetup = True
     
     def close(self):
-        if ON_WINDOWS:
+        if _os_name == "nt":
             pass
         else:
             staticLib.LJUSB_CloseDevice(self.handle)
             self.handle = None
 
     def write(self, writeBuffer):
-        if ON_WINDOWS:
+        if _os_name == "nt":
             pass
         else:
             if self.handle is None:
@@ -523,7 +544,7 @@ class U12(object):
             return writeBuffer
             
     def read(self, numBytes = 8):
-        if ON_WINDOWS:
+        if _os_name == "nt":
             pass
         else:
             if self.handle is None:
@@ -1910,7 +1931,7 @@ class U12(object):
         if idNum is None:
             idNum = self.id
         
-        if ON_WINDOWS:
+        if _os_name == "nt":
             ljid = ctypes.c_long(idNum)
             ad0 = ctypes.c_long(999)
             ad1 = ctypes.c_float(999)
@@ -1944,7 +1965,7 @@ class U12(object):
         if idNum is None:
             idNum = self.id
         
-        if ON_WINDOWS:
+        if _os_name == "nt":
             ljid = ctypes.c_long(idNum)
             ecode = staticLib.EAnalogOut(ctypes.byref(ljid), demo, ctypes.c_float(analogOut0), ctypes.c_float(analogOut1))
     
@@ -1981,7 +2002,7 @@ class U12(object):
         if idNum is None:
             idNum = self.id
         
-        if ON_WINDOWS:
+        if _os_name == "nt":
             ljid = ctypes.c_long(idNum)
             count = ctypes.c_double()
             ms = ctypes.c_double()
@@ -2015,7 +2036,7 @@ class U12(object):
         if idNum is None:
             idNum = self.id
         
-        if ON_WINDOWS:
+        if _os_name == "nt":
             ljid = ctypes.c_long(idNum)
             state = ctypes.c_long(999)
             
@@ -2067,7 +2088,7 @@ class U12(object):
         if idNum is None:
             idNum = self.id
         
-        if ON_WINDOWS:
+        if _os_name == "nt":
             ljid = ctypes.c_long(idNum)
             
             ecode = staticLib.EDigitalOut(ctypes.byref(ljid), demo, channel, writeD, state)
@@ -2381,7 +2402,7 @@ class U12(object):
         >>> dev.bitsToVolts(0, 0, 2662)
         >>> {'volts': 2.998046875}
         """
-        if ON_WINDOWS:
+        if _os_name == "nt":
             volts = ctypes.c_float()
             ecode = staticLib.BitsToVolts(chnum, chgain, bits, ctypes.byref(volts))
     
@@ -2405,7 +2426,7 @@ class U12(object):
         >>> dev.voltsToBits(0, 0, 3)
         >>> {'bits': 2662}
         """
-        if ON_WINDOWS:
+        if _os_name == "nt":
             bits = ctypes.c_long(999)
             ecode = staticLib.VoltsToBits(chnum, chgain, ctypes.c_float(volts), ctypes.byref(bits))
 
@@ -2918,8 +2939,6 @@ class U12(object):
     def LJHash(self, hashStr, size):
         outBuff = (ctypes.c_char * 16)()
         retBuff = ''
-        
-        staticLib = ctypes.windll.LoadLibrary("ljackuw")
         
         ec = staticLib.LJHash(ctypes.cast(hashStr, ctypes.POINTER(ctypes.c_char)),
                               size, 

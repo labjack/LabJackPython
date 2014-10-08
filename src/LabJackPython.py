@@ -12,13 +12,12 @@ A typical user should start with their device's module, such as u3.py.
 # We use the 'with' keyword to manage the thread-safe device lock. It's built-in on 2.6; 2.5 requires an import.
 from __future__ import with_statement
 
-import ctypes
-import os
 import struct
 import socket
 import Modbus
 import atexit # For auto-closing devices
 import threading # For a thread-safe device lock
+import ctypes
 
 LABJACKPYTHON_VERSION = "4-24-2014"
 
@@ -28,6 +27,8 @@ BROADCAST_SOCKET_TIMEOUT = 1
 MAX_USB_PACKET_LENGTH = 64
 
 NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS = 5
+
+_os_name = "" #Set to "nt" or "posix" in _loadLibrary
 
 class LabJackException(Exception):
     """Custom Exception meant for dealing specifically with LabJack Exceptions.
@@ -106,38 +107,54 @@ def _loadLibrary():
     """_loadLibrary()
     Returns a ctypes dll pointer to the library.
     """
-    if(os.name == 'posix'):
-        try:
+    import sys
+    global _os_name
+
+    _os_name = "nt"
+    try:
+        if(sys.platform.startswith("win32")):
+            #Windows detected
+            return ctypes.WinDLL("labjackud")
+        if(sys.platform.startswith("cygwin")):
+            #Cygwin detected. WinDLL not available, but CDLL seems to work.
+            return ctypes.CDLL("labjackud")
+    except Exception, e:
+        raise LabJackException("Could not load labjackud driver. Ethernet connectivity availability only.\n\n    The error was: %s" % e)
+
+    _os_name = "posix"
+    addStr = "Exodriver"
+    try:
+        if(sys.platform.startswith("linux")):
+            #Linux detected
+            addStr = "Linux SO"
             return _loadLinuxSo()
-        except OSError, e:
-            pass # We may be on Mac.
-        except Exception, e:
-            raise LabJackException("Could not load the Linux SO for some reason other than it not being installed. Ethernet connectivity only.\n\n    The error was: %s" % e)
-        
-        try:
+        if(sys.platform.startswith("darwin")):
+            #Mac detected
+            addStr = "Mac Dylib"
             return _loadMacDylib()
-        except OSError, e:
-            raise LabJackException("Could not load the Exodriver driver. Ethernet connectivity only.\n\nCheck that the Exodriver is installed, and the permissions are set correctly.\nThe error message was: %s" % e)
-        except Exception, e:
-            raise LabJackException("Could not load the Mac Dylib for some reason other than it not being installed. Ethernet connectivity only.\n\n    The error was: %s" % e)
-                    
-    if(os.name == 'nt'):
-        try:
-            return ctypes.windll.LoadLibrary("labjackud")
-        except Exception, e:
-            raise LabJackException("Could not load labjackud driver. Ethernet connectivity availability only.\n\n    The error was: %s" % e)
+        #Other OS? Just try to load the Exodriver like a Linux SO
+        addStr = "Other SO"
+        return _loadLinuxSo()
+    except OSError, e:
+        raise LabJackException("Could not load the Exodriver driver. Ethernet connectivity only.\n\nCheck that the Exodriver is installed, and the permissions are set correctly.\nThe error message was: %s" % e)
+    except Exception, e:
+        raise LabJackException("Could not load the %s for some reason other than it not being installed. Ethernet connectivity only.\n\n    The error was: %s" % (addStr, e))
 
 try:
     staticLib = _loadLibrary()
 except LabJackException, e:
     print "%s: %s" % ( type(e), e )
     staticLib = None
-    
+
 # Attempt to load the windows Skymote library.
 try:
-    skymoteLib = ctypes.windll.LoadLibrary("liblabjackusb")
+    skymoteLib = ctypes.WinDLL("liblabjackusb")
 except:
-    skymoteLib = None
+    try:
+        skymoteLib = ctypes.CDLL("liblabjackusb")
+    except:
+        skymoteLib = None
+
 
 class Device(object):
     """Device(handle, localId = None, serialNumber = None, ipAddress = "", type = None)
@@ -258,9 +275,9 @@ class Device(object):
         elif(isinstance(self.handle, UE9TCPHandle)):
             wb = self._writeToUE9TCPHandle(writeBuffer, modbus)
         else:
-            if os.name == 'posix':
+            if _os_name == 'posix':
                 wb = self._writeToExodriver(writeBuffer, modbus)
-            elif os.name == 'nt':
+            elif _os_name == 'nt':
                 wb = self._writeToUDDriver(writeBuffer, modbus)
         
         if self.debug: print "Sent: ", hexWithoutQuotes(wb)
@@ -281,9 +298,9 @@ class Device(object):
         elif(isinstance(self.handle, UE9TCPHandle)):
             return self._readFromUE9TCPHandle(numBytes, stream, modbus)
         else:
-            if(os.name == 'posix'):
+            if _os_name == 'posix':
                 return self._readFromExodriver(numBytes, stream, modbus)
-            elif os.name == 'nt':
+            elif _os_name == 'nt':
                 return self._readFromUDDriver(numBytes, stream, modbus)
         
     def _readFromLJSocketHandle(self, numBytes, modbus, spont = False):
@@ -638,7 +655,7 @@ class Device(object):
         """
         if isinstance(self.handle, UE9TCPHandle) or isinstance(self.handle, LJSocketHandle):
             self.handle.close()
-        elif os.name == 'posix':
+        elif _os_name == 'posix':
             staticLib.LJUSB_CloseDevice(self.handle)
         elif self.devType == 0x501:
             skymoteLib.LJUSB_CloseDevice(self.handle)
@@ -664,12 +681,11 @@ class Device(object):
         @raise LabJackException: 
         """        
         
-        if os.name == 'nt':
-            staticLib = ctypes.windll.LoadLibrary("labjackud")
+        if _os_name == 'nt':
             ec = staticLib.ResetLabJack(self.handle)
     
             if ec != 0: raise LabJackException(ec)
-        elif os.name == 'posix':
+        elif _os_name == 'posix':
             sndDataBuff = [0] * 4
             
             #Make the reset packet
@@ -1074,8 +1090,12 @@ def listAll(deviceType, connectionType = 1):
     
     if deviceType == 12:
         if U12DriverPresent():
-            u12Driver = ctypes.windll.LoadLibrary("ljackuw")
-            
+            import sys
+            if(sys.platform.startswith("cygwin")):
+                u12Driver = ctypes.cdll.LoadLibrary("ljackuw")
+            else:
+                u12Driver = ctypes.windll.LoadLibrary("ljackuw")
+                
             # Setup all the ctype arrays
             pSerialNumbers = (ctypes.c_long * 127)(0)
             pIDs = (ctypes.c_long * 127)(0)
@@ -1109,7 +1129,7 @@ def listAll(deviceType, connectionType = 1):
             return {}
         
     
-    if(os.name == 'nt'):
+    if _os_name == 'nt':
         if deviceType == 0x501:
             if skymoteLib is None:
                 raise ImportError("Couldn't load liblabjackusb.dll. Please install, and try again.")
@@ -1156,7 +1176,7 @@ def listAll(deviceType, connectionType = 1):
     
         return deviceList
 
-    if(os.name == 'posix'):
+    if _os_name == 'posix':
 
         if deviceType == LJ_dtUE9:
             return __listAllUE9Unix(connectionType)
@@ -1171,7 +1191,7 @@ def listAll(deviceType, connectionType = 1):
             return __listAllBridgesUnix()
 
 def isHandleValid(handle):
-    if(os.name == 'nt'):
+    if _os_name == 'nt':
         return True
     else:
         return staticLib.LJUSB_IsHandleValid(handle)
@@ -1179,7 +1199,7 @@ def isHandleValid(handle):
 
 def deviceCount(devType = None):
     """Returns the number of devices connected. """
-    if(os.name == 'nt'):
+    if _os_name == 'nt':
         if devType is None:
             numdev = len(listAll(3))
             numdev += len(listAll(9))
@@ -1201,9 +1221,12 @@ def deviceCount(devType = None):
 
 
 def getDevCounts():
-    if os.name == "nt":
+    if _os_name == "nt":
         # Right now there is no good way to count all the U12s on a Windows box
-        return { 3 : len(listAll(3)), 6 : len(listAll(6)), 9 : len(listAll(9)), 1 : 0, 0x501 : len(listAll(0x501))}
+        returnDict = { 3 : len(listAll(3)), 6 : len(listAll(6)), 9 : len(listAll(9)), 1 : 0, 0x501: 0}
+        if skymoteLib is not None:
+            returnDict[0x501] = len(listAll(0x501))
+        return returnDict
     else:
         devCounts = (ctypes.c_uint*NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS)()
         devIds = (ctypes.c_uint*NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS)()
@@ -1220,14 +1243,15 @@ def getDevCounts():
 
 
 def openAllLabJacks():
-    if os.name == "nt":
+    if _os_name == "nt":
         # Windows doesn't provide a nice way to open all the devices.
         devs = dict()
         devs[3] = listAll(3)
         devs[6] = listAll(6)
         devs[9] = listAll(9)
-        devs[0x501] = listAll(0x501)
-        
+        if skymoteLib is not None:
+            devs[0x501] = listAll(0x501)
+            
         devices = list()
         for prodId, numConnected in devs.items():
             for i, serial in enumerate(numConnected.keys()):
@@ -1446,12 +1470,12 @@ def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, 
     if connectionType == LJ_ctLJSOCKET:
         # LJSocket handles work indepenent of OS
         handle = _openLabJackUsingLJSocket(deviceType, firstFound, pAddress, LJSocket, handleOnly )
-    elif os.name == 'posix' and connectionType == LJ_ctUSB:
+    elif _os_name == 'posix' and connectionType == LJ_ctUSB:
         # Linux/Mac need to work in the low level driver.
         handle = _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber)
         if isinstance( handle, Device ):
             return handle
-    elif os.name == 'nt':
+    elif _os_name == 'nt':
         #If windows operating system then use the UD Driver
         if deviceType == 0x501:
             handle = _openWirelessBridgeOnWindows(firstFound, pAddress, devNumber)
@@ -1604,14 +1628,13 @@ def _makeDeviceFromHandle(handle, deviceType):
         
     return device
 
+#Windows
 def AddRequest(Handle, IOType, Channel, Value, x1, UserData):
     """AddRequest(handle, ioType, channel, value, x1, userData)
         
     Windows Only
     """
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
-        
+    if _os_name == 'nt':
         v = ctypes.c_double(Value)
         ud = ctypes.c_double(UserData)
         
@@ -1654,14 +1677,11 @@ def AddRequestS(Handle, pIOType, Channel, Value, x1, UserData):
     
     @raise LabJackException:
     """
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
-        
+    if _os_name == 'nt':
         v = ctypes.c_double(Value)
         ud = ctypes.c_double(UserData)
         
-        ec = staticLib.AddRequestS(Handle, pIOType, Channel, 
-                                    v, x1, ud)
+        ec = staticLib.AddRequestS(Handle, pIOType, Channel, v, x1, ud)
 
         if ec != 0: raise LabJackException(ec)
     else:
@@ -1700,14 +1720,11 @@ def AddRequestSS(Handle, pIOType, pChannel, Value, x1, UserData):
     
     @raise LabJackException:
     """
-    if os.name == 'nt':      
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
-        
+    if _os_name == 'nt':      
         v = ctypes.c_double(Value)
         ud = ctypes.c_double(UserData)
         
-        ec = staticLib.AddRequestSS(Handle, pIOType, pChannel, 
-                                     v, x1, ud)
+        ec = staticLib.AddRequestSS(Handle, pIOType, pChannel, v, x1, ud)
 
         if ec != 0: raise LabJackException(ec)
     else:
@@ -1734,8 +1751,7 @@ def Go():
     @raise LabJackException:
     """
     
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")           
+    if _os_name == 'nt':
         ec = staticLib.Go()
 
         if ec != 0: raise LabJackException(ec)
@@ -1765,8 +1781,7 @@ def GoOne(Handle):
     
     @raise LabJackException:
     """
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")           
+    if _os_name == 'nt':
         ec = staticLib.GoOne(Handle)
 
         if ec != 0: raise LabJackException(ec)
@@ -1803,8 +1818,7 @@ def eGet(Handle, IOType, Channel, pValue, x1):
         
     @raise LabJackException:
     """
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
+    if _os_name == 'nt':
         pv = ctypes.c_double(pValue)
         #ppv = ctypes.pointer(pv)
         ec = staticLib.eGet(Handle, IOType, Channel, ctypes.byref(pv), x1)
@@ -1856,7 +1870,7 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
     """
     ec = 0
     x1Type = "int"
-    if os.name == 'nt':
+    if _os_name == 'nt':
         digitalConst = [35, 36, 37, 45]
         pv = ctypes.c_double(pValue)
 
@@ -1936,8 +1950,7 @@ def eGetS(Handle, pIOType, Channel, pValue, x1):
         
     @raise LabJackException:
     """
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
+    if _os_name == 'nt':
         pv = ctypes.c_double(pValue)
         ec = staticLib.eGetS(Handle, pIOType, Channel, ctypes.byref(pv), x1)
 
@@ -1976,8 +1989,7 @@ def eGetSS(Handle, pIOType, pChannel, pValue, x1):
         
     @raise LabJackException:
     """
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
+    if _os_name == 'nt':
         pv = ctypes.c_double(pValue)
         ec = staticLib.eGetSS(Handle, pIOType, pChannel, ctypes.byref(pv), x1)
 
@@ -2029,8 +2041,7 @@ def ePut(Handle, IOType, Channel, Value, x1):
     
     @raise LabJackException:
     """
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
+    if _os_name == 'nt':
         pv = ctypes.c_double(Value)
         ec = staticLib.ePut(Handle, IOType, Channel, pv, x1)
 
@@ -2071,9 +2082,7 @@ def ePutS(Handle, pIOType, Channel, Value, x1):
     
     @raise LabJackException:
     """
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
-        
+    if _os_name == 'nt':
         pv = ctypes.c_double(Value)
         ec = staticLib.ePutS(Handle, pIOType, Channel, pv, x1)
 
@@ -2114,9 +2123,7 @@ def ePutSS(Handle, pIOType, pChannel, Value, x1):
     
     @raise LabJackException:
     """
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
-
+    if _os_name == 'nt':
         pv = ctypes.c_double(Value)
         ec = staticLib.ePutSS(Handle, pIOType, pChannel, pv, x1)
 
@@ -2154,8 +2161,7 @@ def GetResult(Handle, IOType, Channel):
         
     @raise LabJackException:
     """
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
+    if _os_name == 'nt':
         pv = ctypes.c_double()
         ec = staticLib.GetResult(Handle, IOType, Channel, ctypes.byref(pv))
 
@@ -2194,8 +2200,7 @@ def GetResultS(Handle, pIOType, Channel):
         
     @raise LabJackException:
     """
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
+    if _os_name == 'nt':
         pv = ctypes.c_double()
         ec = staticLib.GetResultS(Handle, pIOType, Channel, ctypes.byref(pv))
 
@@ -2234,12 +2239,11 @@ def GetResultSS(Handle, pIOType, pChannel):
         
     @raise LabJackException:
     """
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
+    if _os_name == 'nt':
         pv = ctypes.c_double()
-        ec = staticLib.GetResultS(Handle, pIOType, pChannel, ctypes.byref(pv))
+        ec = staticLib.GetResultSS(Handle, pIOType, pChannel, ctypes.byref(pv))
 
-        if ec != 0: raise LabJackException(ec)          
+        if ec != 0: raise LabJackException(ec)
         return pv.value
     else:
        raise LabJackException(0, "Function only supported for Windows")
@@ -2276,8 +2280,7 @@ def GetFirstResult(Handle):
         
     @raise LabJackException: 
     """   
-    if os.name == 'nt':     
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
+    if _os_name == 'nt':     
         pio = ctypes.c_long()
         pchan = ctypes.c_long()
         pv = ctypes.c_double()
@@ -2324,8 +2327,7 @@ def GetNextResult(Handle):
         
     @raise LabJackException: 
     """ 
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
+    if _os_name == 'nt':
         pio = ctypes.c_long()
         pchan = ctypes.c_long()
         pv = ctypes.c_double()
@@ -2408,8 +2410,7 @@ def StringToConstant(pString):
     @rtype: number
     @return: The number (base 10) that represents the LabJackUD string.
     """
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
+    if _os_name == 'nt':
         a = ctypes.create_string_buffer(pString, 256)
         return staticLib.StringToConstant(a)
     else:
@@ -2512,8 +2513,7 @@ def ErrorToString(ErrorCode):
     @rtype: String
     @return: The string that represents the valid LabJackUD error code
     """
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
+    if _os_name == 'nt':
         pString = ctypes.create_string_buffer(256)
         staticLib.ErrorToString(ctypes.c_long(ErrorCode), ctypes.byref(pString))
         return pString.value
@@ -2540,11 +2540,11 @@ def GetDriverVersion():
         - For Windows and Linux systems the return type is a number that represents the driver version
     """
     
-    if os.name == 'nt':        
+    if _os_name == 'nt':        
         staticLib.GetDriverVersion.restype = ctypes.c_float
         return str(staticLib.GetDriverVersion())
         
-    elif os.name == 'posix':
+    elif _os_name == 'posix':
         staticLib.LJUSB_GetLibraryVersion.restype = ctypes.c_float
         return "%.2f" % staticLib.LJUSB_GetLibraryVersion()
         
@@ -2572,8 +2572,7 @@ def TCVoltsToTemp(TCType, TCVolts, CJTempK):
         
     @raise LabJackException:
     """
-    if os.name == 'nt':
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
+    if _os_name == 'nt':
         pTCTempK = ctypes.c_double()
         ec = staticLib.TCVoltsToTemp(ctypes.c_long(TCType), ctypes.c_double(TCVolts), 
                                      ctypes.c_double(CJTempK), ctypes.byref(pTCTempK))
@@ -2597,11 +2596,7 @@ def Close():
     @rtype: None
     @return: The function returns nothing.
     """    
-
-    opSys = os.name
-    
-    if(opSys == 'nt'):
-        staticLib = ctypes.windll.LoadLibrary("labjackud")
+    if(_os_name == 'nt'):
         staticLib.Close()
     else:
        raise LabJackException(0, "Function only supported for Windows")
@@ -2609,27 +2604,40 @@ def Close():
 #Windows, Linux and Mac
 def DriverPresent():
     try:
+        #Windows
         ctypes.windll.LoadLibrary("labjackud")
         return True
     except:
         try:
-            ctypes.cdll.LoadLibrary("liblabjackusb.so")
+            #Cygwin/Windows
+            ctypes.cdll.LoadLibrary("labjackud")
             return True
         except:
             try:
-                ctypes.cdll.LoadLibrary("liblabjackusb.dylib")
+                #Linux
+                ctypes.cdll.LoadLibrary("liblabjackusb.so")
                 return True
             except:
-                return False
-            return False
-        return False
+                try:
+                    #Mac
+                    ctypes.cdll.LoadLibrary("liblabjackusb.dylib")
+                    return True
+                except:
+                    return False
+    return False
         
+#Currently Windows only
 def U12DriverPresent():
     try:
         ctypes.windll.LoadLibrary("ljackuw")
         return True
     except:
-        return False
+        try:
+            ctypes.cdll.LoadLibrary("ljackuw")
+            return True
+        except:
+            return False
+    return False
 
 
 #Windows only
@@ -2655,8 +2663,6 @@ def LJHash(hashStr, size):
     
     outBuff = (ctypes.c_char * 16)()
     retBuff = ''
-    
-    staticLib = ctypes.windll.LoadLibrary("labjackud")
     
     ec = staticLib.LJHash(ctypes.cast(hashStr, ctypes.POINTER(ctypes.c_char)),
                           size, 
