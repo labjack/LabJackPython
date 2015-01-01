@@ -1164,19 +1164,19 @@ class U3(Device):
         else:
             watchdogStatus['WatchDogEnabled'] = True
             
-            if (( result[7] >> 5 ) & 1):
+            if (result[7] >> 5) & 1:
                 watchdogStatus['ResetOnTimeout'] = True
             else:
                 watchdogStatus['ResetOnTimeout'] = False
                 
-            if (( result[7] >> 4 ) & 1):
+            if (result[7] >> 4) & 1:
                 watchdogStatus['SetDIOStateOnTimeout'] = True
             else:
                 watchdogStatus['SetDIOStateOnTimeout'] = False
         
         watchdogStatus['TimeoutPeriod'] = struct.unpack('<H', struct.pack("BB", *result[8:10]))
         
-        if (( result[10] >> 7 ) & 1):
+        if (result[10] >> 7) & 1:
             watchdogStatus['DIOState'] = 1
         else:
             watchdogStatus['DIOState'] = 0 
@@ -1306,12 +1306,12 @@ class U3(Device):
         
         returnDict = {}
         
-        if ( ( result[7] >> 7 ) & 1 ):
+        if (result[7] >> 7) & 1:
             returnDict['Update'] = True
         else:
             returnDict['Update'] = False
         
-        if ( ( result[7] >> 6 ) & 1):
+        if (result[7] >> 6) & 1:
             returnDict['UARTEnable'] = True
         else:
             returnDict['UARTEnable'] = False

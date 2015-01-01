@@ -6,7 +6,7 @@ Desc: Provides a Bridge and Mote class for working with SkyMote bridges and
 from LabJackPython import *
 import sys
 
-if(sys.platform.startswith("win32") or sys.platform.startswith("cygwin")):
+if sys.platform.startswith("win32") or sys.platform.startswith("cygwin"):
     if skymoteLib is None:
         raise ImportError("Couldn't load liblabjackusb.dll. Please install, and try again.")
         
