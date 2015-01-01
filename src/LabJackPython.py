@@ -287,8 +287,6 @@ class Device(object):
             
         Blocking read until a packet is received.
         """
-        readBytes = 0
-        
         if self.handle is None:
             raise LabJackException("The device handle is None.")
         
