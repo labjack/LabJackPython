@@ -1075,7 +1075,6 @@ def listAll(deviceType, connectionType = 1):
             
         if status.lower().startswith('ok'):
             lines = []
-            marked = None
             for i in range(int(numLines)):
                 l = f.readline().strip()
                 dev = parseline(l)
