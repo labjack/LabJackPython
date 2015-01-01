@@ -479,8 +479,6 @@ class Device(object):
         return request, numBytes
 
     def _buildWriteFloatToRegister(self, addr, value, unitId, fmt = '>f'):
-        numReg = 2
-
         if not isinstance(value, int) and not isinstance(value, float):
             raise TypeError("Value must be a float or int.")
 
