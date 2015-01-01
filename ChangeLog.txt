@@ -241,3 +241,5 @@ Version History
       os.name.
     - Fixed getDevCounts, openAllLabJacks, and GetResultSS on Windows.
     - Added Cygwin support.
+    - Fixed a bug in openLabjack where some error conditions on Windows would
+      try to raise LabjackException (undefined) instead of LabJackException.
