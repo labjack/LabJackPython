@@ -1464,7 +1464,6 @@ def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, 
     
         Note: On Windows, Ue9 over Ethernet, pAddress MUST be the IP address. 
     """
-    rcvDataBuff = []
     handle = None
 
     if connectionType == LJ_ctLJSOCKET:
