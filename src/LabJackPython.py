@@ -2906,17 +2906,13 @@ class LJSocketHandle(object):
 
         
 def parseline(line):
-    try:
-        prodId, crPort, modbusPort, spontPort, localId, serial = line.split(' ')
-        if not crPort.startswith('x'):
-            crPort = int(crPort)
-        if not modbusPort.startswith('x'):
-            modbusPort = int(modbusPort)
-        if not spontPort.startswith('x'):
-            spontPort = int(spontPort)
-            
-    except ValueError:
-        raise Exception("")
+    prodId, crPort, modbusPort, spontPort, localId, serial = line.split(' ')
+    if not crPort.startswith('x'):
+        crPort = int(crPort)
+    if not modbusPort.startswith('x'):
+        modbusPort = int(modbusPort)
+    if not spontPort.startswith('x'):
+        spontPort = int(spontPort)
     
     return { 'prodId' : int(prodId), 'crPort' : crPort, 'modbusPort' : modbusPort, 'spontPort' : spontPort, 'localId' : int(localId), 'serial' : int(serial)  }
 
