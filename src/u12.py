@@ -28,6 +28,7 @@ import atexit
 import math
 from time import time
 import struct
+import sys
 
 _os_name = "" #Set to "nt" or "posix" in _loadLibrary
 
@@ -364,7 +365,6 @@ def _loadLibrary():
     """_loadLibrary()
     Returns a ctypes dll pointer to the library.
     """
-    import sys
     global _os_name
 
     _os_name = "nt"

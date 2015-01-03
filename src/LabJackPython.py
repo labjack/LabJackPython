@@ -18,6 +18,7 @@ import Modbus
 import atexit # For auto-closing devices
 import threading # For a thread-safe device lock
 import ctypes
+import sys
 
 LABJACKPYTHON_VERSION = "4-24-2014"
 
@@ -107,7 +108,6 @@ def _loadLibrary():
     """_loadLibrary()
     Returns a ctypes dll pointer to the library.
     """
-    import sys
     global _os_name
 
     _os_name = "nt"
@@ -1085,7 +1085,6 @@ def listAll(deviceType, connectionType = 1):
     
     if deviceType == 12:
         if U12DriverPresent():
-            import sys
             if sys.platform.startswith("cygwin"):
                 u12Driver = ctypes.cdll.LoadLibrary("ljackuw")
             else:
