@@ -1430,9 +1430,9 @@ def _openWirelessBridgeOnWindows(firstFound, pAddress, devNumber):
             raise NullHandleException()
         return handle
     else:
-        raise LabjackException("Bridges don't have identifiers yet.")
+        raise LabJackException("Bridges don't have identifiers yet.")
         if handleOnly:
-            raise LabjackException("Can't use handleOnly with an id.")
+            raise LabJackException("Can't use handleOnly with an id.")
                
         numDevices = skymoteLib.LJUSB_GetDevCount(deviceType)
         
