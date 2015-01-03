@@ -1650,8 +1650,6 @@ class UE9(Device):
         # Insure that we know if we are dealing with a Pro or not.
         self.controlConfig()
         
-        results = dict()
-        
         ainslopes = { '0' : None, '1' : None, '2' : None, '3' : None, '8' : None }
         ainoffsets = { '0' : None, '1' : None, '2' : None, '3' : None, '8' : None }
         proainslopes = { '0' : None, '8' : None }
