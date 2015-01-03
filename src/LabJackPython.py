@@ -1149,11 +1149,6 @@ def listAll(deviceType, connectionType = 1):
         pIDs = (ctypes.c_long * 128)()
         pAddresses = (ctypes.c_double * 128)()
         
-        #The actual return variables so the user does not have to use ctypes
-        serialNumbers = []
-        ids = []
-        addresses = []
-        
         ec = staticLib.ListAll(deviceType, connectionType, 
                               ctypes.byref(pNumFound), 
                               ctypes.cast(pSerialNumbers, ctypes.POINTER(ctypes.c_long)), 
