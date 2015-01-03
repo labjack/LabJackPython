@@ -375,7 +375,8 @@ def _loadLibrary():
         if sys.platform.startswith("cygwin"):
             #Cygwin detected. WinDLL not available, but CDLL seems to work.
             return ctypes.CDLL("ljackuw")
-    except Exception, e:
+    except Exception:
+        e = sys.exc_info()[1]
         raise U12Exception("Could not load LabJack UW driver.\n\n    The error was: %s" % e)
 
     _os_name = "posix"
@@ -392,14 +393,17 @@ def _loadLibrary():
         #Other OS? Just try to load the Exodriver like a Linux SO
         addStr = "Other SO"
         return _loadLinuxSo()
-    except OSError, e:
+    except OSError:
+        e = sys.exc_info()[1]
         raise U12Exception("Could not load the Exodriver driver.\n\nCheck that the Exodriver is installed, and the permissions are set correctly.\nThe error message was: %s" % e)
-    except Exception, e:
+    except Exception:
+        e = sys.exc_info()[1]
         raise U12Exception("Could not load the %s for some reason other than it not being installed.\n\n    The error was: %s" % (addStr, e))
    
 try:
     staticLib = _loadLibrary()
-except U12Exception, e:
+except U12Exception:
+    e = sys.exc_info()[1]
     print "%s: %s" % ( type(e), e )
     staticLib = None
     

@@ -12,7 +12,7 @@ http://labjack.com/support/u6/users-guide/5.2
 """
 from LabJackPython import *
 
-import collections, struct, ConfigParser
+import collections, struct, ConfigParser, sys
 
 def openAllU6():
     """
@@ -246,7 +246,8 @@ class U6(Device):
         #command[9-25] = Reserved 
         try:
             result = self._writeRead(command, 38, [0xF8, 0x10, 0x08])
-        except LabJackException, e:
+        except LabJackException:
+            e = sys.exc_info()[1]
             if e.errorCode is 4:
                 print "NOTE: ConfigU6 returned an error of 4. This probably means you are using U6 with a *really old* firmware. Please upgrade your U6's firmware as soon as possible."
                 result = self._writeRead(command, 38, [0xF8, 0x10, 0x08], checkBytes = False)

@@ -17,7 +17,7 @@ Section Number Mapping:
 
 """
 from LabJackPython import *
-import collections, struct, ConfigParser
+import collections, struct, ConfigParser, sys
 
 FIO0, FIO1, FIO2, FIO3, FIO4, FIO5, FIO6, FIO7, \
 EIO0, EIO1, EIO2, EIO3, EIO4, EIO5, EIO6, EIO7, \
@@ -1681,7 +1681,8 @@ class U3(Device):
             self.calData['hvAIN1Offset'] = toDouble(calData[8:16])
             self.calData['hvAIN2Offset'] = toDouble(calData[16:24])
             self.calData['hvAIN3Offset'] = toDouble(calData[24:32])
-        except LowlevelErrorException, ex:
+        except LowlevelErrorException:
+            ex = sys.exc_info()[1]
             if ex.errorCode != 26:
                 #not an invalid block error, so do not disregard
                 raise ex
