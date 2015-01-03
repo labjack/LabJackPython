@@ -1597,7 +1597,7 @@ class U3(Device):
                 else:
                     return (bits * 0.000074463) * (0.000314 / 0.000037231) + -10.3
             else:
-                raise Exception, "Can't do differential on high voltage channels"
+                raise Exception("Can't do differential on high voltage channels")
     binaryToCalibratedAnalogVoltage.section = 3
     
     def binaryToCalibratedAnalogTemperature(self, bytesTemperature):
