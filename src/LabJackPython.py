@@ -2738,7 +2738,7 @@ def __listAllUE9Unix(connectionType):
 
                         deviceList[serial] = dict(devType = LJ_dtUE9, localId = localId, \
                                                     serialNumber = serial, ipAddress = ipAddress)
-                except Exception, e:
+                except Exception:
                     pass
         except:
             pass
