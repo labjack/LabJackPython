@@ -427,7 +427,7 @@ class Device(object):
             packFormat = ">" + "B" * numBytes
             response = struct.pack(packFormat, *response)
 
-        if format == None:
+        if format is None:
             format = Modbus.calcFormat(addr, numReg)
 
         value = Modbus.readHoldingRegistersResponse(response, payloadFormat=format)
@@ -1205,7 +1205,7 @@ def deviceCount(devType = None):
         else:
             return len(listAll(devType))
     else:
-        if devType == None:
+        if devType is None:
             numdev = staticLib.LJUSB_GetDevCount(3)
             numdev += staticLib.LJUSB_GetDevCount(9)
             numdev += staticLib.LJUSB_GetDevCount(6)
@@ -1312,7 +1312,7 @@ def _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber):
     openDev = staticLib.LJUSB_OpenDevice
     openDev.restype = ctypes.c_void_p
     
-    if devNumber != None:
+    if devNumber is not None:
         handle = openDev(devNumber, 0, devType)
         if handle <= 0:
             raise NullHandleException()
@@ -1419,7 +1419,7 @@ def _openWirelessBridgeOnWindows(firstFound, pAddress, devNumber):
     openDev = skymoteLib.LJUSB_OpenDevice
     openDev.restype = ctypes.c_void_p
     
-    if devNumber != None:
+    if devNumber is not None:
         handle = openDev(devNumber, 0, devType)
         if handle <= 0:
             raise NullHandleException()

@@ -122,7 +122,7 @@ class MainWindow:
         Desc: Gets the latest reading from the readings queue and display it
         """
         # Check for errors
-        if self.thread.exception != None:
+        if self.thread.exception is not None:
             showErrorWindow(self.thread.exception[0], self.thread.exception[1])
 
         else:   
@@ -131,7 +131,7 @@ class MainWindow:
             while not self.targetQueue.empty():
                 latestReading = self.targetQueue.get()
 
-            if latestReading != None:
+            if latestReading is not None:
                 self.tempDisplay.config(text = str(latestReading.getTemperature()) + " deg C")
                 self.humidDisplay.config(text = str(latestReading.getHumidity()) + " %")
                 self.statusDisplay.config(text = str(latestReading.getStatus()))
@@ -155,10 +155,10 @@ Brown(Enable) -- FIO3''')
 
     def close(self):
         try:
-            if self.thread != None:
+            if self.thread is not None:
                 self.thread.stop()
                 self.thread.join()
-            if self.device != None:
+            if self.device is not None:
                 self.device.close()
         except: print "error terminating app"
         finally:
