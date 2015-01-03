@@ -369,10 +369,10 @@ def _loadLibrary():
 
     _os_name = "nt"
     try:
-        if(sys.platform.startswith("win32")):
+        if sys.platform.startswith("win32"):
             #Windows detected
             return ctypes.WinDLL("ljackuw")
-        if(sys.platform.startswith("cygwin")):
+        if sys.platform.startswith("cygwin"):
             #Cygwin detected. WinDLL not available, but CDLL seems to work.
             return ctypes.CDLL("ljackuw")
     except Exception, e:
@@ -381,11 +381,11 @@ def _loadLibrary():
     _os_name = "posix"
     addStr = "Exodriver"
     try:
-        if(sys.platform.startswith("linux")):
+        if sys.platform.startswith("linux"):
             #Linux detected
             addStr = "Linux SO"
             return _loadLinuxSo()
-        if(sys.platform.startswith("darwin")):
+        if sys.platform.startswith("darwin"):
             #Mac detected
             addStr = "Mac Dylib"
             return _loadMacDylib()
@@ -538,7 +538,7 @@ class U12(object):
             
             writeBytes = staticLib.LJUSB_Write(self.handle, ctypes.byref(newA), len(writeBuffer))
             
-            if(writeBytes != len(writeBuffer)):
+            if writeBytes != len(writeBuffer):
                 raise U12Exception( "Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
                 
             return writeBuffer

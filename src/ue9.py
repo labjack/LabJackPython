@@ -1371,11 +1371,11 @@ class UE9(Device):
         
         returnDict = {}
         
-        if ( ( result[7] >> 7 ) & 1 ):
+        if (result[7] >> 7) & 1:
             returnDict['Update'] = True
         else:
             returnDict['Update'] = False
-        if ( ( result[7] >> 6 ) & 1):
+        if (result[7] >> 6) & 1:
             returnDict['UARTEnable'] = True
         else:
             returnDict['UARTEnable'] = False
