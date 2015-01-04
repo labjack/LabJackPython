@@ -31,7 +31,7 @@ def calcNoiseAndResolution(d, resolutionIndex, voltageRange):
     start = datetime.now()
     
     # Collect 128 samples
-    for i in xrange(128):
+    for i in range(128):
         readings.append(d.getFeedback(cmd)[0]['AIN'])
     
     finish = datetime.now()

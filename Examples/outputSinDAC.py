@@ -92,7 +92,7 @@ if __name__ == '__main__':
     # Print the current time, just to let you know something is happening.
     print "Start:", datetime.now()
     
-    for i in xrange(signalcount):
+    for i in range(signalcount):
         # Wait for signal to be received
         signal.pause()
         

@@ -29,7 +29,7 @@ def calcNoiseAndResolution(d, positiveChannel = 0, negativeChannel = 31):
     
     cmd = u3.AIN(positiveChannel, negativeChannel, QuickSample = False, LongSettling = False)
     
-    for i in xrange(128):
+    for i in range(128):
         readings.append( float(d.getFeedback(cmd)[0])/16 )
     #print readings
     
