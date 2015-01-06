@@ -2890,7 +2890,7 @@ class U12(object):
         """
         
         if address is None:
-            raise Exception, "Must give an Address."
+            raise Exception("Must give an Address.")
         
         if idnum is None:
             idnum = self.id
@@ -2923,9 +2923,9 @@ class U12(object):
         >>> 1
         """
         if address is None or data is None:
-            raise Exception, "Must give both an Address and data."
+            raise Exception("Must give both an Address and data.")
         if type(data) is not list or len(data) != 4:
-            raise Exception, "Data must be a list and have a length of 4"
+            raise Exception("Data must be a list and have a length of 4")
         
         if idnum is None:
             idnum = self.id
