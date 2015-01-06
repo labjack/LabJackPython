@@ -2157,7 +2157,6 @@ class U12(object):
         channelsArray = listToCArray(channels, ctypes.c_long)
         gainsArray = listToCArray(gains, ctypes.c_long)
         overVoltage = ctypes.c_long(999)
-        longArrayType = (ctypes.c_long * 4)
         floatArrayType = (ctypes.c_float * 4)
         voltages = floatArrayType(0, 0, 0, 0)
         stateIOin = ctypes.c_long(stateIOin)
@@ -2192,7 +2191,6 @@ class U12(object):
         channelsArray = listToCArray(channels, ctypes.c_long)
         gainsArray = listToCArray(gains, ctypes.c_long)
         scanRate = ctypes.c_float(scanRate)
-        pointerArray = (ctypes.c_void_p * 4)
         arr4096_type = ctypes.c_float * 4096 
         voltages_type = arr4096_type * 4 
         voltages = voltages_type() 
