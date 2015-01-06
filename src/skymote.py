@@ -1,5 +1,5 @@
 """
-Name: bridge.py
+Name: skymote.py
 Desc: Provides a Bridge and Mote class for working with SkyMote bridges and 
       motes.
 """
@@ -32,8 +32,8 @@ class Bridge(Device):
     """
     Bridge class for working with wireless bridges
     
-    >>> import bridge
-    >>> d = bridge.Bridge()
+    >>> import skymote
+    >>> d = skymote.Bridge()
     """
     # ------------------ Object Functions ------------------
     # These functions are part of object interaction in python
