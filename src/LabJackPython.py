@@ -2479,6 +2479,10 @@ ERROR_TO_STRING_DICT['99'] = ("IOTYPE_SYNCH_ERROR", "")
 ERROR_TO_STRING_DICT['100'] = ("INVALID_OFFSET", "")
 ERROR_TO_STRING_DICT['101'] = ("IOTYPE_NOT_VALID", "")
 ERROR_TO_STRING_DICT['102'] = ("TC_PIN_OFFSET_MUST_BE_4-8", "This error is raised when you try to configure the Timer/Counter pin offset to be 0-3.")
+ERROR_TO_STRING_DICT['112'] = ("UART_TIMEOUT", "")
+ERROR_TO_STRING_DICT['113'] = ("UART_NOT_CONNECTED", "")
+ERROR_TO_STRING_DICT['114'] = ("UART_NOT_ENABLED", "")
+ERROR_TO_STRING_DICT['116'] = ("I2C_BUS_BUSY", "")
 
 def lowlevelErrorToString( errorcode ):
     """Converts a low-level errorcode into a string.
