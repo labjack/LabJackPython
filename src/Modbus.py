@@ -1,7 +1,6 @@
 # File: Modbus.py
 # Author: LabJack Corp.
 # Created: 05.05.2008
-# Last Modified: 12/3/2009
 
 from __future__ import with_statement
 from threading import Lock
