@@ -243,5 +243,4 @@ Version History
     - Added Cygwin support.
     - Fixed a bug in openLabJack where some error conditions on Windows would
       try to raise LabjackException (undefined) instead of LabJackException.
-    - Added string descriptions for low-level error codes 112, 113, 114, and
-      116 (there is no 115).
+    - Added string descriptions for low-level error codes 112 to 116.
