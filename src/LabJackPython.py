@@ -3551,7 +3551,7 @@ LJE_DEVICE_NOT_CALIBRATED = -1 # defaults used instead
 LJE_UNABLE_TO_READ_CALDATA = -2 # defaults used instead
 
 
-# depreciated constants:
+# deprecated constants:
 LJ_ioANALOG_INPUT = 10
 LJ_ioANALOG_OUTPUT = 20 # UE9 + U3
 LJ_ioDIGITAL_BIT_IN = 30 # UE9 + U3
