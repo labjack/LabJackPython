@@ -151,7 +151,8 @@ while True:
         break
     except KeyboardInterrupt:
         sdr.running = False
-    except Exception, e:
+    except Exception:
+        e = sys.exc_info()[1]
         print type(e), e
         sdr.running = False
         break

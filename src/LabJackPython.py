@@ -118,7 +118,8 @@ def _loadLibrary():
         if sys.platform.startswith("cygwin"):
             #Cygwin detected. WinDLL not available, but CDLL seems to work.
             return ctypes.CDLL("labjackud")
-    except Exception, e:
+    except Exception:
+        e = sys.exc_info()[1]
         raise LabJackException("Could not load labjackud driver. Ethernet connectivity availability only.\n\n    The error was: %s" % e)
 
     _os_name = "posix"
@@ -135,14 +136,17 @@ def _loadLibrary():
         #Other OS? Just try to load the Exodriver like a Linux SO
         addStr = "Other SO"
         return _loadLinuxSo()
-    except OSError, e:
+    except OSError:
+        e = sys.exc_info()[1]
         raise LabJackException("Could not load the Exodriver driver. Ethernet connectivity only.\n\nCheck that the Exodriver is installed, and the permissions are set correctly.\nThe error message was: %s" % e)
-    except Exception, e:
+    except Exception:
+        e = sys.exc_info()[1]
         raise LabJackException("Could not load the %s for some reason other than it not being installed. Ethernet connectivity only.\n\n    The error was: %s" % (addStr, e))
 
 try:
     staticLib = _loadLibrary()
-except LabJackException, e:
+except LabJackException:
+    e = sys.exc_info()[1]
     print "%s: %s" % ( type(e), e )
     staticLib = None
 
@@ -579,7 +583,8 @@ class Device(object):
                 return True
 
             return False
-        except Exception, e:
+        except Exception:
+            e = sys.exc_info()[1]
             print e
             return False
         
@@ -694,7 +699,8 @@ class Device(object):
                 rcvDataBuff = self.read(4)
                 if len(rcvDataBuff) != 4:
                     raise LabJackException(0, "Unable to reset labJack 2")
-            except Exception, e:
+            except Exception:
+                e = sys.exc_info()[1]
                 raise LabJackException(0, "Unable to reset labjack: %s" % str(e))
 
     def breakupPackets(self, packets, numBytesPerPacket):
@@ -1018,9 +1024,11 @@ def setChecksum(command):
         else:
             command = setChecksum8(command, len(command))
             return command
-    except LabJackException, e:
+    except LabJackException:
+        e = sys.exc_info()[1]
         raise e
-    except Exception, e:
+    except Exception:
+        e = sys.exc_info()[1]
         raise LabJackException("SetChecksum Exception:" + str(e))
 
 
@@ -1400,7 +1408,8 @@ def _openUE9OverEthernet(firstFound, pAddress, devNumber):
             else:
                 # Got a bad checksum.
                 pass
-    except LabJackException, e:
+    except LabJackException:
+        e = sys.exc_info()[1]
         raise LabJackException(LJE_LABJACK_NOT_FOUND, "%s" % e)
     except:
         raise LabJackException("LJE_LABJACK_NOT_FOUND: Couldn't find the specified LabJack.")
@@ -1516,7 +1525,8 @@ def _makeDeviceFromHandle(handle, deviceType):
             device.changed['commFWVersion'] = device.commFWVersion
             
             
-        except Exception, e:
+        except Exception:
+            e = sys.exc_info()[1]
             device.close()
             raise e  
         
@@ -1530,7 +1540,8 @@ def _makeDeviceFromHandle(handle, deviceType):
         try:
             device.write(sndDataBuff, checksum = False)
             rcvDataBuff = device.read(38) 
-        except LabJackException, e:
+        except LabJackException:
+            e = sys.exc_info()[1]
             device.close()
             raise e
         
@@ -1565,7 +1576,8 @@ def _makeDeviceFromHandle(handle, deviceType):
         try:
             device.write(command)
             rcvDataBuff = device.read(38)
-        except LabJackException, e:
+        except LabJackException:
+            e = sys.exc_info()[1]
             device.close()
             raise e
         
@@ -2885,7 +2897,8 @@ class LJSocketHandle(object):
             else:
                 raise Exception("Got an error from LJSocket. It said '%s'" % l)
             
-        except Exception, e:
+        except Exception:
+            e = sys.exc_info()[1]
             raise LabJackException(ec = LJE_LABJACK_NOT_FOUND, errorString = "Couldn't connect to a LabJack at %s:%s. The error was: %s" % (ipAddress, port, str(e)))
     
     def close(self):
@@ -2934,9 +2947,11 @@ class UE9TCPHandle(object):
                 self.modbus = socket.socket()
                 self.modbus.settimeout(timeout)
                 self.modbus.connect((ipAddress, 502))
-            except socket.error, e:
+            except socket.error:
+                e = sys.exc_info()[1]
                 self.modbus = None
-        except Exception, e:
+        except Exception:
+            e = sys.exc_info()[1]
             print e
             raise LabJackException("Couldn't open sockets to the UE9 at IP Address %s. Error was: %s" % (ipAddress, e))
 
@@ -2945,7 +2960,8 @@ class UE9TCPHandle(object):
             self.data.close()
             self.stream.close()
             self.modbus.close()
-        except Exception, e:
+        except Exception:
+            e = sys.exc_info()[1]
             print "UE9 Handle close exception: ", e
             pass
 
