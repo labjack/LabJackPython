@@ -2153,7 +2153,6 @@ class U12(object):
         channelsArray = listToCArray(channels, ctypes.c_long)
         gainsArray = listToCArray(gains, ctypes.c_long)
         overVoltage = ctypes.c_long(999)
-        longArrayType = (ctypes.c_long * 4)
         floatArrayType = (ctypes.c_float * 4)
         voltages = floatArrayType(0, 0, 0, 0)
         stateIOin = ctypes.c_long(stateIOin)
