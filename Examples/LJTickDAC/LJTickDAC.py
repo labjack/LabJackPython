@@ -4,6 +4,7 @@ Desc: A simple GUI application to demonstrate the usage of the I2C and
 LabJack Python modules to set the value of DACA and DACB in a LJ-TickDAC
 """
 import time
+import struct
 import sys
 from threading import Thread
 from Tkinter import *
