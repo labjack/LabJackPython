@@ -205,7 +205,7 @@ class LJTickDAC(Tk):
         Desc: updates the configuration of the application
         """
         try:
-            if self.ainReadThread != None: self.ainReadThread.stop()
+            if self.ainReadThread is not None: self.ainReadThread.stop()
             self.device.close()
             self.ainPin = ainPin
             self.dacPin = dacPin
@@ -225,8 +225,8 @@ class LJTickDAC(Tk):
         Name: cleanUp()
         Desc: Closes devices, terminates threads, and closes windows
         """
-        if self.ainReadThread != None: self.ainReadThread.stop()
-        if self.device != None: self.device.close()
+        if self.ainReadThread is not None: self.ainReadThread.stop()
+        if self.device is not None: self.device.close()
         self.destroy()
 
     def getCalConstants(self):

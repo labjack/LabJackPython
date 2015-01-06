@@ -978,8 +978,8 @@ class U3(Device):
         if len(PChannels) != len(NChannels):
             raise LabJackException("Length of PChannels didn't match the length of NChannels")
         
-        if ScanFrequency != None or SampleFrequency != None:
-            if ScanFrequency == None:
+        if (ScanFrequency is not None) or (SampleFrequency is not None):
+            if ScanFrequency is None:
                 ScanFrequency = SampleFrequency
             if ScanFrequency < 1000:
                 if ScanFrequency < 25:
@@ -1458,7 +1458,7 @@ class U3(Device):
         command[7] = SpeedAdjust
         command[8] = SDAPinNum
         command[9] = SCLPinNum
-        if AddressByte != None:
+        if AddressByte is not None:
             command[10] = AddressByte
         else:
             command[10] = Address << 1
@@ -2442,7 +2442,7 @@ class Timer(FeedbackCommand):
         self.mode = Mode
         if timer != 0 and timer != 1:
             raise LabJackException("Timer should be either 0 or 1.")
-        if UpdateReset and Value == None:
+        if UpdateReset and (Value is None):
             raise LabJackException("UpdateReset set but no value.")
             
         

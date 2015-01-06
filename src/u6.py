@@ -237,7 +237,7 @@ class U6(Device):
         #command[4]  = Checksum16 (LSB)
         #command[5]  = Checksum16 (MSB)
         
-        if LocalID != None:
+        if LocalID is not None:
             command[6] = (1 << 3)
             command[8] = LocalID
             
@@ -295,23 +295,23 @@ class U6(Device):
         #command[4]  = Checksum16 (LSB)
         #command[5]  = Checksum16 (MSB)
         
-        if NumberTimersEnabled != None:
+        if NumberTimersEnabled is not None:
             command[6] = 1
             command[7] = NumberTimersEnabled
         
-        if EnableCounter0 != None:
+        if EnableCounter0 is not None:
             command[6] = 1
             
             if EnableCounter0:
                 command[8] = 1
         
-        if EnableCounter1 != None:
+        if EnableCounter1 is not None:
             command[6] = 1
             
             if EnableCounter1:
                 command[8] |= (1 << 1)
         
-        if TimerCounterPinOffset != None:
+        if TimerCounterPinOffset is not None:
             command[6] = 1
             command[9] = TimerCounterPinOffset
             
@@ -350,11 +350,11 @@ class U6(Device):
         #command[6]  = Reserved
         #command[7]  = Reserved
         
-        if TimerClockBase != None:
+        if TimerClockBase is not None:
             command[8] = (1 << 7)
             command[8] |= TimerClockBase & 7
         
-        if TimerClockDivisor != None:
+        if TimerClockDivisor is not None:
             command[9] = TimerClockDivisor
             
         result = self._writeRead(command, 10, [0xF8, 0x2, 0x0A])
@@ -604,8 +604,8 @@ class U6(Device):
         if len(ChannelNumbers) != len(ChannelOptions):
             raise LabJackException("len(ChannelNumbers) doesn't match len(ChannelOptions)")
         
-        if ScanFrequency != None or SampleFrequency != None:
-            if ScanFrequency == None:
+        if (ScanFrequency is not None) or (SampleFrequency is not None):
+            if ScanFrequency is None:
                 ScanFrequency = SampleFrequency
             if ScanFrequency < 1000:
                 if ScanFrequency < 25:
@@ -886,7 +886,7 @@ class U6(Device):
         if UARTEnable:
             command[7] |= (1 << 6)
         
-        if DesiredBaud != None:
+        if DesiredBaud is not None:
             BaudFactor = (2**16) - 48000000/(2 * DesiredBaud)   
         
         t = struct.pack("<H", BaudFactor)
@@ -992,7 +992,7 @@ class U6(Device):
         command[8] = SDAPinNum
         command[9] = SCLPinNum
         
-        if AddressByte != None:
+        if AddressByte is not None:
             command[10] = AddressByte
         else:
             command[10] = Address << 1
@@ -2130,7 +2130,7 @@ class Timer(FeedbackCommand):
     def __init__(self, timer, UpdateReset = False, Value=0, Mode = None):
         if timer not in range(4):
             raise LabJackException("Timer should be 0-3.")
-        if UpdateReset and Value == None:
+        if UpdateReset and (Value is None):
             raise LabJackException("UpdateReset set but no value.")
         
         self.timer = timer
