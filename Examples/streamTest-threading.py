@@ -13,12 +13,11 @@ about 40kHz.
 """
 
 import u3, u6, ue9, LabJackPython
-from time import sleep
 from datetime import datetime
-import struct
 import threading
 import Queue
-import ctypes, copy, sys
+import copy
+import sys
 
 # MAX_REQUESTS is the number of packets to be read.
 MAX_REQUESTS = 2500

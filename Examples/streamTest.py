@@ -1,7 +1,5 @@
 import u3, u6, ue9
-from time import sleep
 from datetime import datetime
-import struct
 import traceback
 
 # MAX_REQUESTS is the number of packets to be read.
