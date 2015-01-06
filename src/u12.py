@@ -2188,7 +2188,6 @@ class U12(object):
         channelsArray = listToCArray(channels, ctypes.c_long)
         gainsArray = listToCArray(gains, ctypes.c_long)
         scanRate = ctypes.c_float(scanRate)
-        pointerArray = (ctypes.c_void_p * 4)
         arr4096_type = ctypes.c_float * 4096 
         voltages_type = arr4096_type * 4 
         voltages = voltages_type() 
