@@ -877,7 +877,7 @@ class Device(object):
         
     def setName(self, name = "My LabJack U3"):
         """
-        Name: Device.setName(name = ""My LabJack U3")
+        Name: Device.setName(name = "My LabJack U3")
         Args: name, the name you'd like to assign the the U3
         Desc: Writes a new name to the device.
               Names a limited to 30 characters or less.
