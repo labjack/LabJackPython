@@ -1166,7 +1166,7 @@ def listAll(deviceType, connectionType = 1):
         
         deviceList = dict()
     
-        for i in xrange(pNumFound.value):
+        for i in range(pNumFound.value):
             if pSerialNumbers[i] != 1010:
                 deviceValue = dict(localId = pIDs[i], serialNumber = pSerialNumbers[i], ipAddress = DoubleToStringAddress(pAddresses[i]), devType = deviceType)
                 deviceList[pSerialNumbers[i]] = deviceValue
@@ -2690,7 +2690,7 @@ def __listAllUE9Unix(connectionType):
     if connectionType == LJ_ctUSB:
         numDevices = staticLib.LJUSB_GetDevCount(LJ_dtUE9)
     
-        for i in xrange(numDevices):
+        for i in range(numDevices):
             try:
                 device = openLabJack(LJ_dtUE9, 1, firstFound = False, devNumber = i+1)
                 device.close()
@@ -2759,7 +2759,7 @@ def __listAllU3Unix():
     deviceList = {}
     numDevices = staticLib.LJUSB_GetDevCount(LJ_dtU3)
 
-    for i in xrange(numDevices):
+    for i in range(numDevices):
         try:
             device = openLabJack(LJ_dtU3, 1, firstFound = False, devNumber = i+1)
             device.close()
@@ -2777,7 +2777,7 @@ def __listAllU6Unix():
     deviceList = {}
     numDevices = staticLib.LJUSB_GetDevCount(LJ_dtU6)
 
-    for i in xrange(numDevices):
+    for i in range(numDevices):
         try:
             device = openLabJack(LJ_dtU6, 1, firstFound = False, devNumber = i+1)
             device.close()
@@ -2793,7 +2793,7 @@ def __listAllBridgesUnix():
     deviceList = {}
     numDevices = staticLib.LJUSB_GetDevCount(0x501)
 
-    for i in xrange(numDevices):
+    for i in range(numDevices):
         try:
             device = openLabJack(0x501, 1, firstFound = False, devNumber = i+1)
             device.close()
