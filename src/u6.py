@@ -332,7 +332,7 @@ class U6(Device):
               TimerClockDivisor, set the divisor
               
               if all args are None, command just reads.
-              Also, if you cannot set the divisor without setting the base.
+              Also, you cannot set the divisor without setting the base.
               
         Desc: Writes and read the timer clock configuration.
         
