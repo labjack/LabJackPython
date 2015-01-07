@@ -2666,8 +2666,6 @@ def LJHash(hashStr, size):
     @return: The hashed string.
     """  
     
-    print "Hash String:" + str(hashStr)
-    
     outBuff = (ctypes.c_char * 16)()
     retBuff = ''
     
