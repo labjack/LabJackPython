@@ -1982,7 +1982,7 @@ class AIN(FeedbackCommand):
         self.longSettling = LongSettling
         self.quickSample = QuickSample
         
-        validChannels = range(16) + [30, 31]
+        validChannels = list(range(16)) + [30, 31]
         if PositiveChannel not in validChannels:
             raise Exception("Invalid Positive Channel specified")
         if NegativeChannel not in validChannels:
