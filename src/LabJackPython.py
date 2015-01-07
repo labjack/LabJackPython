@@ -163,7 +163,7 @@ except:
 
 
 class Device(object):
-    """Device(handle, localId = None, serialNumber = None, ipAddress = "", type = None)
+    """Device(handle, localId = None, serialNumber = None, ipAddress = "", devType = None)
             
     Creates a simple 0 with the following functions:
     write(writeBuffer) -- Writes a buffer.
