@@ -9,16 +9,18 @@ inherit from.
 
 A typical user should start with their device's module, such as u3.py.
 """
-# We use the 'with' keyword to manage the thread-safe device lock. It's built-in on 2.6; 2.5 requires an import.
+# We use the 'with' keyword to manage the thread-safe device lock. 
+# It's built-in on 2.6; 2.5 requires an import.
 from __future__ import with_statement
 
-import struct
-import socket
-import Modbus
 import atexit # For auto-closing devices
-import threading # For a thread-safe device lock
 import ctypes
+import socket
+import struct
+import threading # For a thread-safe device lock
 import sys
+
+import Modbus
 
 LABJACKPYTHON_VERSION = "4-24-2014"
 

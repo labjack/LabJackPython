@@ -23,6 +23,13 @@
 # For information on the CloudDot REST API, visit: 
 #     http://labjack.com/support/clouddot/rest-api
 
+import signal
+from datetime import datetime
+from httplib2 import Http
+from urllib import urlencode
+
+import u3
+
 # Replace these three fields
 CLOUDDOT_USERNAME = ""
 CLOUDDOT_API_KEY  = "01234567890123456789"
@@ -30,13 +37,6 @@ CLOUDDOT_CHANNEL  = "Temperature"
 
 SAMPLE_INTERVAL   = 30 # Sample and post to CloudDot after this time in seconds
 MODBUS_REGISTER   = 0  # Read from this register to get the data. See http://labjack.com/support/modbus
-
-import u3
-import signal
-from datetime import datetime
-
-from httplib2 import Http
-from urllib import urlencode
 
 def sampleAndPost(*args):
     print "----- Gathering sample at", datetime.now()

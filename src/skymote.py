@@ -3,8 +3,9 @@ Name: skymote.py
 Desc: Provides a Bridge and Mote class for working with SkyMote bridges and 
       motes.
 """
-from LabJackPython import *
 import sys
+
+from LabJackPython import *
 
 if sys.platform.startswith("win32") or sys.platform.startswith("cygwin"):
     if skymoteLib is None:

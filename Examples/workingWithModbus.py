@@ -5,9 +5,11 @@
 " Be sure to check out the Modbus map (http://labjack.com/support/modbus) for a
 " full list of registers.
 """
-
-import u3, u6, ue9
 import random
+
+import u3
+import u6
+import ue9
 
 if __name__ == '__main__':
     print "This program shows how to work with modbus and your device. Registers are taken directly from the Modbus map (http://labjack.com/support/modbus).\n"

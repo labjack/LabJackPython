@@ -6,8 +6,11 @@ For the complete modbus map, visit the Modbus support page:
 Note: Low-level commands that are commented out work only for U6/U3. UE9 is a
       little more complicated.
 """
-import u3, u6, ue9
 from time import sleep
+
+import u3
+import u6
+import ue9
 
 # Open the LabJack. Comment out all but one of these:
 d = ue9.UE9()

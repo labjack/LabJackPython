@@ -3,7 +3,10 @@ A class to make working with the DCA-10 easier. More info on the DCA-10 here:
 
 http://labjack.com/support/dca-10/datasheet
 """
-import LabJackPython, u3, u6, ue9
+import LabJackPython
+import u3
+import u6
+import ue9
 
 U3_WIRING_DESCRIPTION = """
 Connection on DCA-10 -> Connection on LabJack
