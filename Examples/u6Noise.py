@@ -8,7 +8,7 @@ Desc: An example program that will calculate the values that can be found in
 import math # Need math for square root and log.
 from datetime import datetime
 
-import u6 # Import the u6 class
+import u6 # Import the u6 module
 
 # The size of the various ranges
 ranges = [20, 2, 0.2, 0.02]

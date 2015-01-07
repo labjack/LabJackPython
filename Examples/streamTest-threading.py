@@ -13,10 +13,14 @@ about 40kHz.
 """
 
 import copy
-import Queue
 import sys
 import threading
 from datetime import datetime
+
+try:
+  import Queue
+except ImportError: # Python 3
+  import queue as Queue
 
 import LabJackPython
 import u3

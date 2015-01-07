@@ -17,9 +17,13 @@ Section Number Mapping:
 
 """
 import collections
-import ConfigParser
 import struct
 import sys
+
+try:
+    import ConfigParser
+except ImportError: # Python 3
+    import configparser as ConfigParser
 
 from LabJackPython import *
 

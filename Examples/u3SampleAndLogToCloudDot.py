@@ -25,8 +25,13 @@
 
 import signal
 from datetime import datetime
+
+try:
+    from urllib import urlencode
+except ImportError: # Python 3
+    from urllib.parse import urlencode
+
 from httplib2 import Http
-from urllib import urlencode
 
 import u3
 

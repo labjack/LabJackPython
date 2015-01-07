@@ -23,6 +23,11 @@ On with the test:
 
 import math
 
+try:
+    raw_input
+except NameError: # Python 3
+    raw_input = input
+
 import u3
 
 def calcNoiseAndResolution(d, positiveChannel = 0, negativeChannel = 31):

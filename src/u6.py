@@ -12,8 +12,12 @@ http://labjack.com/support/u6/users-guide/5.2
 """
 import collections
 import struct
-import ConfigParser
 import sys
+
+try:
+    import ConfigParser
+except ImportError: # Python 3
+    import configparser as ConfigParser
 
 from LabJackPython import *
 

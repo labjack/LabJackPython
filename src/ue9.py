@@ -10,11 +10,15 @@ To learn about the low-level functions, please see Section 5.2 of the UE9 User's
 http://labjack.com/support/ue9/users-guide/5.2 
 """
 import collections
-import ConfigParser
 import select
 import socket
 import struct
 from datetime import datetime
+
+try:
+  import ConfigParser
+except ImportError: # Python 3
+  import configparser as ConfigParser
 
 from LabJackPython import *
 
