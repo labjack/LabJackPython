@@ -1019,7 +1019,10 @@ class U6(Device):
         result = self._writeRead(command, (12+NumI2CBytesToReceive), [0xF8, (3+(NumI2CBytesToReceive/2)), 0x3B])
         
         if NumI2CBytesToReceive != 0:
-            return { 'AckArray' : result[8:12], 'I2CBytes' : result[12:] }
+            if oddResponse:
+                return { 'AckArray' : result[8:12], 'I2CBytes' : result[12:-1] }
+            else:
+                return { 'AckArray' : result[8:12], 'I2CBytes' : result[12:] }
         else:
             return { 'AckArray' : result[8:12] }
             
