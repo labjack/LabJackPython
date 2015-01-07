@@ -12,12 +12,20 @@ On a Mac OS 10.5 machine with a 1.42 GHz G4 Processor, we saw max speeds of
 about 40kHz.
 """
 
-import u3, u6, ue9, LabJackPython
-from datetime import datetime
-import threading
-import Queue
 import copy
 import sys
+import threading
+from datetime import datetime
+
+try:
+  import Queue
+except ImportError: # Python 3
+  import queue as Queue
+
+import LabJackPython
+import u3
+import u6
+import ue9
 
 # MAX_REQUESTS is the number of packets to be read.
 MAX_REQUESTS = 2500

@@ -2,9 +2,10 @@
 Name: EI1050
 Desc: A few simple classes to handle communication with the EI1050 probe
 """
+import sys
 import threading
 import time
-import sys
+
 import u3
 import u6
 import ue9

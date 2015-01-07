@@ -1,8 +1,9 @@
 # Based on u3allio.c
 
-import u3
-from datetime import datetime
 import sys
+from datetime import datetime
+
+import u3
 
 numChannels = int(sys.argv[1])
 quickSample = 1

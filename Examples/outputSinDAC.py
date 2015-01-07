@@ -13,6 +13,13 @@
 # can result in strange behavior. Try to keep the period (1/frequency) much
 # greater than update interval.
 
+import math # For sin function
+import signal # For timing
+from datetime import datetime # For printing times
+
+import u3
+import u6
+import ue9
 
 # Constants. Change these to change the results:
 
@@ -21,12 +28,6 @@ UPDATE_INTERVAL = 0.005
 
 # The frequency of the sine wave, in Hz
 FREQUENCY = 10
-
-# Imports:
-import u3, u6, ue9 # For working with the U3
-import signal # For timing
-import math # For sin function
-from datetime import datetime # For printing times
 
 if __name__ == '__main__':
     print "This program will attempt to generate a sine wave with a frequency of %s Hz, updating once every %s seconds." % (FREQUENCY, UPDATE_INTERVAL)

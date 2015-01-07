@@ -3,10 +3,9 @@
 # Created: 05.05.2008
 
 from __future__ import with_statement
-from threading import Lock
-
-from struct import pack, unpack #, unpack_from  # unpack_from is new in 2.5
 from datetime import datetime
+from struct import pack, unpack
+from threading import Lock
 
 AES_CHANNEL               = 64000
 IP_PART1_CHANNEL          = 64008

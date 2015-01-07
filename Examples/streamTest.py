@@ -1,6 +1,9 @@
-import u3, u6, ue9
-from datetime import datetime
 import traceback
+from datetime import datetime
+
+import u3
+import u6
+import ue9
 
 # MAX_REQUESTS is the number of packets to be read.
 MAX_REQUESTS = 75

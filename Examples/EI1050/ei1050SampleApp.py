@@ -5,9 +5,21 @@ LabJack Python modules. For an example of using the Labjack Python module direct
 look at the source code of ei1050.py
 """
 import sys
-from Queue import Queue
-from Tkinter import *
-import tkMessageBox
+
+try:
+    from Queue import Queue
+except ImportError: # Python 3
+    from queue import Queue
+
+try:
+    from Tkinter import *
+except ImportError: # Python 3
+    from tkinter import *
+
+try:
+    import tkMessageBox
+except ImportError: # Python 3
+    import tkinter.messagebox as tkMessageBox
 
 try:
     import LabJackPython

@@ -16,8 +16,16 @@ Section Number Mapping:
 4 = Private Helper Functions
 
 """
+import collections
+import struct
+import sys
+
+try:
+    import ConfigParser
+except ImportError: # Python 3
+    import configparser as ConfigParser
+
 from LabJackPython import *
-import collections, struct, ConfigParser, sys
 
 FIO0, FIO1, FIO2, FIO3, FIO4, FIO5, FIO6, FIO7, \
 EIO0, EIO1, EIO2, EIO3, EIO4, EIO5, EIO6, EIO7, \

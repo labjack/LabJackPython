@@ -26,9 +26,8 @@ The default SPI settings for a U3 are:
 Note the CSPINNum, CLKPinNum, MISOPinNum, and MOSIPinNum pin numbers and make
 your connections accordingly.
 """
-
-import time
 import os
+import time
 
 #By default the example uses a UE9. Uncomment the U6 or U3 section if that is
 #your device and then comment out the UE9 section.

@@ -21,8 +21,14 @@ You'll find that by comparing the two results, the LabJack is rarely the reason 
 On with the test:
 """
 
-import u3
 import math
+
+try:
+    raw_input
+except NameError: # Python 3
+    raw_input = input
+
+import u3
 
 def calcNoiseAndResolution(d, positiveChannel = 0, negativeChannel = 31):
     readings = []

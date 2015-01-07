@@ -10,9 +10,16 @@ Guide:
 
 http://labjack.com/support/u6/users-guide/5.2
 """
-from LabJackPython import *
+import collections
+import struct
+import sys
 
-import collections, struct, ConfigParser, sys
+try:
+    import ConfigParser
+except ImportError: # Python 3
+    import configparser as ConfigParser
+
+from LabJackPython import *
 
 def openAllU6():
     """

@@ -23,12 +23,12 @@ Desc: Defines the U12 class, which makes working with a U12 much easier. The
       
 """
 
-import ctypes
 import atexit
+import ctypes
 import math
-from time import time
 import struct
 import sys
+from time import time
 
 _os_name = "" #Set to "nt" or "posix" in _loadLibrary
 

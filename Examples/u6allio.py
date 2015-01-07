@@ -1,8 +1,9 @@
 # Based on u6allio.c
 
-import u6
-from datetime import datetime
 import sys
+from datetime import datetime
+
+import u6
 
 numChannels = int(sys.argv[1])
 resolutionIndex = 1
