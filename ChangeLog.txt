@@ -246,3 +246,6 @@ Version History
     - Added string descriptions for low-level error codes 112 to 116.
     - Fixed a bug in U6 where I2C responses with an odd number of bytes would
       return an extra byte at the end.
+    - Removed U12.rawAIContinuous().  This function was previously marked as
+      in development.  It was only partially implemented and was too slow to
+      be useful.
