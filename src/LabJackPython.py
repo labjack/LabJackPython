@@ -1436,25 +1436,6 @@ def _openWirelessBridgeOnWindows(firstFound, pAddress, devNumber):
         return handle
     else:
         raise LabJackException("Bridges don't have identifiers yet.")
-        if handleOnly:
-            raise LabJackException("Can't use handleOnly with an id.")
-               
-        numDevices = skymoteLib.LJUSB_GetDevCount(deviceType)
-        
-        for i in range(numDevices):
-            handle = openDev(i + 1, 0, devType)
-            
-            try:
-                if handle <= 0:
-                    raise NullHandleException()
-                device = _makeDeviceFromHandle(handle, deviceType)
-            except:
-                continue
-            
-            if device.localId == pAddress or device.serialNumber == pAddress or device.ipAddress == pAddress:
-                return device
-            else:
-                device.close()
         
     raise LabJackException(LJE_LABJACK_NOT_FOUND) 
 
