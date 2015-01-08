@@ -244,3 +244,5 @@ Version History
     - Fixed a bug in openLabJack where some error conditions on Windows would
       try to raise LabjackException (undefined) instead of LabJackException.
     - Added string descriptions for low-level error codes 112 to 116.
+    - Fixed a bug in U6 where I2C responses with an odd number of bytes would
+      return an extra byte at the end.
