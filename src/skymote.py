@@ -3,6 +3,7 @@ Name: skymote.py
 Desc: Provides a Bridge and Mote class for working with SkyMote bridges and 
       motes.
 """
+import struct
 import sys
 
 from LabJackPython import *
