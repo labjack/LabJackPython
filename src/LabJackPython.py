@@ -17,8 +17,8 @@ import atexit # For auto-closing devices
 import ctypes
 import socket
 import struct
-import threading # For a thread-safe device lock
 import sys
+import threading # For a thread-safe device lock
 
 import Modbus
 

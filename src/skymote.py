@@ -7,7 +7,11 @@ import socket
 import struct
 import sys
 
-from LabJackPython import *
+from LabJackPython import (
+    Device,
+    LabJackException,
+    skymoteLib,
+    )
 
 if sys.platform.startswith("win32") or sys.platform.startswith("cygwin"):
     if skymoteLib is None:

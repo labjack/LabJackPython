@@ -20,7 +20,18 @@ try:
 except ImportError: # Python 3
   import configparser as ConfigParser
 
-from LabJackPython import *
+from LabJackPython import (
+    Device,
+    deviceCount,
+    LabJackException,
+    LJ_tcSYS,
+    LowlevelErrorException,
+    lowlevelErrorToString,
+    setChecksum8,
+    toDouble,
+    UE9TCPHandle,
+    verifyChecksum,
+    )
 
 def openAllUE9():
     """
