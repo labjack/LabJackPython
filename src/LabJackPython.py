@@ -993,19 +993,18 @@ def setChecksum(command):
     
     Sample Usage:
     
-    >>> from LabJackPython import *
+    >>> from LabJackPython import setChecksum
     >>> command = [0] * 12
     >>> command[1] = 0xf8
     >>> command[2] = 0x03
     >>> command[3] = 0x0b
-    >>> command = SetChecksum(command)
+    >>> command = setChecksum(command)
     >>> command
     [7, 248, 3, 11, 0, 0, 0, 0, 0, 0, 0, 0]
 
     @type  command: List
     @param command: The command by which to calculate the checksum
 
-            
     @rtype: List
     @return: A command list with checksums in the proper locations.
     """  
