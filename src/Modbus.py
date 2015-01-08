@@ -175,7 +175,6 @@ def readInputRegistersResponse(packet, payloadFormat=None):
 
     return payload
 
-
 def writeRegisterRequest(addr, value, unitId = None):
     if not isinstance(value, int):
         raise TypeError("Value written must be an integer.")
@@ -202,16 +201,10 @@ def writeRegistersRequest(startAddr, values, unitId = None):
     packet = header + pack(format, *values)
     return packet
 
-def writeAesStingRegisterRequest(addr, a, b):
-    packet = TCP_HEADER + pack('>BHcc', 0x06, addr, a, b)
-    return packet
-
-    
 def writeRegisterRequestValue(data):
     """Return the value to be written in a writeRegisterRequest Packet."""
     packet = unpack('>H', data[10:])
     return packet[0]
-
 
 class ModbusException(Exception):
     
@@ -220,7 +213,6 @@ class ModbusException(Exception):
 
     def __str__(self):
         return repr(self.exceptCode)
-
 
 def calcNumberOfRegisters(addr, numReg = None):
     return calcNumberOfRegistersAndFormat(addr, numReg)[0]
@@ -289,7 +281,6 @@ def calcNumberOfRegistersAndFormat(addr, numReg = None):
 def getStartingAddress(packet):
     """Get the address of a modbus request"""
     return ((ord(packet[8]) << 8) + ord(packet[9]))
-
     
 def getRequestType(packet):
     """Get the request type of a modbus request."""
@@ -344,6 +335,3 @@ def parseSpontaneousDataPacket(packet):
     results['Sound'] = report[11]
     
     return results
-
-
-
