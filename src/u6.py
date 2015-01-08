@@ -19,7 +19,16 @@ try:
 except ImportError: # Python 3
     import configparser as ConfigParser
 
-from LabJackPython import *
+from LabJackPython import (
+    Device,
+    deviceCount,
+    LabJackException,
+    LowlevelErrorException,
+    lowlevelErrorToString,
+    MAX_USB_PACKET_LENGTH,
+    setChecksum8,
+    toDouble,
+    )
 
 def openAllU6():
     """
