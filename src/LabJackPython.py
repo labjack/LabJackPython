@@ -57,11 +57,12 @@ class LabJackException(Exception):
     def __str__(self):
           return self.errorString
 
-# Raised when a low-level command raises an error.
-class LowlevelErrorException(LabJackException): pass
+class LowlevelErrorException(LabJackException):
+    """Raised when a low-level command raises an error."""
+    pass
 
-# Raised when the return value of OpenDevice is null.
 class NullHandleException(LabJackException):
+    """Raised when the return value of OpenDevice is null."""
     def __init__(self):
         self.errorString = "Couldn't open device. Please check that the device you are trying to open is connected."
 
