@@ -1,7 +1,6 @@
 from time import sleep
 
 import u6
-import ue9
 
 # Coefficients
 
