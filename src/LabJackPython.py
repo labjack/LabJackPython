@@ -252,10 +252,10 @@ class Device(object):
                 dataWords = len(writeBuffer)
                 writeBuffer = [0, 0xF8, 0, 0x07, 0, 0] + writeBuffer #modbus low-level function
                 if dataWords % 2 != 0:
-                    dataWords = (dataWords+1)/2
+                    dataWords = (dataWords+1)//2
                     writeBuffer.append(0)
                 else:
-                    dataWords = dataWords/2
+                    dataWords = dataWords//2
                 writeBuffer[2] = dataWords
                 setChecksum(writeBuffer)
             elif modbus is True and self.modbusPrependZeros:

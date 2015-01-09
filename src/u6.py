@@ -428,7 +428,7 @@ class U6(Device):
 
         if len(sendBuffer) % 2:
             sendBuffer += [0]
-        sendBuffer[2] = len(sendBuffer) / 2 - 3
+        sendBuffer[2] = len(sendBuffer) // 2 - 3
         
         if readLen % 2:
             readLen += 1
