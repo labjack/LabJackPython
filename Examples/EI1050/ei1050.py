@@ -8,7 +8,6 @@ import time
 
 import u3
 import u6
-import ue9
 
 class EI1050:
     """
