@@ -22,7 +22,6 @@ try:
 except ImportError: # Python 3
   import queue as Queue
 
-import LabJackPython
 import u3
 import u6
 import ue9
