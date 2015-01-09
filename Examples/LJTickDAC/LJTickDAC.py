@@ -3,22 +3,30 @@ Name: LJTickDAC
 Desc: A simple GUI application to demonstrate the usage of the I2C and
 LabJack Python modules to set the value of DACA and DACB in a LJ-TickDAC
 """
-import time
 import struct
 import sys
-from threading import Thread
-from Tkinter import *
-import tkMessageBox
+import threading
+import time
+
+try:
+    import Tkinter
+except ImportError: # Python 3
+    import tkinter as Tkinter
+
+try:
+    import tkMessageBox
+except ImportError: # Python 3
+    import tkinter.messagebox as tkMessageBox
 
 # Attempt to load the labjack driver
 try:
     import LabJackPython
-    from u3 import *
-    from u6 import *
-    from ue9 import *
+    import u3
+    import u6
+    import ue9
 except:
     tkMessageBox.showerror("Driver error", "The driver could not be imported.\nIf you are on windows, please install the UD driver from www.labjack.com")
-    sys.exit()
+    sys.exit(1)
 
 def toDouble(buffer):
     """
@@ -33,7 +41,7 @@ def toDouble(buffer):
     dec, wh = struct.unpack('<Ii', bufferStr)
     return float(wh) + float(dec)/2**32
 
-class LJTickDAC(Tk):
+class LJTickDAC(Tkinter.Tk):
     """
     Name: LJTickDAC
     Desc: A simple GUI application to demonstrate the usage of the I2C and
@@ -53,30 +61,30 @@ class LJTickDAC(Tk):
     
     def __init__(self):
         # Create the window
-        Tk.__init__(self)
+        Tkinter.Tk.__init__(self)
         self.title("LJTickDAC")
 
         # Create and place labels
-        Label(self, text="Serial Num:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=0, column=0, sticky=W)
-        self.serialDisplay = Label(self, font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE), text="please wait...",)
-        self.serialDisplay.grid(row=0, column=1, sticky=W)
-        Label(self, text="DAC A:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=1, column=0, sticky=W)
-        Label(self, text="DAC B:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=2, column=0, sticky=W)
-        self.ainALabel = Label(self, text="AIN:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE))
-        self.ainALabel.grid(row=3, column=0, sticky=W)
-        self.ainDisplay = Label(self, text="not configured", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE))
-        self.ainDisplay.grid(row=3, column=1, sticky=W)
+        Tkinter.Label(self, text="Serial Num:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=0, column=0, sticky=Tkinter.W)
+        self.serialDisplay = Tkinter.Label(self, font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE), text="please wait...",)
+        self.serialDisplay.grid(row=0, column=1, sticky=Tkinter.W)
+        Tkinter.Label(self, text="DAC A:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=1, column=0, sticky=Tkinter.W)
+        Tkinter.Label(self, text="DAC B:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=2, column=0, sticky=Tkinter.W)
+        self.ainALabel = Tkinter.Label(self, text="AIN:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE))
+        self.ainALabel.grid(row=3, column=0, sticky=Tkinter.W)
+        self.ainDisplay = Tkinter.Label(self, text="not configured", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE))
+        self.ainDisplay.grid(row=3, column=1, sticky=Tkinter.W)
 
         # Create and place entry boxes
-        self.dacAEntry = Entry(self, font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE))
-        self.dacAEntry.grid(row=1, column=1, sticky=E+W)
-        self.dacBEntry = Entry(self, font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE))
-        self.dacBEntry.grid(row=2, column=1, sticky=E+W)
+        self.dacAEntry = Tkinter.Entry(self, font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE))
+        self.dacAEntry.grid(row=1, column=1, sticky=Tkinter.E+Tkinter.W)
+        self.dacBEntry = Tkinter.Entry(self, font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE))
+        self.dacBEntry.grid(row=2, column=1, sticky=Tkinter.E+Tkinter.W)
 
         # Create and place buttons
-        Button(self, text="Setup", command=self.showSetup, font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=4, column=0, sticky=W)
-        Button(self, text="Apply Changes", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE), comman=self.updateDevice).grid(row=4, column=1, sticky=E+W)
-        Label(self, text="(c) 2009 Labjack Corp.                         ", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=5, column=0, columnspan=2, sticky=W, padx=1, pady=1)
+        Tkinter.Button(self, text="Setup", command=self.showSetup, font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=4, column=0, sticky=Tkinter.W)
+        Tkinter.Button(self, text="Apply Changes", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE), comman=self.updateDevice).grid(row=4, column=1, sticky=Tkinter.E+Tkinter.W)
+        Tkinter.Label(self, text="(c) 2009 Labjack Corp.                         ", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=5, column=0, columnspan=2, sticky=Tkinter.W, padx=1, pady=1)
 
         # Set defaults
         self.ainPin = LJTickDAC.AIN_PIN_DEFAULT
@@ -171,9 +179,12 @@ class LJTickDAC(Tk):
         self.deviceType = deviceType
         
         # Determine which device to use
-        if self.deviceType == LJTickDAC.U3: self.device = U3()
-        elif self.deviceType == LJTickDAC.U6: self.device = U6()
-        else: self.device = UE9()
+        if self.deviceType == LJTickDAC.U3:
+            self.device = u3.U3()
+        elif self.deviceType == LJTickDAC.U6:
+            self.device = u6.U6()
+        else:
+            self.device = ue9.UE9()
             
         # Display serial number
         self.serialDisplay.config(text=self.device.serialNumber)
@@ -254,7 +265,7 @@ class LJTickDAC(Tk):
 
         if 255 in response: self.showErrorWindow("Pins", "The calibration constants seem a little off. Please go into settings and make sure the pin numbers are correct and that the LJTickDAC is properly attached.")
         
-class SettingsWindow(Toplevel):
+class SettingsWindow(Tkinter.Toplevel):
     """
     Name: SettingsWindow
     Desc: A dialog window that allows the user to set the pins and device
@@ -266,56 +277,56 @@ class SettingsWindow(Toplevel):
     
     def __init__(self, parent, currentDevice, currentDACPin, currentAINPin, u3Available, u6Available, ue9Available):
         # Create window
-        Toplevel.__init__(self, parent)
+        Tkinter.Toplevel.__init__(self, parent)
         self.title("Setup")
         self.parent = parent
 
         # Create and place labels
-        Label(self, text="Device:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=0, column=0, sticky=W)
-        Label(self, text="DAC Pins:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=1, column=0, sticky=W)
-        Label(self, text="AIN Pins:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=2, column=0, sticky=W)
-        Label(self, text="Notice: Settings only take effect after clicking apply. AIN pins are provided for testing.").grid(row=4, column=0, columnspan=2)
+        Tkinter.Label(self, text="Device:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=0, column=0, sticky=Tkinter.W)
+        Tkinter.Label(self, text="DAC Pins:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=1, column=0, sticky=Tkinter.W)
+        Tkinter.Label(self, text="AIN Pins:", font=(LJTickDAC.FONT, LJTickDAC.FONT_SIZE)).grid(row=2, column=0, sticky=Tkinter.W)
+        Tkinter.Label(self, text="Notice: Settings only take effect after clicking apply. AIN pins are provided for testing.").grid(row=4, column=0, columnspan=2)
         # Create and place radio buttons for the device
-        self.deviceVar = IntVar()
+        self.deviceVar = Tkinter.IntVar()
         self.deviceVar.set(currentDevice)
-        deviceFrame = Frame(self)
-        u3Radio = Radiobutton(deviceFrame, text="U3", variable=self.deviceVar, value=LJTickDAC.U3, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE), command=self.adjustText)
+        deviceFrame = Tkinter.Frame(self)
+        u3Radio = Tkinter.Radiobutton(deviceFrame, text="U3", variable=self.deviceVar, value=LJTickDAC.U3, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE), command=self.adjustText)
         u3Radio.grid(row=0, column=0)
-        if not u3Available: u3Radio.config(state=DISABLED)
-        u6Radio = Radiobutton(deviceFrame, text="U6", variable=self.deviceVar, value=LJTickDAC.U6, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE), command=self.adjustText)
+        if not u3Available: u3Radio.config(state=Tkinter.DISABLED)
+        u6Radio = Tkinter.Radiobutton(deviceFrame, text="U6", variable=self.deviceVar, value=LJTickDAC.U6, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE), command=self.adjustText)
         u6Radio.grid(row=0, column=1)
-        if not u6Available: u6Radio.config(state=DISABLED)
-        ue9Radio = Radiobutton(deviceFrame, text="UE9", variable=self.deviceVar, value=LJTickDAC.UE9, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE), command=self.adjustText)
+        if not u6Available: u6Radio.config(state=Tkinter.DISABLED)
+        ue9Radio = Tkinter.Radiobutton(deviceFrame, text="UE9", variable=self.deviceVar, value=LJTickDAC.UE9, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE), command=self.adjustText)
         ue9Radio.grid(row=0, column=2)
-        if not ue9Available: ue9Radio.config(state=DISABLED)
-        deviceFrame.grid(row=0, column=1, sticky=E+W)
+        if not ue9Available: ue9Radio.config(state=Tkinter.DISABLED)
+        deviceFrame.grid(row=0, column=1, sticky=Tkinter.E+Tkinter.W)
 
         # Create and place radio buttons for the dac pins
-        self.dacPin = IntVar()
+        self.dacPin = Tkinter.IntVar()
         self.dacPin.set(currentDACPin)
-        dacPinFrame = Frame(self)
-        self.dacOptARadio = Radiobutton(dacPinFrame, text="FIO 0/1", variable=self.dacPin, value=0, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE))
+        dacPinFrame = Tkinter.Frame(self)
+        self.dacOptARadio = Tkinter.Radiobutton(dacPinFrame, text="FIO 0/1", variable=self.dacPin, value=0, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE))
         self.dacOptARadio.grid(row=0, column=0)
-        self.dacOptBRadio = Radiobutton(dacPinFrame, text="FIO 2/3", variable=self.dacPin, value=2, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE))
+        self.dacOptBRadio = Tkinter.Radiobutton(dacPinFrame, text="FIO 2/3", variable=self.dacPin, value=2, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE))
         self.dacOptBRadio.grid(row=0, column=1)
-        dacPinFrame.grid(row=1, column=1, sticky=E+W)
+        dacPinFrame.grid(row=1, column=1, sticky=Tkinter.E+Tkinter.W)
 
         # Create and place the radio buttons for the ain pins
-        self.ainPin = IntVar()
+        self.ainPin = Tkinter.IntVar()
         self.ainPin.set(currentAINPin)
-        ainPinFrame = Frame(self)
-        Radiobutton(ainPinFrame, text="None", variable=self.ainPin, value=-1, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE)).grid(row=0, column=0)
-        self.ainOptARadio = Radiobutton(ainPinFrame, text="AIN 0", variable=self.ainPin, value=0, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE))
+        ainPinFrame = Tkinter.Frame(self)
+        Tkinter.Radiobutton(ainPinFrame, text="None", variable=self.ainPin, value=-1, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE)).grid(row=0, column=0)
+        self.ainOptARadio = Tkinter.Radiobutton(ainPinFrame, text="AIN 0", variable=self.ainPin, value=0, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE))
         self.ainOptARadio.grid(row=0, column=1)
-        self.ainOptBRadio = Radiobutton(ainPinFrame, text="AIN 2", variable=self.ainPin, value=2, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE))
+        self.ainOptBRadio = Tkinter.Radiobutton(ainPinFrame, text="AIN 2", variable=self.ainPin, value=2, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE))
         self.ainOptBRadio.grid(row=0, column=2)
-        ainPinFrame.grid(row=2, column=1, sticky=E+W)
+        ainPinFrame.grid(row=2, column=1, sticky=Tkinter.E+Tkinter.W)
 
         # Create and place apply and cancel buttons
-        buttonsFrame = Frame(self)
-        Button(buttonsFrame, text="Apply", command=self.applyChanges, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE)).grid(row=0, column=0)
+        buttonsFrame = Tkinter.Frame(self)
+        Tkinter.Button(buttonsFrame, text="Apply", command=self.applyChanges, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE)).grid(row=0, column=0)
         #Button(buttonsFrame, text="Cancel", font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE)).grid(row=0, column=1)
-        buttonsFrame.grid(row=3, column=0, columnspan=2, sticky=E+W)
+        buttonsFrame.grid(row=3, column=0, columnspan=2, sticky=Tkinter.E+Tkinter.W)
 
         # Adjust text for device and prepare for future adjustments
         self.adjustText()
@@ -346,14 +357,14 @@ class SettingsWindow(Toplevel):
         self.parent.updateSettings(self.deviceVar.get(), self.ainPin.get(), self.dacPin.get())
         self.destroy()
 
-class AINReadThread(Thread):
+class AINReadThread(threading.Thread):
     """
     Name: AINReadThread
     Desc: A thread that reads from a given analog input every secound and updates a GUI
     """
 
     def __init__(self, displayLabel, device, deviceType, pinNum):
-        Thread.__init__(self)
+        threading.Thread.__init__(self)
         self.displayLabel = displayLabel
         self.device = device
         self.pinNum = pinNum
