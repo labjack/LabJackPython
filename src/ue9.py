@@ -207,7 +207,7 @@ class UE9(Device):
         self.portB = struct.unpack("<H", struct.pack("BB", *result[24:26]))[0]
         self.DHCPEnabled = bool(result[26])
         self.productId = result[27]
-        macBytes = result[28:34]
+
         self.macAddress = "%02X:%02X:%02X:%02X:%02X:%02X" % (result[33], result[32], result[31], result[30], result[29], result[28])
         
         self.serialNumber = struct.unpack("<I", struct.pack("BBBB", result[28], result[29], result[30], 0x10))[0]
