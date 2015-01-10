@@ -2364,7 +2364,7 @@ class U12(object):
         
         # Make data 18 elements large
         dataArray = [0] * 18
-        for i in range(0, len(data)):
+        for i in range(len(data)):
             dataArray[i] = data[i]
         dataArray = listToCArray(dataArray, ctypes.c_long)
         
@@ -2828,7 +2828,7 @@ class U12(object):
         
         # Make sure data is 18 elements
         cData = [0] * 18
-        for i in range(0, len(data)):
+        for i in range(len(data)):
             cData[i] = data[i]
         cData = listToCArray(cData, ctypes.c_long)
         
@@ -2944,7 +2944,7 @@ def isIterable(var):
 def listToCArray(list, dataType):
     arrayType = dataType * len(list)
     array = arrayType()
-    for i in range(0,len(list)):
+    for i in range(len(list)):
         array[i] = list[i]
     
     return array

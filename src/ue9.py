@@ -766,13 +766,13 @@ class UE9(Device):
 
         # Parse the results
         returnValue = {}
-        for i in range(0,6):
+        for i in range(6):
             returnValue["Timer" + str(i) + "Enabled"] = result[7] >> i & 1 == 1
-        for i in range(0,2):
+        for i in range(2):
             returnValue["Counter" + str(i) + "Enabled"] = result[7] >> i + 6 & 1 == 1
-        for i in range(0, 6):
+        for i in range(6):
             returnValue["Timer" + str(i)] = unpackInt(result[8+i*4:12+i*4])
-        for i in range(0,2):
+        for i in range(2):
             counterValue = [0]
             counterValue.extend(result[32+i*4:35+i*4])
             returnValue["Counter" + str(i)] = unpackInt(counterValue)
@@ -882,7 +882,7 @@ class UE9(Device):
         Note: Use before and/or after streaming.  Timeout delay can occur occur.
         """
         try:
-            for i in range(0, 10):
+            for i in range(10):
                 res = self.read(192, stream = True)
                 if len(res) == 192:
                     if all([ ord(b) == 0 for b in res ]):

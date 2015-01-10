@@ -1873,12 +1873,12 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
             newA = None
             if type(x1[0]) == int:
                 newA = (ctypes.c_byte*len(x1))()
-                for i in range(0, len(x1), 1):
+                for i in range(len(x1)):
                     newA[i] = ctypes.c_byte(x1[i])
             else:
                 x1Type = "float"
                 newA = (ctypes.c_double*len(x1))()
-                for i in range(0, len(x1), 1):
+                for i in range(len(x1)):
                     newA[i] = ctypes.c_double(x1[i])
 
             ec = staticLib.eGet(Handle, IOType, Channel, ctypes.byref(pv), ctypes.byref(newA))
