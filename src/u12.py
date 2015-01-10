@@ -707,7 +707,7 @@ class U12(object):
         returnDict = {}
         returnDict['EchoValue'] = results[1]
         returnDict['PGAOvervoltage'] = bool(bf.bit4)
-        returnDict['IO3toIO0States'] = BitField(results[0], "IO", range(3, -1, -1), "Low", "High")
+        returnDict['IO3toIO0States'] = BitField(results[0], "IO", list(range(3, -1, -1)), "Low", "High")
         
         channel0 = (results[2] >> 4) & 0xf
         channel1 = (results[2] & 0xf)
@@ -834,16 +834,16 @@ class U12(object):
         if results[0] != 87:
             raise U12Exception("Expected a DIO response, got %s instead." % results[0])
         
-        returnDict['D15toD8States'] = BitField(results[1], "D", range(15, 7, -1), "Low", "High")
-        returnDict['D7toD0States'] = BitField(results[2], "D", range(7, -1, -1), "Low", "High")
+        returnDict['D15toD8States'] = BitField(results[1], "D", list(range(15, 7, -1)), "Low", "High")
+        returnDict['D7toD0States'] = BitField(results[2], "D", list(range(7, -1, -1)), "Low", "High")
         
-        returnDict['D15toD8Directions'] = BitField(results[4], "D", range(15, 7, -1), "Output", "Input")
-        returnDict['D7toD0Directions'] = BitField(results[5], "D", range(7, -1, -1), "Output", "Input")
+        returnDict['D15toD8Directions'] = BitField(results[4], "D", list(range(15, 7, -1)), "Output", "Input")
+        returnDict['D7toD0Directions'] = BitField(results[5], "D", list(range(7, -1, -1)), "Output", "Input")
         
-        returnDict['D15toD8OutputLatchStates'] = BitField(results[6], "D", range(15, 7, -1))
-        returnDict['D7toD0OutputLatchStates'] = BitField(results[7], "D", range(7, -1, -1))
+        returnDict['D15toD8OutputLatchStates'] = BitField(results[6], "D", list(range(15, 7, -1)))
+        returnDict['D7toD0OutputLatchStates'] = BitField(results[7], "D", list(range(7, -1, -1)))
         
-        returnDict['IO3toIO0States'] = BitField((results[3] >> 4), "IO", range(3, -1, -1), "Low", "High")
+        returnDict['IO3toIO0States'] = BitField((results[3] >> 4), "IO", list(range(3, -1, -1)), "Low", "High")
         
         return returnDict
     
@@ -907,9 +907,9 @@ class U12(object):
         if results[0] != command[5]:
             raise U12Exception("Expected a Counter response, got %s instead." % results[0])
         
-        returnDict['D15toD8States'] = BitField(results[1], "D", range(15, 7, -1), "Low", "High")
-        returnDict['D7toD0States'] = BitField(results[2], "D", range(7, -1, -1), "Low", "High")
-        returnDict['IO3toIO0States'] = BitField((results[3] >> 4), "IO", range(3, -1, -1), "Low", "High")
+        returnDict['D15toD8States'] = BitField(results[1], "D", list(range(15, 7, -1)), "Low", "High")
+        returnDict['D7toD0States'] = BitField(results[2], "D", list(range(7, -1, -1)), "Low", "High")
+        returnDict['IO3toIO0States'] = BitField((results[3] >> 4), "IO", list(range(3, -1, -1)), "Low", "High")
         
         counter = results[7]
         counter += results[6] << 8
@@ -1016,9 +1016,9 @@ class U12(object):
         
         returnDict = {}
         
-        returnDict['D15toD8States'] = BitField(results[1], "D", range(15, 7, -1), "Low", "High")
-        returnDict['D7toD0States'] = BitField(results[2], "D", range(7, -1, -1), "Low", "High")
-        returnDict['IO3toIO0States'] = BitField((results[3] >> 4), "IO", range(3, -1, -1), "Low", "High")
+        returnDict['D15toD8States'] = BitField(results[1], "D", list(range(15, 7, -1)), "Low", "High")
+        returnDict['D7toD0States'] = BitField(results[2], "D", list(range(7, -1, -1)), "Low", "High")
+        returnDict['IO3toIO0States'] = BitField((results[3] >> 4), "IO", list(range(3, -1, -1)), "Low", "High")
         
         counter = results[7]
         counter += results[6] << 8
@@ -1201,7 +1201,7 @@ class U12(object):
             
             returnDict['BufferOverflowOrChecksumErrors'].append(bool(bf.bit5))
             returnDict['PGAOvervoltages'].append(bool(bf.bit4))
-            returnDict['IO3toIO0States'].append(BitField(results[0], "IO", range(3, -1, -1), "Low", "High"))
+            returnDict['IO3toIO0States'].append(BitField(results[0], "IO", list(range(3, -1, -1)), "Low", "High"))
             
             returnDict['IterationCounters'].append((results[1] >> 5))
             returnDict['Backlogs'].append(results[1] & 0xf)
