@@ -433,7 +433,4 @@ class Mote(object):
             byteList = [ 0 ] + byteList
             
         byteList = list(struct.unpack(">"+"H" * 8, struct.pack("B"*16, *byteList)))
-        
-        print "Writing:", byteList
-        
         self.writeRegister(50120, byteList)
