@@ -187,7 +187,7 @@ class BitField(object):
         self.labelPrefix = labelPrefix
         
         if labelList is None:
-            self.labelList = range(8)
+            self.labelList = list(range(8))
         else:
             self.labelList = list(reversed(labelList))
         
