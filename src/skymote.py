@@ -150,7 +150,7 @@ class Bridge(Device):
         results = self.readRegister(50120, numReg = 8, format = ">"+"B"*16)
         
         returnDict = dict()
-        returnDict['enabled'] = True if results[0] != 0 else False
+        returnDict['enabled'] = results[0] != 0
         returnDict['password'] = struct.pack("B"*15, *results[1:])
         
         return returnDict
@@ -413,7 +413,7 @@ class Mote(object):
         results = self.readRegister(50120, numReg = 8, format = ">"+"B"*16)
         
         returnDict = dict()
-        returnDict['enabled'] = True if results[0] != 0 else False
+        returnDict['enabled'] = results[0] != 0
         returnDict['password'] = struct.pack("B"*15, *results[1:])
         
         return returnDict
