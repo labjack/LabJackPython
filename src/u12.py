@@ -319,7 +319,7 @@ class BitField(object):
         FIO1 Output
         FIO0 Input
         """
-        return zip(self.labels, self.data)
+        return list(zip(self.labels, self.data))
     
     def __int__(self):
         return self.asByte()
