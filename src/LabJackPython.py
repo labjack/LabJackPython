@@ -1293,7 +1293,7 @@ def _openLabJackUsingLJSocket(deviceType, firstFound, pAddress, LJSocket, handle
 def _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, devNumber ):
     if devNumber is not None:
         devs = listAll(deviceType)
-        pAddress = devs.keys()[(devNumber-1)]
+        pAddress = list(devs.keys())[devNumber-1]
     
     handle = ctypes.c_long()
     pAddress = str(pAddress)
