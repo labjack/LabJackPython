@@ -1280,7 +1280,7 @@ def openAllLabJacks():
 
 
 
-def _openLabJackUsingLJSocket(deviceType, firstFound, pAddress, LJSocket, handleOnly ):
+def _openLabJackUsingLJSocket(deviceType, firstFound, pAddress, LJSocket, handleOnly):
     if LJSocket is not '':
         ip, port = LJSocket.split(":")
         port = int(port)
@@ -1290,7 +1290,7 @@ def _openLabJackUsingLJSocket(deviceType, firstFound, pAddress, LJSocket, handle
       
     return handle
 
-def _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, devNumber ):
+def _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, devNumber):
     if devNumber is not None:
         devs = listAll(deviceType)
         pAddress = devs.keys()[(devNumber-1)]
@@ -2468,7 +2468,7 @@ ERROR_TO_STRING_DICT['114'] = ("UART_NOT_ENABLED", "")
 ERROR_TO_STRING_DICT['115'] = ("UART_RXOVERFLOW", "")
 ERROR_TO_STRING_DICT['116'] = ("I2C_BUS_BUSY", "")
 
-def lowlevelErrorToString( errorcode ):
+def lowlevelErrorToString(errorcode):
     """Converts a low-level errorcode into a string.
     """
     try:
