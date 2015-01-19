@@ -1651,7 +1651,8 @@ class FeedbackCommand(object):
     def handle(self, input):
         return None
 
-validChannels = range(144)
+_validChannels = frozenset(range(144))
+
 class AIN(FeedbackCommand):
     '''
     Analog Input Feedback command
@@ -1669,7 +1670,7 @@ class AIN(FeedbackCommand):
     [ 19238 ]
     '''
     def __init__(self, PositiveChannel):
-        if PositiveChannel not in validChannels:
+        if PositiveChannel not in _validChannels:
             raise LabJackException("Invalid Positive Channel specified")
         
         self.positiveChannel = PositiveChannel
@@ -1713,7 +1714,7 @@ class AIN24(FeedbackCommand):
     [ 193847 ]
     '''
     def __init__(self, PositiveChannel, ResolutionIndex = 0, GainIndex = 0, SettlingFactor = 0, Differential = False):
-        if PositiveChannel not in validChannels:
+        if PositiveChannel not in _validChannels:
             raise LabJackException("Invalid Positive Channel specified")
 
         self.positiveChannel = PositiveChannel
@@ -1770,7 +1771,7 @@ class AIN24AR(FeedbackCommand):
     { 'AIN' : 193847, 'ResolutionIndex' : 0, 'GainIndex' : 0, 'Status' : 0 }
     '''
     def __init__(self, PositiveChannel, ResolutionIndex = 0, GainIndex = 0, SettlingFactor = 0, Differential = False):
-        if PositiveChannel not in validChannels:
+        if PositiveChannel not in _validChannels:
             raise LabJackException("Invalid Positive Channel specified")
 
         self.positiveChannel = PositiveChannel
