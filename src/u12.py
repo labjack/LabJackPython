@@ -346,7 +346,7 @@ def errcheck(ret, func, args):
 def _loadLinuxSo():
     try:
         l = ctypes.CDLL("liblabjackusb.so", use_errno=True)
-    except TypeError:
+    except TypeError: # Python 2.5
         l = ctypes.CDLL("liblabjackusb.so")
     l.LJUSB_Stream.errcheck = errcheck
     l.LJUSB_Read.errcheck = errcheck
@@ -355,7 +355,7 @@ def _loadLinuxSo():
 def _loadMacDylib():
     try:
         l = ctypes.CDLL("liblabjackusb.dylib", use_errno=True)
-    except TypeError:
+    except TypeError: # Python 2.5
         l = ctypes.CDLL("liblabjackusb.dylib")
     l.LJUSB_Stream.errcheck = errcheck
     l.LJUSB_Read.errcheck = errcheck
