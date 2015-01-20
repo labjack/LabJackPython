@@ -803,7 +803,6 @@ class U6(Device):
         
         return watchdogStatus
 
-    SPIModes = { 'A' : 0, 'B' : 1, 'C' : 2, 'D' : 3 }
     def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 0, CLKPinNum = 1, MISOPinNum = 2, MOSIPinNum = 3):
         """
         Name: U6.spi(SPIBytes, AutoCS=True, DisableDirConfig = False,
@@ -851,7 +850,12 @@ class U6(Device):
         if DisableDirConfig:
             command[6] |= (1 << 6)
         
-        command[6] |= ( self.SPIModes[SPIMode] & 3 )
+        spiModes = ('A', 'B', 'C', 'D')
+        try:
+            modeIndex = spiModes.index(SPIMode)
+        except ValueError:
+            raise LabJackException("Invalid SPIMode %r, valid modes are: %r" % (SPIMode, spiModes))
+        command[6] |= modeIndex
         
         command[7] = SPIClockFactor
         #command[8] = Reserved

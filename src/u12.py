@@ -1681,7 +1681,6 @@ class U12(object):
         
         return returnDict
         
-    SPIModes = ['A', 'B', 'C', 'D']
     def rawSPI(self, Data, AddMsDelay = False, AddHundredUsDelay = False, SPIMode = 'A', NumberOfBytesToWriteRead = 0, ControlCS = False, StateOfActiveCS = False, CSLineNumber = 0):
         """
         Name: U12.rawSPI( Data, AddMsDelay = False, AddHundredUsDelay = False,
@@ -1740,7 +1739,11 @@ class U12(object):
         bf.bit7 = int(bool(AddMsDelay))
         bf.bit6 = int(bool(AddHundredUsDelay))
         
-        modeIndex = self.SPIModes.index(SPIMode)
+        spiModes = ('A', 'B', 'C', 'D')
+        try:
+            modeIndex = spiModes.index(SPIMode)
+        except ValueError:
+            raise U12Exception("Invalid SPIMode %r, valid modes are: %r" % (SPIMode, spiModes))
         bf[7-modeIndex] = 1
         
         command[4] = int(bf)
