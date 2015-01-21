@@ -3,9 +3,10 @@
 # Created: 05.05.2008
 
 from __future__ import with_statement
-from datetime import datetime
-from struct import pack, unpack
-from threading import Lock
+
+import datetime
+import struct
+import threading
 
 AES_CHANNEL               = 64000
 IP_PART1_CHANNEL          = 64008
@@ -23,12 +24,12 @@ WRITE_PACKET              = 6
 HEADER_LENGTH             = 9
 BYTES_PER_REGISTER        = 2
 
-GLOBAL_TRANSACTION_ID_LOCK = Lock()
+GLOBAL_TRANSACTION_ID_LOCK = threading.Lock()
 
 MAX_TRANS_ID = 64760
 
 def _calcBaseTransId():
-    t = datetime.now()
+    t = datetime.datetime.now()
     d = "%s%s%s%s" % (t.hour, t.minute, t.second, t.microsecond)
     d = int(d) % MAX_TRANS_ID
     return d
@@ -48,7 +49,7 @@ def _buildHeaderBytes(length = 6, unitId = None):
         
         BASE_TRANS_ID = ( BASE_TRANS_ID + 1 ) % MAX_TRANS_ID
         
-        return pack('>HHHB', *basicHeader)
+        return struct.pack('>HHHB', *basicHeader)
     
 def _checkTransId(transId):
     with GLOBAL_TRANSACTION_ID_LOCK:
@@ -63,7 +64,7 @@ def readHoldingRegistersRequest(addr, numReg = None, unitId = None):
     if numReg is None:
         numReg = calcNumberOfRegisters(addr)
         
-    packet = _buildHeaderBytes(unitId = unitId) + pack('>BHH', 0x03, addr, numReg)
+    packet = _buildHeaderBytes(unitId = unitId) + struct.pack('>BHH', 0x03, addr, numReg)
 
     return packet
 
@@ -73,7 +74,7 @@ def readHoldingRegistersResponse(packet, payloadFormat=None):
     #  H  H  H    c  c  c  payload
     #  0  1  2    3  4  5  6+
     HEADER_LENGTH = 9
-    header = unpack('>HHHBBB', packet[:HEADER_LENGTH])
+    header = struct.unpack('>HHHBBB', packet[:HEADER_LENGTH])
     #print "header", [ c for c in header ]
     #print "header", header
     
@@ -113,8 +114,8 @@ def readHoldingRegistersResponse(packet, payloadFormat=None):
     #print [ ord(c) for c in packet ]
     
     # Mike C.: unpack_from new in 2.5.  Won't work on Joyent.
-    #payload = unpack_from(payloadFormat, packet, offset = HEADER_LENGTH)
-    payload = unpack(payloadFormat, packet[HEADER_LENGTH:])
+    # payload = struct.unpack_from(payloadFormat, packet, offset = HEADER_LENGTH)
+    payload = struct.unpack(payloadFormat, packet[HEADER_LENGTH:])
     
     if len(payload) == 1:
         return payload[0]
@@ -125,7 +126,7 @@ def readInputRegistersRequest(addr, numReg = None):
     if numReg is None:
         numReg = calcNumberOfRegisters(addr)
     
-    packet = _buildHeaderBytes() + pack('>BHH', 0x04, addr, numReg)
+    packet = _buildHeaderBytes() + struct.pack('>BHH', 0x04, addr, numReg)
     #print "making readHoldingRegistersRequest packet"
     #print [ ord(c) for c in packet ]
     return packet
@@ -136,7 +137,7 @@ def readInputRegistersResponse(packet, payloadFormat=None):
     #  H  H  H    c  c  c  payload
     #  0  1  2    3  4  5  6+
     HEADER_LENGTH = 9
-    header = unpack('>HHHBBB', packet[:HEADER_LENGTH])
+    header = struct.unpack('>HHHBBB', packet[:HEADER_LENGTH])
     #print "header", [ c for c in header ]
     #print "header", header
     
@@ -170,8 +171,8 @@ def readInputRegistersResponse(packet, payloadFormat=None):
     #print [ ord(c) for c in packet ]
     
     # Mike C.: unpack_from new in 2.5.  Won't work on Joyent.
-    #payload = unpack_from(payloadFormat, packet, offset = HEADER_LENGTH)
-    payload = unpack(payloadFormat, packet[HEADER_LENGTH:])
+    # payload = struct.unpack_from(payloadFormat, packet, offset = HEADER_LENGTH)
+    payload = struct.unpack(payloadFormat, packet[HEADER_LENGTH:])
 
     return payload
 
@@ -179,7 +180,7 @@ def writeRegisterRequest(addr, value, unitId = None):
     if not isinstance(value, int):
         raise TypeError("Value written must be an integer.")
 
-    packet = _buildHeaderBytes(unitId = unitId) + pack('>BHH', 0x06, addr, value)
+    packet = _buildHeaderBytes(unitId = unitId) + struct.pack('>BHH', 0x06, addr, value)
 
     return packet
     
@@ -195,15 +196,15 @@ def writeRegistersRequest(startAddr, values, unitId = None):
     
     header = _buildHeaderBytes(length = 7+(numReg*2), unitId = unitId)
     
-    header += pack('>BHHB', *(16, startAddr, numReg, numReg*2) )
+    header += struct.pack('>BHHB', *(16, startAddr, numReg, numReg*2) )
     
     format = '>' + 'H' * numReg
-    packet = header + pack(format, *values)
+    packet = header + struct.pack(format, *values)
     return packet
 
 def writeRegisterRequestValue(data):
     """Return the value to be written in a writeRegisterRequest Packet."""
-    packet = unpack('>H', data[10:])
+    packet = struct.unpack('>H', data[10:])
     return packet[0]
 
 class ModbusException(Exception):
@@ -289,16 +290,16 @@ def getRequestType(packet):
 def getTransactionId(packet):
     """Pulls out the transaction id of the packet"""
     if isinstance(packet, list):
-        return unpack(">H", pack("BB", *packet[:2]) )[0]
+        return struct.unpack(">H", struct.pack("BB", *packet[:2]) )[0]
     else:
-        return unpack(">H", packet[:2])[0]
+        return struct.unpack(">H", packet[:2])[0]
         
 def getProtocolId(packet):
     """Pulls out the transaction id of the packet"""
     if isinstance(packet, list):
-        return unpack(">H", pack("BB", *packet[2:4]) )[0]
+        return struct.unpack(">H", struct.pack("BB", *packet[2:4]) )[0]
     else:
-        return unpack(">H", packet[2:4])[0]
+        return struct.unpack(">H", packet[2:4])[0]
         
 def parseIntoPackets(packet):
     while True:
@@ -317,11 +318,11 @@ def parseIntoPackets(packet):
 def parseSpontaneousDataPacket(packet):
     if isinstance(packet, list):
         localId = packet[6]
-        packet = pack("B"*len(packet), *packet)
+        packet = struct.pack("B"*len(packet), *packet)
     else:
         localId = ord(packet[6])
-    transId = unpack(">H", packet[0:2])[0]
-    report = unpack(">HBBfHH"+"f"*8, packet[9:53])
+    transId = struct.unpack(">H", packet[0:2])[0]
+    report = struct.unpack(">HBBfHH"+"f"*8, packet[9:53])
     
     results = dict()
     results['unitId'] = localId
