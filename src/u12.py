@@ -28,7 +28,7 @@ import ctypes
 import math
 import struct
 import sys
-from time import time
+import time
 
 _os_name = "" #Set to "nt" or "posix" in _loadLibrary
 
@@ -2003,7 +2003,7 @@ class U12(object):
         else:
             results = self.rawCounter( ResetCounter = resetCounter)
             
-            return {"idnum":self.id, "count":results['Counter'], "ms": (time() * 1000)}
+            return {"idnum":self.id, "count":results['Counter'], "ms": (time.time() * 1000)}
             
 
     def eDigitalIn(self, channel, idNum = None, demo = 0, readD=0):

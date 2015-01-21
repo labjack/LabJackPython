@@ -10,10 +10,10 @@ To learn about the low-level functions, please see Section 5.2 of the UE9 User's
 http://labjack.com/support/ue9/users-guide/5.2 
 """
 import collections
+import datetime
 import select
 import socket
 import struct
-from datetime import datetime
 
 try:
   import ConfigParser
@@ -1096,7 +1096,7 @@ class UE9(Device):
         while True:
             if self.ethernet and newTimeLoop == True:
                 newTimeLoop = False
-                startTime = datetime.now()
+                startTime = datetime.datetime.now()
             
             result = self.read(numBytes * self.packetsPerRequest, stream = True)
             numPackets = len(result) // numBytes
@@ -1139,7 +1139,7 @@ class UE9(Device):
                     #Adjust buffered data
                     resultBuffer = resultBuffer[(numBytes * self.packetsPerRequest):]
                 else:
-                    curTime = datetime.now()
+                    curTime = datetime.datetime.now()
                     timeElapsed = (curTime-startTime).seconds + float((curTime-startTime).microseconds)/1000000
                     if timeElapsed > 1.10:
                         newTimeLoop = True
