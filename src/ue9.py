@@ -1150,7 +1150,7 @@ class UE9(Device):
                         else:
                             #Return packets in multiples of 4 like over USB
                             numPackets = (packetsInBuffer // 4) * 4
-                            result = retResult[:(numBytes * numPackets)]
+                            result = resultBuffer[:(numBytes * numPackets)]
                             firstPacket = ord(result[10])
                             
                             #Adjust buffered data
