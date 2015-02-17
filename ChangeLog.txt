@@ -248,3 +248,5 @@ Version History
       return an extra byte at the end.
     - Fixed a bug in UE9 streamData where an incorrect variable name was being
       used.
+    - Fixed a Windows bug in eGetRaw when the x1 parameter has a 64-bit pointer
+      address. The function now uses 32 and 64-bit safe eGetPtr UD function.

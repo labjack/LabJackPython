@@ -31,7 +31,10 @@ MAX_USB_PACKET_LENGTH = 64
 
 NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS = 5
 
-_os_name = "" #Set to "nt" or "posix" in _loadLibrary
+_os_name = "" #Set to "nt" or "posix" in _loadLibrary.
+
+_use_ptr = True #Set to True or False in _loadLibrary. Indicates whether to use
+                #the Ptr version of certain UD calls or not. Windows only.
 
 class LabJackException(Exception):
     """Custom Exception meant for dealing specifically with LabJack Exceptions.
@@ -115,12 +118,22 @@ def _loadLibrary():
 
     _os_name = "nt"
     try:
+        wlib = None
         if sys.platform.startswith("win32"):
             #Windows detected
-            return ctypes.WinDLL("labjackud")
+            wlib = ctypes.WinDLL("labjackud")
         if sys.platform.startswith("cygwin"):
             #Cygwin detected. WinDLL not available, but CDLL seems to work.
-            return ctypes.CDLL("labjackud")
+            wlib = ctypes.CDLL("labjackud")
+        if wlib is not None:
+            try:
+                wlib.eGetPtr
+                #eGetPtr is available in the UD driver version installed.
+                _use_ptr = True
+            except:
+                #eGetPtr is not available in the UD driver version installed.
+                _use_ptr = False
+            return wlib
     except Exception:
         e = sys.exc_info()[1]
         raise LabJackException("Could not load labjackud driver. Ethernet connectivity availability only.\n\n    The error was: %s" % e)
@@ -1881,7 +1894,13 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
                 for i in range(len(x1)):
                     newA[i] = ctypes.c_double(x1[i])
 
-            ec = staticLib.eGet(Handle, IOType, Channel, ctypes.byref(pv), ctypes.byref(newA))
+            #Use eGetPtr when x1 is a pointer. x1 is a void*, and can accept 32
+            #and 64-bit pointer addresses safely.
+            if _use_ptr:
+                ec = staticLib.eGetPtr(Handle, IOType, Channel, ctypes.byref(pv), ctypes.byref(newA))
+            else:
+                #Using eGet if eGetPtr is not available.
+                ec = staticLib.eGet(Handle, IOType, Channel, ctypes.byref(pv), ctypes.byref(newA))
             
             if IOType == LJ_ioRAW_IN and Channel == 1:
                 # We return the raw byte string if we are streaming
