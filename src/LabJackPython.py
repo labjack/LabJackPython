@@ -115,6 +115,7 @@ def _loadLibrary():
     Returns a ctypes dll pointer to the library.
     """
     global _os_name
+    global _use_ptr
 
     _os_name = "nt"
     try:
