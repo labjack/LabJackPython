@@ -250,3 +250,6 @@ Version History
       used.
     - Fixed a Windows bug in eGetRaw when the x1 parameter has a 64-bit pointer
       address. The function now uses 32 and 64-bit safe eGetPtr UD function.
+    - Fixed the returned DAC values of the readDefaultsConfig method to little
+      endian.
+

@@ -1465,9 +1465,9 @@ class U6(Device):
         
         defaults = self.readDefaults(2)
         
-        results['DAC0'] = struct.unpack( ">H", struct.pack("BB", *defaults[16:18]) )[0]
+        results['DAC0'] = struct.unpack( "<H", struct.pack("BB", *defaults[16:18]) )[0]
         
-        results['DAC1'] = struct.unpack( ">H", struct.pack("BB", *defaults[20:22]) )[0]
+        results['DAC1'] = struct.unpack( "<H", struct.pack("BB", *defaults[20:22]) )[0]
         
         defaults = self.readDefaults(3)
         

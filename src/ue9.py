@@ -1771,9 +1771,9 @@ class UE9(Device):
         results['TMR5ValueL'] = defaults[5]
         results['TMR5ValueH'] = defaults[6]
         
-        results['DAC0'] = struct.unpack( ">H", struct.pack("BB", *defaults[16:18]) )[0]
+        results['DAC0'] = struct.unpack( "<H", struct.pack("BB", *defaults[16:18]) )[0]
         
-        results['DAC1'] = struct.unpack( ">H", struct.pack("BB", *defaults[20:22]) )[0]
+        results['DAC1'] = struct.unpack( "<H", struct.pack("BB", *defaults[20:22]) )[0]
         
         defaults = self.readDefaults(3)
         
