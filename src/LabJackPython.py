@@ -22,7 +22,7 @@ import threading # For a thread-safe device lock
 
 import Modbus
 
-LABJACKPYTHON_VERSION = "4-24-2014"
+LABJACKPYTHON_VERSION = "5-26-2015"
 
 SOCKET_TIMEOUT = 3
 LJSOCKET_TIMEOUT = 62

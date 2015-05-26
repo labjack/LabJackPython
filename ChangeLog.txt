@@ -228,7 +228,7 @@ Version History
     - Fixed the U3 writeCal method.
     - Updated the device open error checks on Windows. Warnings no longer raise
       an exception.
-- Next Release
+- May 26, 2015
     - LabJackPython now refuses to install on unsupported Python versions.
     - Fixed U12 watchdog method argument parsing.  If the stateDn argument was
       invalid, it would try to raise Value (undefined) instead of ValueError.
@@ -252,4 +252,4 @@ Version History
       address. The function now uses 32 and 64-bit safe eGetPtr UD function.
     - Fixed the returned DAC values of the readDefaultsConfig method to little
       endian.
-
+    - Various fixes, updates and cleanup from mnaberez.
