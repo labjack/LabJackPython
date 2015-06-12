@@ -14,8 +14,8 @@ A typical user should start with their device's module, such as u3.py.
 from __future__ import with_statement
 
 import atexit # For auto-closing devices
-import ctypes
 import socket
+import ctypes
 import struct
 import sys
 import threading # For a thread-safe device lock

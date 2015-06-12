@@ -253,3 +253,6 @@ Version History
     - Fixed the returned DAC values of the readDefaultsConfig method to little
       endian.
     - Various fixes, updates and cleanup from mnaberez.
+- Next Release
+    - Moved the ctypes import after socket to prevent an "Aborted (core dump)"
+      exit error on Cygwin.
