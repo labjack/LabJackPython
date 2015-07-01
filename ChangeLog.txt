@@ -160,7 +160,7 @@ Version History
 - August 26, 2011
     - Updated README file to include a U12 example and license information.
     - Added U6 timer mode 14 support.
-    - Modified UE9 TCP open to create TCP sockets without a UDP broadcast when 
+    - Modified UE9 TCP open to create TCP sockets without a UDP broadcast when
       IP address is specified (Linux/Mac OS X).
     - Added NoStopWhenRestarting parameter to UE9 and U3 classes' i2c method,
       and reordered i2c parameters so they are the same across UE9, U3 and U6
@@ -256,3 +256,4 @@ Version History
 - Next Release
     - Moved the ctypes import after socket to prevent an "Aborted (core dump)"
       exit error on Cygwin.
+    - _makeDeviceFromHandle function now gets/sets the U3's bootloaderVersion.

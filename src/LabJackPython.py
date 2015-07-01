@@ -1499,18 +1499,18 @@ def _makeDeviceFromHandle(handle, deviceType):
         try:
             device.write(sndDataBuff, checksum = False)
             rcvDataBuff = device.read(38)
-        
+            
             # Local ID
             device.localId = rcvDataBuff[8] & 0xff
-        
+            
             # MAC Address
             device.macAddress = "%02X:%02X:%02X:%02X:%02X:%02X" % (rcvDataBuff[33], rcvDataBuff[32], rcvDataBuff[31], rcvDataBuff[30], rcvDataBuff[29], rcvDataBuff[28])
-        
+            
             # Parse out serial number
             device.serialNumber = struct.unpack("<I", struct.pack("BBBB", rcvDataBuff[28], rcvDataBuff[29], rcvDataBuff[30], 0x10))[0]
-        
-            #Parse out the IP address
-            device.ipAddress = "%s.%s.%s.%s" % (rcvDataBuff[13], rcvDataBuff[12], rcvDataBuff[11], rcvDataBuff[10] )
+            
+            # Parse out the IP address
+            device.ipAddress = "%s.%s.%s.%s" % (rcvDataBuff[13], rcvDataBuff[12], rcvDataBuff[11], rcvDataBuff[10])
             
             # Comm FW Version
             device.commFWVersion = "%s.%02d" % (rcvDataBuff[37], rcvDataBuff[36])
@@ -1521,11 +1521,10 @@ def _makeDeviceFromHandle(handle, deviceType):
             device.changed['ipAddress'] = device.ipAddress
             device.changed['commFWVersion'] = device.commFWVersion
             
-            
         except Exception:
             e = sys.exc_info()[1]
             device.close()
-            raise e  
+            raise e
         
     elif deviceType == LJ_dtU3:
         sndDataBuff = [0] * 26
@@ -1536,7 +1535,7 @@ def _makeDeviceFromHandle(handle, deviceType):
         
         try:
             device.write(sndDataBuff, checksum = False)
-            rcvDataBuff = device.read(38) 
+            rcvDataBuff = device.read(38)
         except LabJackException:
             e = sys.exc_info()[1]
             device.close()
@@ -1547,6 +1546,7 @@ def _makeDeviceFromHandle(handle, deviceType):
         device.serialNumber = struct.unpack('<I', serialNumber)[0]
         device.ipAddress = ""
         device.firmwareVersion = "%d.%02d" % (rcvDataBuff[10], rcvDataBuff[9])
+        device.bootloaderVersion = "%s.%02d" % (rcvDataBuff[12], rcvDataBuff[11])
         device.hardwareVersion = "%d.%02d" % (rcvDataBuff[14], rcvDataBuff[13])
         device.versionInfo = rcvDataBuff[37]
         device.deviceName = 'U3'
@@ -1564,6 +1564,7 @@ def _makeDeviceFromHandle(handle, deviceType):
         device.changed['versionInfo'] = device.versionInfo
         device.changed['deviceName'] = device.deviceName
         device.changed['hardwareVersion'] = device.hardwareVersion
+        device.changed['bootloaderVersion'] = device.bootloaderVersion
         
     elif deviceType == 6:
         command = [ 0 ] * 26
@@ -1584,13 +1585,13 @@ def _makeDeviceFromHandle(handle, deviceType):
         device.ipAddress = ""
         
         device.firmwareVersion = "%s.%02d" % (rcvDataBuff[10], rcvDataBuff[9])
-        device.bootloaderVersion = "%s.%02d" % (rcvDataBuff[12], rcvDataBuff[11]) 
+        device.bootloaderVersion = "%s.%02d" % (rcvDataBuff[12], rcvDataBuff[11])
         device.hardwareVersion = "%s.%02d" % (rcvDataBuff[14], rcvDataBuff[13])
         device.versionInfo = rcvDataBuff[37]
         device.deviceName = 'U6'
         if device.versionInfo == 12:
             device.deviceName = 'U6-Pro'
-            
+        
         device.changed['localId'] = device.localId
         device.changed['serialNumber'] = device.serialNumber
         device.changed['ipAddress'] = device.ipAddress
@@ -1612,10 +1613,10 @@ def _makeDeviceFromHandle(handle, deviceType):
                 break
             except Modbus.ModbusException:
                 pass
-                
+        
         if serial is None:
             raise LabJackException("Error reading serial number.")
-                
+        
         device.serialNumber = serial
         device.localId = 0
         device.deviceName = "SkyMote Bridge"
