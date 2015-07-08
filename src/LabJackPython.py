@@ -15,7 +15,7 @@ from __future__ import with_statement
 
 import atexit # For auto-closing devices
 import socket
-import ctypes
+import ctypes # import after socket or cygwin crashes "Aborted (core dump)"
 import struct
 import sys
 import threading # For a thread-safe device lock
