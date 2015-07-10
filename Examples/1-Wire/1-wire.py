@@ -20,13 +20,13 @@ def oneWire(sense_pin, rom_function, rom_id, num_rx, tx_data = [], options = Non
 	# Configure Options
 	options_val = 0
 	if options is not None:
-		if options.has_key('dpu_control_enable'):
+		if 'dpu_control_enable' in options:
 			if options.dpu_control_enable:
 				options_val |= 1
-		if options.has_key('dpu_polarity'):
+		if 'dpu_polarity' in options:
 			if options.dpu_polarity:
 				options_val |= 1 << 1
-		if options.has_key('dpu_idle'):
+		if 'dpu_idle' in options:
 			if options.dpu_idle:
 				options_val |= 1 << 2
 
