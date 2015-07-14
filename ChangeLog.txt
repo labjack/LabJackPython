@@ -252,7 +252,8 @@ Version History
       address. The function now uses 32 and 64-bit safe eGetPtr UD function.
     - Fixed the returned DAC values of the readDefaultsConfig method to little
       endian.
-    - Various fixes, updates and cleanup from mnaberez.
+    - Fixed many Pyflakes warnings such as unused variables and unused imports.
+    - Removed use of "import *" from most modules.
 - Next Release
     - Moved the ctypes import after socket to prevent an "Aborted (core dump)"
       exit error on Cygwin.
