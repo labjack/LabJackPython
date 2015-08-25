@@ -719,13 +719,7 @@ class U6(Device):
                 elif self.streamChannelNumbers[j] >= 200:
                     value = struct.unpack('<H', sample )[0]
                 else:
-                    if (self.streamChannelOptions[j] >> 7) == 1:
-                        # do signed
-                        value = struct.unpack('<H', sample )[0]
-                    else:
-                        # do unsigned
-                        value = struct.unpack('<H', sample )[0]
-                    
+                    value = struct.unpack('<H', sample )[0]
                     gainIndex = (self.streamChannelOptions[j] >> 4) & 0x3
                     value = self.binaryToCalibratedAnalogVoltage(gainIndex, value, is16Bits = True, resolutionIndex = 0)
                 
