@@ -258,3 +258,4 @@ Version History
     - Moved the ctypes import after socket to prevent an "Aborted (core dump)"
       exit error on Cygwin.
     - _makeDeviceFromHandle function now gets/sets the U3's bootloaderVersion.
+    - Fixed the reset method for LabJackPython module's Device class.

@@ -687,8 +687,8 @@ class Device(object):
     
         Sample Usage:
     
-        >>> u3 = OpenLabJack(LJ_dtU3, LJ_ctUSB, "0", 1)
-        >>> u3.reset()
+        >>> d = ue9.UE9()
+        >>> d.reset()
         
         @type  None
         @param Function takes no arguments
@@ -697,8 +697,7 @@ class Device(object):
         @return: Function returns nothing.
             
         @raise LabJackException: 
-        """        
-        
+        """
         if _os_name == 'nt':
             ec = staticLib.ResetLabJack(self.handle)
     
@@ -707,15 +706,12 @@ class Device(object):
             sndDataBuff = [0] * 4
             
             #Make the reset packet
-            sndDataBuff[0] = 0x9B
+            sndDataBuff[0] = 0x9B #Checksum
             sndDataBuff[1] = 0x99
             sndDataBuff[2] = 0x02
             
             try:
-                self.write(sndDataBuff)
-                rcvDataBuff = self.read(4)
-                if len(rcvDataBuff) != 4:
-                    raise LabJackException(0, "Unable to reset labJack 2")
+                self._writeRead(sndDataBuff, 4, [], False, False, False)
             except Exception:
                 e = sys.exc_info()[1]
                 raise LabJackException(0, "Unable to reset labjack: %s" % str(e))
