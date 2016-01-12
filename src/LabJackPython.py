@@ -706,9 +706,9 @@ class Device(object):
             sndDataBuff = [0] * 4
             
             #Make the reset packet
-            sndDataBuff[0] = 0x9B #Checksum
+            sndDataBuff[0] = 0x9C #Checksum
             sndDataBuff[1] = 0x99
-            sndDataBuff[2] = 0x02
+            sndDataBuff[2] = 0x03
             
             try:
                 self._writeRead(sndDataBuff, 4, [], False, False, False)
@@ -1453,7 +1453,7 @@ def _openWirelessBridgeOnWindows(firstFound, pAddress, devNumber):
 def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, devNumber = None, handleOnly = False, LJSocket = None):
     """openLabJack(deviceType, connectionType, firstFound = True, pAddress = 1, LJSocket = None)
     
-        Note: On Windows, Ue9 over Ethernet, pAddress MUST be the IP address. 
+        Note: On Windows, UE9 over Ethernet, pAddress MUST be the IP address. 
     """
     handle = None
 

@@ -259,3 +259,5 @@ Version History
       exit error on Cygwin.
     - _makeDeviceFromHandle function now gets/sets the U3's bootloaderVersion.
     - Fixed the reset method for LabJackPython module's Device class.
+    - Updated the reset method of the Device class to perform a hard and soft
+      reset on Linux and Mac OS X like the Windows UD function ResetLabJack.
