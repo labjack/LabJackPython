@@ -14,6 +14,7 @@ import datetime
 import select
 import socket
 import struct
+import warnings
 
 try:
   import ConfigParser
@@ -1289,10 +1290,10 @@ class UE9(Device):
         return { 'UpdateDAC0onTimeout' : bool(result[7]& 1), 'UpdateDAC1onTimeout' : bool((result[7] >> 1) & 1), 'UpdateDigitalIOAonTimeout' : bool((result[7] >> 3) & 1), 'UpdateDigitalIOBonTimeout' : bool((result[7] >> 4) & 1), 'ResetControlOnTimeout' : bool((result[7] >> 5) & 1), 'ResetCommOnTimeout' : bool((result[7] >> 6) & 1), 'TimeoutPeriod' : struct.unpack('<H', struct.pack("BB", *result[8:10]))[0], 'DIOConfigA' : result[10], 'DIOConfigB' : result[11], 'DAC0' : struct.unpack('<H', struct.pack("BB", *result[12:14]))[0], 'DAC1' : struct.unpack('<H', struct.pack("BB", *result[14:16]))[0] }
 
     SPIModes = { 'A' : 0, 'B' : 1, 'C' : 2, 'D' : 3 }
-    def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 1, CLKPinNum = 0, MISOPinNum = 3, MOSIPinNum = 2):
+    def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 1, CLKPinNum = 0, MISOPinNum = 3, MOSIPinNum = 2, CSPINNum = None):
         """
         Name: UE9.spi(SPIBytes, AutoCS=True, DisableDirConfig = False,
-                     SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 1,
+                     SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 1,
                      CLKPinNum = 0, MISOPinNum = 3, MOSIPinNum = 2)
         
         Args: SPIBytes, a list of bytes to be transferred.
@@ -1302,10 +1303,15 @@ class UE9(Device):
               communication.
         
         NOTE: The return has been changed to a dictionary with
-              NumSPIBytesTransferred and SPIBytes.
+              NumSPIBytesTransferred and SPIBytes.  The keyword
+              argument CSPinNum was named CSPINNum in old versions.
         """
         if not isinstance(SPIBytes, list):
             raise LabJackException("SPIBytes MUST be a list of bytes")
+
+        if CSPINNum is not None:
+            warnings.warn("CSPINNum is deprecated, use CSPinNum instead", DeprecationWarning)
+            CSPinNum = CSPINNum
         
         numSPIBytes = len(SPIBytes)
         
@@ -1333,7 +1339,7 @@ class UE9(Device):
         
         command[7] = SPIClockFactor
         #command[8] = Reserved
-        command[9] = CSPINNum
+        command[9] = CSPinNum
         command[10] = CLKPinNum
         command[11] = MISOPinNum
         command[12] = MOSIPinNum

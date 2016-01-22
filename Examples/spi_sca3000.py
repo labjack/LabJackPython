@@ -8,22 +8,22 @@ AppNote online:
 The default SPI settings for a UE9 are:
 
   AutoCS = True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0,
-  CSPINNum = 1 (FIO1), CLKPinNum = 0 (FIO0), MISOPinNum = 3 (FIO3),
+  CSPinNum = 1 (FIO1), CLKPinNum = 0 (FIO0), MISOPinNum = 3 (FIO3),
   MOSIPinNum = 2 (FIO2)
 
 The default SPI settings for a U6 are:
 
   AutoCS = True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0,
-  CSPINNum = 0 (FIO0), CLKPinNum = 1 (FIO1), MISOPinNum = 2 (FIO2),
+  CSPinNum = 0 (FIO0), CLKPinNum = 1 (FIO1), MISOPinNum = 2 (FIO2),
   MOSIPinNum = 3 (FIO3)
 
 The default SPI settings for a U3 are:
 
   AutoCS = True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0,
-  CSPINNum = 4 (FIO4), CLKPinNum = 5 (FIO5), MISOPinNum = 6 (FIO6),
+  CSPinNum = 4 (FIO4), CLKPinNum = 5 (FIO5), MISOPinNum = 6 (FIO6),
   MOSIPinNum = 7 (FIO7)
 
-Note the CSPINNum, CLKPinNum, MISOPinNum, and MOSIPinNum pin numbers and make
+Note the CSPinNum, CLKPinNum, MISOPinNum, and MOSIPinNum pin numbers and make
 your connections accordingly.
 """
 import os

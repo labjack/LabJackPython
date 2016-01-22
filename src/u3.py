@@ -19,6 +19,7 @@ Section Number Mapping:
 import collections
 import struct
 import sys
+import warnings
 
 try:
     import ConfigParser
@@ -1203,10 +1204,10 @@ class U3(Device):
         return watchdogStatus
     watchdog.section = 2
 
-    def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 4, CLKPinNum = 5, MISOPinNum = 6, MOSIPinNum = 7):
+    def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 4, CLKPinNum = 5, MISOPinNum = 6, MOSIPinNum = 7, CSPINNum = None):
         """
         Name: U3.spi(SPIBytes, AutoCS=True, DisableDirConfig = False,
-                     SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 4,
+                     SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 4,
                      CLKPinNum = 5, MISOPinNum = 6, MOSIPinNum = 7)
         
         Args: SPIBytes, a list of bytes to be transferred.
@@ -1217,11 +1218,16 @@ class U3(Device):
 
         NOTE: Requires U3 hardware version 1.21 or greater.  Also,
               the return has been changed to a dictionary with
-              NumSPIBytesTransferred and SPIBytes.
+              NumSPIBytesTransferred and SPIBytes.  The keyword
+              argument CSPinNum was named CSPINNum in old versions.
         """
         if not isinstance(SPIBytes, list):
             raise LabJackException("SPIBytes MUST be a list of bytes")
-        
+
+        if CSPINNum is not None:
+            warnings.warn("CSPINNum is deprecated, use CSPinNum instead", DeprecationWarning)
+            CSPinNum = CSPINNum
+
         numSPIBytes = len(SPIBytes)
         
         oddPacket = False
@@ -1253,7 +1259,7 @@ class U3(Device):
         
         command[7] = SPIClockFactor
         #command[8] = Reserved
-        command[9] = CSPINNum
+        command[9] = CSPinNum
         command[10] = CLKPinNum
         command[11] = MISOPinNum
         command[12] = MOSIPinNum

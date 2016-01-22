@@ -13,6 +13,7 @@ http://labjack.com/support/u6/users-guide/5.2
 import collections
 import struct
 import sys
+import warnings
 
 try:
     import ConfigParser
@@ -797,10 +798,10 @@ class U6(Device):
         
         return watchdogStatus
 
-    def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 0, CLKPinNum = 1, MISOPinNum = 2, MOSIPinNum = 3):
+    def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 0, CLKPinNum = 1, MISOPinNum = 2, MOSIPinNum = 3, CSPINNum = None):
         """
         Name: U6.spi(SPIBytes, AutoCS=True, DisableDirConfig = False,
-                     SPIMode = 'A', SPIClockFactor = 0, CSPINNum = 0,
+                     SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 0,
                      CLKPinNum = 1, MISOPinNum = 2, MOSIPinNum = 3)
         
         Args: SPIBytes, A list of bytes to send.
@@ -811,16 +812,23 @@ class U6(Device):
                                 of the line.
               SPIMode, 'A', 'B', 'C',  or 'D'. 
               SPIClockFactor, Sets the frequency of the SPI clock.
-              CSPINNum, which pin is CS
+              CSPinNum, which pin is CS
               CLKPinNum, which pin is CLK
               MISOPinNum, which pin is MISO
               MOSIPinNum, which pin is MOSI
         
         Desc: Sends and receives serial data using SPI synchronous
               communication. See Section 5.2.17 of the user's guide.
+
+        NOTE: The keyword argument CSPinNum was named CSPINNum in
+              old versions.
         """
         if not isinstance(SPIBytes, list):
             raise LabJackException("SPIBytes MUST be a list of bytes")
+
+        if CSPINNum is not None:
+            warnings.warn("CSPINNum is deprecated, use CSPinNum instead", DeprecationWarning)
+            CSPinNum = CSPINNum
         
         numSPIBytes = len(SPIBytes)
         
@@ -853,7 +861,7 @@ class U6(Device):
         
         command[7] = SPIClockFactor
         #command[8] = Reserved
-        command[9] = CSPINNum
+        command[9] = CSPinNum
         command[10] = CLKPinNum
         command[11] = MISOPinNum
         command[12] = MOSIPinNum
