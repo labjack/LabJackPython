@@ -1289,7 +1289,6 @@ class UE9(Device):
         result = self._writeRead(command, 16, [0xF8, 0x05, 0x09], checksum = False)
         return { 'UpdateDAC0onTimeout' : bool(result[7]& 1), 'UpdateDAC1onTimeout' : bool((result[7] >> 1) & 1), 'UpdateDigitalIOAonTimeout' : bool((result[7] >> 3) & 1), 'UpdateDigitalIOBonTimeout' : bool((result[7] >> 4) & 1), 'ResetControlOnTimeout' : bool((result[7] >> 5) & 1), 'ResetCommOnTimeout' : bool((result[7] >> 6) & 1), 'TimeoutPeriod' : struct.unpack('<H', struct.pack("BB", *result[8:10]))[0], 'DIOConfigA' : result[10], 'DIOConfigB' : result[11], 'DAC0' : struct.unpack('<H', struct.pack("BB", *result[12:14]))[0], 'DAC1' : struct.unpack('<H', struct.pack("BB", *result[14:16]))[0] }
 
-    SPIModes = { 'A' : 0, 'B' : 1, 'C' : 2, 'D' : 3 }
     def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 1, CLKPinNum = 0, MISOPinNum = 3, MOSIPinNum = 2, CSPINNum = None):
         """
         Name: UE9.spi(SPIBytes, AutoCS=True, DisableDirConfig = False,
@@ -1335,7 +1334,11 @@ class UE9(Device):
         if DisableDirConfig:
             command[6] |= (1 << 6)
         
-        command[6] |= ( self.SPIModes[SPIMode] & 3 )
+        spiModes = ('A', 'B', 'C', 'D')
+        try:
+            command[6] |= ( spiModes.index(SPIMode) & 3 )
+        except ValueError:
+            raise LabJackException("Invalid SPIMode %r, valid modes are: %r" % (SPIMode, spiModes))
         
         command[7] = SPIClockFactor
         #command[8] = Reserved
