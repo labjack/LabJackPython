@@ -265,3 +265,5 @@ Version History
       "CSPINNum" has been renamed to "CSPinNum" to be consistent with the other
       keyword arguments.  The old "CSPINNum" will still work but is deprecated
       and will be removed in a future version.
+    - Removed the u3SampleAndLogToCloudDot.py example.  The CloudDot service
+      this example uses is no longer available.
