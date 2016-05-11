@@ -267,3 +267,4 @@ Version History
       and will be removed in a future version.
     - Removed the u3SampleAndLogToCloudDot.py example.  The CloudDot service
       this example uses is no longer available.
+    - Updated the U6 streamConfig docstring.

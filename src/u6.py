@@ -613,9 +613,7 @@ class U6(Device):
                                since SampleFrequency has always set the scan
                                frequency and the name is confusing.
         
-        Desc: Configures streaming on the U6. On a decent machine, you can
-              expect to stream a range of 0.238 Hz to 15 Hz. Without the
-              conversion, you can get up to 55 Hz.
+        Desc: Configures streaming on the U6.
         """
         if NumChannels != len(ChannelNumbers) or NumChannels != len(ChannelOptions):
             raise LabJackException("NumChannels must match length of ChannelNumbers and ChannelOptions")
