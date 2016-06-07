@@ -268,3 +268,6 @@ Version History
     - Removed the u3SampleAndLogToCloudDot.py example.  The CloudDot service
       this example uses is no longer available.
     - Updated the U6 streamConfig docstring.
+    - Fixed a bug in the U6 processStreamData method where high-resolution
+      calibration constants were being used on a U6-Pro by mistake when
+      calculating the voltage value.

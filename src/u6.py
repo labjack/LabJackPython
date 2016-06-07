@@ -720,7 +720,7 @@ class U6(Device):
                 else:
                     value = struct.unpack('<H', sample )[0]
                     gainIndex = (self.streamChannelOptions[j] >> 4) & 0x3
-                    value = self.binaryToCalibratedAnalogVoltage(gainIndex, value, is16Bits = True, resolutionIndex = 0)
+                    value = self.binaryToCalibratedAnalogVoltage(gainIndex, value, is16Bits = True, resolutionIndex = 1)
                 
                 returnDict["AIN%s" % self.streamChannelNumbers[j]].append(value)
                 
