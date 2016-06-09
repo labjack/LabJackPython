@@ -271,3 +271,5 @@ Version History
     - Fixed a bug in the U6 processStreamData method where high-resolution
       calibration constants were being used on a U6-Pro by mistake when
       calculating the voltage value.
+    - Replaced print statements with print function calls in the modules for
+      Python 3 compatibility.
