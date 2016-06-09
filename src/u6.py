@@ -5,7 +5,7 @@ Desc: Defines the U6 class, which makes working with a U6 much easier. All of
       class. There are also a handful additional functions which improve upon
       the interface provided by the low-level functions.
 
-To learn about the low-level functions, please see Section 5.2 of the U6 User's 
+To learn about the low-level functions, please see Section 5.2 of the U6 User's
 Guide:
 
 http://labjack.com/support/u6/users-guide/5.2
@@ -17,7 +17,7 @@ import warnings
 
 try:
     import ConfigParser
-except ImportError: # Python 3
+except ImportError:  # Python 3
     import configparser as ConfigParser
 
 from LabJackPython import (
@@ -33,16 +33,16 @@ from LabJackPython import (
 
 def openAllU6():
     """
-    A helpful function which will open all the connected U6s. Returns a 
+    A helpful function which will open all the connected U6s. Returns a
     dictionary where the keys are the serialNumber, and the value is the device
     object.
     """
     returnDict = dict()
-    
+
     for i in range(deviceCount(6)):
         d = U6(firstFound = False, devNumber = i+1)
         returnDict[str(d.serialNumber)] = d
-        
+
     return returnDict
 
 def dumpPacket(buffer):
@@ -59,7 +59,7 @@ def getBit(n, bit):
     Args: n, the original integer you want the bit of
           bit, the index of the bit you want
     Desc: Returns the bit at position "bit" of integer "n"
-    
+
     >>> n = 5
     >>> bit = 2
     >>> getBit(n, bit)
@@ -108,10 +108,10 @@ class CalibrationInfo(object):
         self.ain100mvOffset = -0.105869565220
         self.ain10mvSlope = 3.1580578 * (10 ** -7)
         self.ain10mvOffset = -0.0105869565220
-        
+
         self.ainSlope = [self.ain10vSlope, self.ain1vSlope, self.ain100mvSlope, self.ain10mvSlope]
         self.ainOffset = [self.ain10vOffset, self.ain1vOffset, self.ain100mvOffset, self.ain10mvOffset]
-        
+
         # Negative Channel calibration
         self.ain10vNegSlope = -3.15805800 * (10 ** -4)
         self.ain10vCenter = 33523.0
@@ -178,7 +178,7 @@ class U6(Device):
     Example:
     >>> import u6
     >>> d = u6.U6()
-    >>> print d.configU6()
+    >>> print(d.configU6())
     {'SerialNumber': 320032102, ... , 'FirmwareVersion': '1.26'}
     """
     def __init__(self, debug = False, autoOpen = True, **kargs):
@@ -266,7 +266,7 @@ class U6(Device):
         except LabJackException:
             e = sys.exc_info()[1]
             if e.errorCode is 4:
-                print "NOTE: ConfigU6 returned an error of 4. This probably means you are using U6 with a *really old* firmware. Please upgrade your U6's firmware as soon as possible."
+                print("NOTE: ConfigU6 returned an error of 4. This probably means you are using U6 with a *really old* firmware. Please upgrade your U6's firmware as soon as possible.")
                 result = self._writeRead(command, 38, [0xF8, 0x10, 0x08], checkBytes = False)
             else:
                 raise e
@@ -450,7 +450,7 @@ class U6(Device):
                 raise LabJackException("Got incorrect command bytes")
         except LowlevelErrorException:
             if isinstance(commandlist[0], list):
-                culprit = commandlist[0][ (rcvBuffer[7] -1) ]
+                culprit = commandlist[0][ (rcvBuffer[7] - 1) ]
             else:
                 culprit = commandlist[ (rcvBuffer[7] -1) ]
             
@@ -539,10 +539,10 @@ class U6(Device):
         Desc: The U6 uses flash memory that must be erased before writing.
               Please read section 5.2.8 of the user's guide before you do
               something you may regret.
-        
+
         >>> myU6 = U6()
         >>> myU6.eraseMem()
-        
+
         NOTE: Do not call this function while streaming.
         """
         if not isinstance(EraseCal, bool):
@@ -699,8 +699,8 @@ class U6(Device):
               calibrations.
               
         >>> reading = d.streamData(convert = False)
-        >>> print proccessStreamData(reading['result'])
-        defaultDict(list, {'AIN0' : [3.123, 3.231, 3.232, ...]})
+        >>> print(proccessStreamData(reading['result']))
+        defaultDict(list, {'AIN0': [3.123, 3.231, 3.232, ...]})
         """
         if numBytes is None:
             numBytes = 14 + (self.streamSamplesPerPacket * 2)
@@ -1106,7 +1106,7 @@ class U6(Device):
         <ainDiffOffset: -2.46886488446,...>
         """
         if self.debug is True:
-            print "Calibration data retrieval"
+            print("Calibration data retrieval")
         
         self.calInfo.nominal = False
         
@@ -1356,7 +1356,7 @@ class U6(Device):
         Example:
         >>> import u6
         >>> d = u6.U6()
-        >>> print d.getDIState(0)
+        >>> print(d.getDIState(0))
         1
         """
         return self.getFeedback(BitDirWrite(ioNum, 0), BitStateRead(ioNum))[1]
@@ -1375,7 +1375,7 @@ class U6(Device):
         Example:
         >>> import u6
         >>> d = u6.U6()
-        >>> print d.getDIOState(0)
+        >>> print(d.getDIOState(0))
         1
         """
         return self.getFeedback(BitStateRead(ioNum))[0]
@@ -2127,6 +2127,7 @@ class DAC1_16(DAC16):
         
     def __repr__(self):
         return "<u6.DAC1_16( Value = %s )>" % self.value
+
         
 class Timer(FeedbackCommand):
     """
@@ -2180,6 +2181,7 @@ class Timer(FeedbackCommand):
         else:
             return struct.unpack('<I', inStr )[0]
 
+
 class Timer0(Timer):
     """
     For reading the value of Timer0. It provides the ability to update/reset
@@ -2203,6 +2205,7 @@ class Timer0(Timer):
         
     def __repr__(self):
         return "<u6.Timer0( UpdateReset = %s, Value = %s, Mode = %s )>" % (self.updateReset, self.value, self.mode)
+
 
 class Timer1(Timer):
     """
@@ -2228,6 +2231,7 @@ class Timer1(Timer):
     def __repr__(self):
         return "<u6.Timer1( UpdateReset = %s, Value = %s, Mode = %s )>" % (self.updateReset, self.value, self.mode)
 
+
 class Timer2(Timer):
     """
     For reading the value of Timer2. It provides the ability to update/reset
@@ -2252,6 +2256,7 @@ class Timer2(Timer):
     def __repr__(self):
         return "<u6.Timer2( UpdateReset = %s, Value = %s, Mode = %s )>" % (self.updateReset, self.value, self.mode)
 
+
 class Timer3(Timer):
     """
     For reading the value of Timer3. It provides the ability to update/reset
@@ -2275,6 +2280,7 @@ class Timer3(Timer):
     
     def __repr__(self):
         return "<u6.Timer3( UpdateReset = %s, Value = %s, Mode = %s )>" % (self.updateReset, self.value, self.mode)
+
 
 class QuadratureInputTimer(Timer):
     """
@@ -2302,6 +2308,7 @@ class QuadratureInputTimer(Timer):
     def __repr__(self):
         return "<u6.QuadratureInputTimer( UpdateReset = %s, Value = %s )>" % (self.updateReset, self.value)
 
+
 class TimerStopInput1(Timer1):
     """
     For reading a stop input timer. They are special because the value returns
@@ -2328,6 +2335,7 @@ class TimerStopInput1(Timer1):
     
     def __repr__(self):
         return "<u6.TimerStopInput1( UpdateReset = %s, Value = %s )>" % (self.updateReset, self.value)
+
 
 class TimerConfig(FeedbackCommand):
     """
@@ -2359,6 +2367,7 @@ class TimerConfig(FeedbackCommand):
     def __repr__(self):
         return "<u6.TimerConfig( timer = %s, TimerMode = %s, Value = %s )>" % (self.timer, self.timerMode, self.value)
 
+
 class Timer0Config(TimerConfig):
     """
     This IOType configures Timer0.
@@ -2375,6 +2384,7 @@ class Timer0Config(TimerConfig):
     
     def __repr__(self):
         return "<u6.Timer0Config( TimerMode = %s, Value = %s )>" % (self.timerMode, self.value)
+
 
 class Timer1Config(TimerConfig):
     """
@@ -2393,6 +2403,7 @@ class Timer1Config(TimerConfig):
     def __repr__(self):
         return "<u6.Timer1Config( TimerMode = %s, Value = %s )>" % (self.timerMode, self.value)
 
+
 class Timer2Config(TimerConfig):
     """
     This IOType configures Timer2.
@@ -2410,6 +2421,7 @@ class Timer2Config(TimerConfig):
     def __repr__(self):
         return "<u6.Timer2Config( TimerMode = %s, Value = %s )>" % (self.timerMode, self.value)
 
+
 class Timer3Config(TimerConfig):
     """
     This IOType configures Timer3.
@@ -2426,6 +2438,7 @@ class Timer3Config(TimerConfig):
     
     def __repr__(self):
         return "<u6.Timer3Config( TimerMode = %s, Value = %s )>" % (self.timerMode, self.value)
+
 
 class Counter(FeedbackCommand):
     '''
@@ -2456,6 +2469,7 @@ class Counter(FeedbackCommand):
         inStr = ''.join([chr(x) for x in input])
         return struct.unpack('<I', inStr )[0]
 
+
 class Counter0(Counter):
     '''
     Counter0 Feedback command
@@ -2472,9 +2486,10 @@ class Counter0(Counter):
     '''
     def __init__(self, Reset = False):
         Counter.__init__(self, 0, Reset)
-    
+
     def __repr__(self):
         return "<u6.Counter0( Reset = %s )>" % self.reset
+
 
 class Counter1(Counter):
     '''
@@ -2486,13 +2501,12 @@ class Counter1(Counter):
 
     Returns the current count from the counter if enabled.  If reset,
     this is the value before the reset.
-    
+
     >>> d.getFeedback( u6.Counter1( Reset = False ) )
     [ 2183 ]
     '''
     def __init__(self, Reset = False):
         Counter.__init__(self, 1, Reset)
-    
+
     def __repr__(self):
         return "<u6.Counter1( Reset = %s )>" % self.reset
-
