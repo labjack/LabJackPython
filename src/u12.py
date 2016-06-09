@@ -58,48 +58,48 @@ class BitField(object):
     Provides a method for working with bit fields.
     
     >>> bf = BitField()
-    >>> print bf
+    >>> print(bf)
     [ bit7 = 0, bit6 = 0, bit5 = 0, bit4 = 0, bit3 = 0, bit2 = 0, bit1 = 0, bit0 = 0 ]
     
     You can use attribute accessing for easy bit flipping:
     >>> bf.bit4 = 1
     >>> bf.bit7 = 1
-    >>> print bf
+    >>> print(bf)
     [ bit7 = 1, bit6 = 0, bit5 = 0, bit4 = 1, bit3 = 0, bit2 = 0, bit1 = 0, bit0 = 0 ]
     
     You can also use list-style accessing. Counting starts on the left:
-    >>> print bf[0] # List index 0 is bit7
+    >>> print(bf[0])  # List index 0 is bit7
     1
-    >>> print bf[3] # List index 3 is bit4
+    >>> print(bf[3])  # List index 3 is bit4
     1
     
     List-style slicing:
-    >>> print bf[3:]
+    >>> print(bf[3:])
     [1, 0, 0, 0, 0]
     
     List-style setting bits works as you would expect:
     >>> bf[1] = 1
-    >>> print bf
+    >>> print(bf)
     [ bit7 = 1, bit6 = 1, bit5 = 0, bit4 = 1, bit3 = 0, bit2 = 0, bit1 = 0, bit0 = 0 ]
     
     It provides methods for going to and from bytes:
     
     >>> bf = BitField(123)
-    >>> print bf
+    >>> print(bf)
     [ bit7 = 0, bit6 = 1, bit5 = 1, bit4 = 1, bit3 = 1, bit2 = 0, bit1 = 1, bit0 = 1 ]
     
     >>> bf = BitField()
     >>> bf.fromByte(123) # Modifies bf in place
-    >>> print bf
+    >>> print(bf)
     [ bit7 = 0, bit6 = 1, bit5 = 1, bit4 = 1, bit3 = 1, bit2 = 0, bit1 = 1, bit0 = 1 ]
     
     >>> bf.bit4 = 0
-    >>> print bf.asByte()
+    >>> print(bf.asByte())
     107
     
     You can iterate of the raw bits ( 1 and 0 Vs. '1' and '0') easily:
     >>> for i in bf:
-    ...     print i
+    ...     print(i)
     0
     1
     1
@@ -111,7 +111,7 @@ class BitField(object):
     
     You can also iterate over the labels and their data values using items():
     >>> for label, data in bf.items():
-    ...     print label, data
+    ...     print("%s %s" % (label, data))
     bit7 0
     bit6 1
     bit5 1
@@ -144,7 +144,7 @@ class BitField(object):
         
         With out any arguments, you get a bit field that looks like this:
         >>> bf = BitField()
-        >>> print bf
+        >>> print(bf)
         [ bit7 = 0, bit6 = 0, bit5 = 0, bit4 = 0, bit3 = 0, bit2 = 0, bit1 = 0,
         bit0 = 0 ]
         
@@ -154,7 +154,7 @@ class BitField(object):
         
         To make a BitField with labels for FIO0-7 you can do the following:
         >>> bf = BitField(labelPrefix = "FIO")
-        >>> print bf
+        >>> print(bf)
         [ FIO7 = 0, FIO6 = 0, FIO5 = 0, FIO4 = 0, FIO3 = 0, FIO2 = 0, FIO1 = 0,
           FIO0 = 0 ]
         
@@ -163,7 +163,7 @@ class BitField(object):
         >>> names = [ "Goodreau", "Jerri", "Selena", "Allan", "Tania",
                       "Kathrine", "Jessie", "Zelma" ]
         >>> bf = BitField( labelPrefix = "", labelList = names)
-        >>> print bf
+        >>> print(bf)
         [ Goodreau = 0, Jerri = 0, Selena = 0, Allan = 0, Tania = 0,
           Kathrine = 0, Jessie = 0, Zelma = 0 ]
           
@@ -172,13 +172,13 @@ class BitField(object):
         directions:
         >>> dirs = BitField(rawByte = 5, labelPrefix = "FIO", 
                               zeroLabel = "Output", oneLabel = "Input")
-        >>> print dirs
+        >>> print(dirs)
         [ FIO7 = Output, FIO6 = Output, FIO5 = Output, FIO4 = Output, 
           FIO3 = Output, FIO2 = Input, FIO1 = Output, FIO0 = Input ]
         
         Note, that when you access the value, you will get 1 or 0, not "Input"
         or "Output. For example:
-        >>> print dirs.FIO3
+        >>> print(dirs.FIO3)
         0
         """
         # Do labels first, so that self.something = something works.
@@ -213,7 +213,7 @@ class BitField(object):
         
         >>> bf = BitField()
         >>> bf.fromByte(123) # Modifies bf in place
-        >>> print bf
+        >>> print(bf)
         [ bit7 = 0, bit6 = 1, bit5 = 1, bit4 = 1, bit3 = 1, bit2 = 0, bit1 = 1,
           bit0 = 1 ]
         """
@@ -235,7 +235,7 @@ class BitField(object):
         >>> bf = BitField()
         >>> bf.fromByte(123) # Modifies bf in place
         >>> bf.bit4 = 0
-        >>> print bf.asByte()
+        >>> print(bf.asByte())
         107
         """
         byteVal = 0
@@ -304,11 +304,11 @@ class BitField(object):
               
         >>> dirs = BitField(rawByte = 5, labelPrefix = "FIO", 
                               zeroLabel = "Output", oneLabel = "Input")
-        >>> print dirs
+        >>> print(dirs)
         [ FIO7 = Output, FIO6 = Output, FIO5 = Output, FIO4 = Output, 
           FIO3 = Output, FIO2 = Input, FIO1 = Output, FIO0 = Input ]
         >>> for label, data in dirs.items():
-        ...   print label, data
+        ...   print("%s %s" % (label, data))
         ... 
         FIO7 Output
         FIO6 Output
@@ -404,7 +404,7 @@ try:
     staticLib = _loadLibrary()
 except U12Exception:
     e = sys.exc_info()[1]
-    print "%s: %s" % ( type(e), e )
+    print("%s: %s" % (type(e), e))
     staticLib = None
     
 
@@ -443,11 +443,11 @@ class U12(object):
         if _os_name == "nt":
             pass
         else:
-            if self.debug: print "open called"
+            if self.debug:
+                print("open called")
             devType = ctypes.c_ulong(1)
             openDev = staticLib.LJUSB_OpenDevice
             openDev.restype = ctypes.c_void_p
-            
             
             if serialNumber is not None:
                 numDevices = staticLib.LJUSB_GetDevCount(devType)
@@ -535,7 +535,8 @@ class U12(object):
             if self.handle is None:
                 raise U12Exception("The U12's handle is None. Please open a U12 with open()")
             
-            if self.debug: print "Writing:", hexWithoutQuotes(writeBuffer)
+            if self.debug:
+                print("Writing: " + hexWithoutQuotes(writeBuffer))
             newA = (ctypes.c_byte*len(writeBuffer))(0) 
             for i in range(len(writeBuffer)):
                 newA[i] = ctypes.c_byte(writeBuffer[i])
@@ -557,9 +558,9 @@ class U12(object):
             readBytes = staticLib.LJUSB_Read(self.handle, ctypes.byref(newA), numBytes)
             # return a list of integers in command/response mode
             result = [(newA[i] & 0xff) for i in range(readBytes)]
-            if self.debug: print "Received:", hexWithoutQuotes(result)
+            if self.debug:
+                print("Received: " + hexWithoutQuotes(result))
             return result
-
 
     # Low-level helpers
     def rawReadSerial(self):
@@ -575,7 +576,7 @@ class U12(object):
         Example:
         >>> import u12
         >>> d = u12.U12()
-        >>> print d.rawReadSerial()
+        >>> print(d.rawReadSerial())
         10004XXXX
         """
         results = self.rawReadRAM()
@@ -594,7 +595,7 @@ class U12(object):
         Example:
         >>> import u12
         >>> d = u12.U12()
-        >>> print d.rawReadLocalId()
+        >>> print(d.rawReadLocalId())
         0
         """
         results = self.rawReadRAM(0x08)
@@ -1308,7 +1309,7 @@ class U12(object):
         >>> d.rawDIO(D7toD0Directions = 0, UpdateDigital = True)
         >>> d.rawCounter(ResetCounter = True)
         >>> d.rawPulseout(ClearFirst = True)
-        >>> print d.rawCounter()
+        >>> print(d.rawCounter())
         { 'IO3toIO0States': ... , 
           'Counter': 5, 
           'D7toD0States': ... ,
@@ -1428,7 +1429,7 @@ class U12(object):
         Example:
         >>> import u12
         >>> d = u12.U12()
-        >>> print d.rawWatchdog()
+        >>> print(d.rawWatchdog())
         {'FirmwareVersion': '1.10'}
         """
         command = [ 0 ] * 8
@@ -1491,10 +1492,10 @@ class U12(object):
         >>> import u12, struct
         >>> d = u12.U12()
         >>> r = d.rawReadRAM()
-        >>> print r
+        >>> print(r)
         {'DataByte3': 5, 'DataByte2': 246, 'DataByte1': 139, 'DataByte0': 170}
         >>> bytes = [ r['DataByte3'], r['DataByte2'], r['DataByte1'], r['DataByte0'] ]
-        >>> print struct.unpack(">I", struct.pack("BBBB", *bytes))[0]
+        >>> print(struct.unpack(">I", struct.pack("BBBB", *bytes))[0])
         100043690
         """
         command = [ 0 ] * 8
@@ -1548,7 +1549,7 @@ class U12(object):
         Example:
         >>> import u12
         >>> d = u12.U12()
-        >>> print d.rawWriteRAM([1, 2, 3, 4], 0x200)
+        >>> print(d.rawWriteRAM([1, 2, 3, 4], 0x200))
         {'DataByte3': 4, 'DataByte2': 3, 'DataByte1': 2, 'DataByte0': 1}
         """
         command = [ 0 ] * 8
@@ -1618,7 +1619,7 @@ class U12(object):
         >>> # Set the full and half A,B,C to 9600
         >>> d.rawWriteRAM([0, 1, 1, 200], 0x073)
         >>> d.rawWriteRAM([5, 1, 2, 48], 0x076)
-        >>> print d.rawAsynch([1, 2, 3, 4], NumberOfBytesToWrite = 4, NumberOfBytesToRead = 4)
+        >>> print(d.rawAsynch([1, 2, 3, 4], NumberOfBytesToWrite = 4, NumberOfBytesToRead = 4))
         {
          'DataByte3': 4,
          'DataByte2': 3,
@@ -1823,7 +1824,7 @@ class U12(object):
         >>> import u12
         >>> d = u12.U12()
         >>> results = d.rawSHT1X()
-        >>> print results
+        >>> print(results)
         {
          'DataByte3': 0,
          'DataByte2': 69,
@@ -1834,10 +1835,10 @@ class U12(object):
         }
         >>> tempC = (results['DataByte0'] * 256 ) + results['DataByte1']
         >>> tempC = (tempC * 0.01) - 40
-        >>> print tempC
+        >>> print(tempC)
         24.48
         >>> results = d.rawSHT1X(Data = [5,0,0,0])
-        >>> print results
+        >>> print(results)
         {
          'DataByte3': 0,
          'DataByte2': 200,
@@ -1849,7 +1850,7 @@ class U12(object):
         >>> sorh = (results['DataByte0'] * 256 ) + results['DataByte1']
         >>> rhlinear = (-0.0000028*sorh*sorh)+(0.0405*sorh)-4.0
         >>> rh = ((tempC-25.0)*(0.01+(0.00008*sorh)))+rhlinear
-        >>> print rh
+        >>> print(rh)
         19.3360256
         """
         command = [ 0 ] * 8
@@ -2392,7 +2393,8 @@ class U12(object):
             volts = ctypes.c_float()
             ecode = staticLib.BitsToVolts(chnum, chgain, bits, ctypes.byref(volts))
     
-            if ecode != 0: print ecode
+            if ecode != 0:
+                print(ecode)
     
             return volts.value
         else:
@@ -2977,7 +2979,7 @@ def hexWithoutQuotes(l):
     """ Return a string listing hex without all the single quotes.
     
     >>> l = range(10)
-    >>> print hexWithoutQuotes(l)
+    >>> print(hexWithoutQuotes(l))
     [0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9]
 
     """

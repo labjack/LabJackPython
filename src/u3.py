@@ -63,7 +63,7 @@ class U3(Device):
     Example:
     >>> import u3
     >>> d = u3.U3()
-    >>> print d.configU3()
+    >>> print(d.configU3())
     {'SerialNumber': 320032102, ... , 'FirmwareVersion': '1.26'}
     """
     def __init__(self, debug = False, autoOpen = True, **kargs):
@@ -147,7 +147,7 @@ class U3(Device):
         Simplest:
         >>> import u3
         >>> d = u3.U3()
-        >>> print d.configU3()
+        >>> print(d.configU3())
         {
          'LocalID': 1, 
          'SerialNumber': 320035782, 
@@ -161,7 +161,7 @@ class U3(Device):
         Configure all FIOs and EI0s to analog on boot:
         >>> import u3
         >>> d = u3.U3()
-        >>> print d.configU3( FIOAnalog = 255, EIOAnalog = 255)
+        >>> print(d.configU3( FIOAnalog = 255, EIOAnalog = 255))
         {
          'FIOAnalog': 255,
          'EIOAnalog': 255,
@@ -297,7 +297,7 @@ class U3(Device):
         Simplest:
         >>> import u3
         >>> d = u3.U3()
-        >>> print d.configIO()
+        >>> print(d.configIO())
         {
          'NumberOfTimersEnabled': 0,
          'TimerCounterPinOffset': 4,
@@ -312,7 +312,7 @@ class U3(Device):
         Set all FIOs and EIOs to digital (until power cycle):
         >>> import u3
         >>> d = u3.U3()
-        >>> print d.configIO(FIOAnalog = 0, EIOAnalog = 0)
+        >>> print(d.configIO(FIOAnalog = 0, EIOAnalog = 0))
         {
          'NumberOfTimersEnabled': 0,
          'TimerCounterPinOffset': 4,
@@ -477,7 +477,7 @@ class U3(Device):
         Example:
         >>> import u3
         >>> d = u3.U3()
-        >>> print d.getFIOState(4)
+        >>> print(d.getFIOState(4))
         1
         """
         return self.getFeedback(BitStateRead(fioNum))[0]
@@ -515,7 +515,7 @@ class U3(Device):
         Example:
         >>> import u3
         >>> d = u3.U3()
-        >>> print d.getDIState(4)
+        >>> print(d.getDIState(4))
         1
         """
         return self.getFeedback(BitDirWrite(ioNum, 0), BitStateRead(ioNum))[1]
@@ -534,7 +534,7 @@ class U3(Device):
         Example:
         >>> import u3
         >>> d = u3.U3()
-        >>> print d.getDIOState(4)
+        >>> print(d.getDIOState(4))
         1
         """
         return self.getFeedback(BitStateRead(ioNum))[0]
@@ -573,7 +573,7 @@ class U3(Device):
         Example:
         >>> import u3
         >>> d = u3.U3()
-        >>> print d.getAIN( 0 )
+        >>> print(d.getAIN(0))
         0.0501680038869
         """
         isSpecial = False
@@ -1080,7 +1080,7 @@ class U3(Device):
               calibrations.
               
         >>> reading = d.streamData(convert = False)
-        >>> print proccessStreamData(reading['result'])
+        >>> print(proccessStreamData(reading['result']))
         defaultDict(list, {'AIN0' : [3.123, 3.231, 3.232, ...]})
         """
         if numBytes is None:
@@ -1584,10 +1584,10 @@ class U3(Device):
         Example:
         >>> import u3
         >>> d = u3.U3()
-        >>> bits = d.getFeedback( u3.AIN(0, 31))[0]
-        >>> print bits
+        >>> bits = d.getFeedback(u3.AIN(0, 31))[0]
+        >>> print(bits)
         1248
-        >>> print d.binaryToCalibratedAnalogVoltage(bits)
+        >>> print(d.binaryToCalibratedAnalogVoltage(bits))
         0.046464288000000006
         """
         hasCal = self.calData is not None

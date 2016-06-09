@@ -66,7 +66,7 @@ class UE9(Device):
     Example:
     >>> import ue9
     >>> d = ue9.UE9()
-    >>> print d.commConfig()
+    >>> print(d.commConfig())
     {'CommFWVersion': '1.47', ..., 'IPAddress': '192.168.1.114'}
     """
     def __init__(self, debug = False, autoOpen = True, **kargs):
@@ -1118,7 +1118,8 @@ class UE9(Device):
                 e = ord(result[11+offset])
                 if e != 0:
                     errors += 1
-                    if self.debug: print e
+                    if self.debug:
+                        print(e)
                 i+=1
             
             if len(result) == 0  and self.ethernet == False:
@@ -1189,8 +1190,8 @@ class UE9(Device):
               calibrations.
               
         >>> reading = d.streamData(convert = False)
-        >>> print proccessStreamData(reading['result'])
-        defaultDict(list, {'AIN0' : [3.123, 3.231, 3.232, ...]})
+        >>> print(proccessStreamData(reading['result']))
+        defaultDict(list, {'AIN0': [3.123, 3.231, 3.232, ...]})
         """
         if numBytes is None:
             numBytes = self.streamPacketSize
@@ -1620,9 +1621,9 @@ class UE9(Device):
         Desc: Converts the binary value returned from Feedback and SingleIO
               to a calibrated, analog voltage.
         
-        >>> print d.singleIO(4, 1, BipGain = 0x01, Resolution = 12)
+        >>> print(d.singleIO(4, 1, BipGain = 0x01, Resolution = 12))
         {'AIN1': 65520.0}
-        >>> print d.binaryToCalibratedAnalogVoltage(65520.0, 0x01, 12)
+        >>> print(d.binaryToCalibratedAnalogVoltage(65520.0, 0x01, 12))
         2.52598272
         """
         if self.calData is not None:
