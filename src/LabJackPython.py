@@ -164,7 +164,7 @@ try:
     staticLib = _loadLibrary()
 except LabJackException:
     e = sys.exc_info()[1]
-    print "%s: %s" % ( type(e), e )
+    print("%s: %s" % (type(e), e))
     staticLib = None
 
 # Attempt to load the windows Skymote library.
@@ -301,8 +301,9 @@ class Device(object):
             elif _os_name == 'nt':
                 wb = self._writeToUDDriver(writeBuffer, modbus)
         
-        if self.debug: print "Sent: ", hexWithoutQuotes(wb)
-    
+        if self.debug:
+            print("Sent: " + hexWithoutQuotes(wb))
+
     def read(self, numBytes, stream = False, modbus = False):
         """read(numBytes, stream = False, modbus = False)
             
@@ -542,12 +543,14 @@ class Device(object):
             self.write(request, modbus = True, checksum = False)
             try:
                 result = self.read(numBytes, modbus = True)
-                if self.debug: print "Response: ", hexWithoutQuotes(result)
+                if self.debug:
+                    print("Response: " + hexWithoutQuotes(result))
                 return result
             except LabJackException:
                 self.write(request, modbus = True, checksum = False)
                 result = self.read(numBytes, modbus = True)
-                if self.debug: print "Response: ", hexWithoutQuotes(result)
+                if self.debug:
+                    print("Response: " + hexWithoutQuotes(result))
                 return result
     
     def _checkCommandBytes(self, results, commandBytes):
@@ -573,7 +576,8 @@ class Device(object):
             self.write(command, checksum = checksum)
             
             result = self.read(readLen, stream=False)
-            if self.debug: print "Response: ", hexWithoutQuotes(result)
+            if self.debug:
+                print("Response: " + hexWithoutQuotes(result))
             if checkBytes:
                 self._checkCommandBytes(result, commandBytes)
                         
@@ -602,7 +606,7 @@ class Device(object):
             return False
         except Exception:
             e = sys.exc_info()[1]
-            print e
+            print(e)
             return False
         
 
@@ -726,7 +730,7 @@ class Device(object):
         
         >>> l = range(15)
         >>> for packet in d.breakupPackets(l, 5):
-        ...     print packet
+        ...     print(packet)
         [ 0, 1, 2, 3, 4 ]
         [ 5, 6, 7, 8, 9 ]
         [ 10, 11, 12, 13, 14]
@@ -746,7 +750,7 @@ class Device(object):
         
         >>> packet = range(16) # fake packet with 1 sample in it
         >>> for sample in d.samplesFromPacket(packet):
-        ...     print sample
+        ...     print(sample)
         [ 12, 13 ]
         """
         HEADER_SIZE = 12
@@ -826,7 +830,8 @@ class Device(object):
                 e = ord(result[11+(i*numBytes)])
                 if e != 0:
                     errors += 1
-                    if self.debug and e != 60 and e != 59: print e
+                    if self.debug and e != 60 and e != 59:
+                        print(e)
                     if e == 60:
                         missed += struct.unpack('<I', result[6+(i*numBytes):10+(i*numBytes)] )[0]
             
@@ -873,7 +878,8 @@ class Device(object):
         if name[1] == 3:
             # Old style string
             name = "My %s" % self.deviceName
-            if self.debug: print "Old UTF-16 name detected, replacing with %s" % name
+            if self.debug:
+                print("Old UTF-16 name detected, replacing with %s" % name)
             self.setName(name)
             name = name.decode("UTF-8")
         else:
@@ -882,7 +888,8 @@ class Device(object):
                 name = struct.pack("B"*end, *name[:end]).decode("UTF-8")
             except ValueError:
                 name = "My %s" % self.deviceName
-                if self.debug: print "Invalid name detected, replacing with %s" % name 
+                if self.debug:
+                    print("Invalid name detected, replacing with %s" % name)
                 self.setName(name)
                 name = name.decode("UTF-8")
         
@@ -1099,8 +1106,8 @@ def listAll(deviceType, connectionType = 1):
             f.close()
             serverSocket.close()
             
-            #print "Result of scan:"
-            #print lines
+            #print("Result of scan:")
+            #print(lines)
             return lines
     
     if deviceType == 12:
@@ -1315,7 +1322,7 @@ def _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, 
     if ec > 0:
         raise LabJackException(ec)
     if ec < 0:
-        print "Warning: " + str(LabJackException(ec))
+        print("Warning: " + str(LabJackException(ec)))
     
     devHandle = handle.value
     
@@ -1334,7 +1341,7 @@ def _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber):
     elif firstFound:
         handle = openDev(1, 0, devType)
         if handle <= 0:
-            print "handle: %s" % handle 
+            print("handle: %s" % handle) 
             raise NullHandleException()
         return handle
     else:      
@@ -1650,8 +1657,8 @@ def AddRequestS(Handle, pIOType, Channel, Value, x1, UserData):
     >>> AddRequestS(u3Handle,"LJ_ioGET_AIN", 0, 0.0, 0, 0.0)
     >>> Go()
     >>> value = GetResult(u3Handle, LJ_ioGET_AIN, 0)
-    >>> print "Value:" + str(value)
-    Value:0.366420765873
+    >>> print("Value: " + str(value))
+    Value: 0.366420765873
     
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
@@ -1693,8 +1700,8 @@ def AddRequestSS(Handle, pIOType, pChannel, Value, x1, UserData):
     >>> AddRequestSS(u3Handle,"LJ_ioGET_CONFIG", "LJ_chFIRMWARE_VERSION", 0.0, 0, 0.0)
     >>> Go()
     >>> value = GetResultS(u3Handle, "LJ_ioGET_CONFIG", LJ_chFIRMWARE_VERSION)
-    >>> print "Value:" + str(value)
-    Value:1.27
+    >>> print("Value: " + str(value))
+    Value: 1.27
     
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
@@ -1736,8 +1743,8 @@ def Go():
     >>> AddRequestSS(u3Handle,"LJ_ioGET_CONFIG", "LJ_chFIRMWARE_VERSION", 0.0, 0, 0.0)
     >>> Go()
     >>> value = GetResultS(u3Handle, "LJ_ioGET_CONFIG", LJ_chFIRMWARE_VERSION)
-    >>> print "Value:" + str(value)
-    Value:1.27
+    >>> print("Value: " + str(value))
+    Value: 1.27
     
     @rtype: None
     @return: Function returns nothing.
@@ -1764,8 +1771,8 @@ def GoOne(Handle):
     >>> AddRequestSS(u3Handle,"LJ_ioGET_CONFIG", "LJ_chFIRMWARE_VERSION", 0.0, 0, 0.0)
     >>> GoOne(u3Handle)
     >>> value = GetResultS(u3Handle, "LJ_ioGET_CONFIG", LJ_chFIRMWARE_VERSION)
-    >>> print "Value:" + str(value)
-    Value:1.27
+    >>> print("Value: " + str(value))
+    Value: 1.27
     
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
@@ -1820,8 +1827,8 @@ def eGet(Handle, IOType, Channel, pValue, x1):
         #ec = staticLib.eGet(Handle, IOType, Channel, pValue, x1)
         
         if ec != 0: raise LabJackException(ec)
-        #print "EGet:" + str(ppv)
-        #print "Other:" + str(ppv.contents)
+        #print("EGet:" + str(ppv))
+        #print("Other:" + str(ppv.contents))
         return pv.value
     else:
        raise LabJackException(0, "Function only supported for Windows")
@@ -2145,8 +2152,8 @@ def GetResult(Handle, IOType, Channel):
     >>> AddRequestSS(u3Handle,"LJ_ioGET_CONFIG", "LJ_chFIRMWARE_VERSION", 0.0, 0, 0.0)
     >>> GoOne(u3Handle)
     >>> value = GetResult(u3Handle, LJ_ioGET_CONFIG, LJ_chFIRMWARE_VERSION)
-    >>> print "Value:" + str(value)
-    Value:1.27
+    >>> print("Value: " + str(value))
+    Value: 1.27
     
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
@@ -2184,8 +2191,8 @@ def GetResultS(Handle, pIOType, Channel):
     >>> AddRequestSS(u3Handle,"LJ_ioGET_CONFIG", "LJ_chFIRMWARE_VERSION", 0.0, 0, 0.0)
     >>> GoOne(u3Handle)
     >>> value = GetResultS(u3Handle, "LJ_ioGET_CONFIG", LJ_chFIRMWARE_VERSION)
-    >>> print "Value:" + str(value)
-    Value:1.27
+    >>> print("Value: " + str(value))
+    Value: 1.27
     
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
@@ -2223,8 +2230,8 @@ def GetResultSS(Handle, pIOType, pChannel):
     >>> AddRequestSS(u3Handle,"LJ_ioGET_CONFIG", "LJ_chFIRMWARE_VERSION", 0.0, 0, 0.0)
     >>> GoOne(u3Handle)
     >>> value = GetResultSS(u3Handle, "LJ_ioGET_CONFIG", "LJ_chFIRMWARE_VERSION")
-    >>> print "Value:" + str(value)
-    Value:1.27
+    >>> print("Value:" + str(value))
+    Value: 1.27
     
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
@@ -2866,8 +2873,8 @@ class LJSocketHandle(object):
                 f.close()
                 serverSocket.close()
                 
-                #print "Result of scan:"
-                #print lines
+                #print("Result of scan:")
+                #print(lines)
                 
                 if firstFound and len(lines) > 0:
                     marked = lines[0]
@@ -2955,7 +2962,7 @@ class UE9TCPHandle(object):
                 self.modbus = None
         except Exception:
             e = sys.exc_info()[1]
-            print e
+            print(e)
             raise LabJackException("Couldn't open sockets to the UE9 at IP Address %s. Error was: %s" % (ipAddress, e))
 
     def close(self):
@@ -2965,9 +2972,8 @@ class UE9TCPHandle(object):
             self.modbus.close()
         except Exception:
             e = sys.exc_info()[1]
-            print "UE9 Handle close exception: ", e
+            print("UE9 Handle close exception: %s" % e)
             pass
-
 
     
 def toDouble(bytes):
@@ -2984,7 +2990,7 @@ def hexWithoutQuotes(l):
     """ Return a string listing hex without all the single quotes.
     
     >>> l = range(10)
-    >>> print hexWithoutQuotes(l)
+    >>> print(hexWithoutQuotes(l))
     [0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9]
 
     """
