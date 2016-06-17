@@ -1,24 +1,24 @@
 """
 Name: ei1050SampleApp
 Desc: A simple GUI application to demonstrate the usage of the ei1050 and
-LabJack Python modules. For an example of using the Labjack Python module directly
-look at the source code of ei1050.py
+LabJack Python modules. For an example of using the Labjack Python module
+directly look at the source code of ei1050.py
 """
 import sys
 
 try:
     from Queue import Queue
-except ImportError: # Python 3
+except ImportError:  # Python 3
     from queue import Queue
 
 try:
     import Tkinter
-except ImportError: # Python 3
+except ImportError:  # Python 3
     import tkinter as Tkinter
 
 try:
     import tkMessageBox
-except ImportError: # Python 3
+except ImportError:  # Python 3
     import tkinter.messagebox as tkMessageBox
 
 try:
@@ -29,7 +29,9 @@ try:
 
     import ei1050
 except:
-    tkMessageBox.showerror("Driver error", "The driver could not be imported.\nIf you are on windows, please install the UD driver from www.labjack.com")
+    tkMessageBox.showerror("Driver error", '''The driver could not be imported.
+Please install the UD driver (Windows) or Exodriver (Linux and Mac OS X) from www.labjack.com''')
+
 
 class MainWindow:
     """
@@ -37,7 +39,7 @@ class MainWindow:
     """
 
     FONT_SIZE = 10
-    FIO_PIN_STATE = 0 # for u3
+    FIO_PIN_STATE = 0  # For U3
     FONT = "Arial"
 
     def __init__(self):
@@ -53,7 +55,7 @@ class MainWindow:
         Tkinter.Label(self.readingsFrame, text="Device Serial Number:", font=(MainWindow.FONT, MainWindow.FONT_SIZE)).grid(row=0, column=0, sticky=Tkinter.W, padx=1, pady=1)
         Tkinter.Label(self.readingsFrame, text="Temperature:", font=(MainWindow.FONT, MainWindow.FONT_SIZE)).grid(row=1, column=0, sticky=Tkinter.W, padx=1, pady=1)
         Tkinter.Label(self.readingsFrame, text="Humidity:", font=(MainWindow.FONT, MainWindow.FONT_SIZE)).grid(row=2, column=0, sticky=Tkinter.W, padx=1, pady=1)
-        Tkinter.Label(self.readingsFrame, text="Probe Status:", font=(MainWindow.FONT, MainWindow.FONT_SIZE)).grid(row=3, column=0,sticky=Tkinter.W, padx=1, pady=1)
+        Tkinter.Label(self.readingsFrame, text="Probe Status:", font=(MainWindow.FONT, MainWindow.FONT_SIZE)).grid(row=3, column=0, sticky=Tkinter.W, padx=1, pady=1)
         Tkinter.Label(self.readingsFrame, text="(c) 2009 Labjack Corp.                         ", font=(MainWindow.FONT, MainWindow.FONT_SIZE)).grid(row=4, column=0, columnspan=2, sticky=Tkinter.W, padx=1, pady=1)
 
         self.serialDisplay = Tkinter.Label(self.readingsFrame, text="", font=(MainWindow.FONT, MainWindow.FONT_SIZE))
@@ -82,11 +84,11 @@ class MainWindow:
 
         # Determine if we are reading data
         self.reading = False
-        
+
         # Start mainloop
         self.window.protocol("WM_DELETE_WINDOW", self.close)
         self.window.mainloop()
-        
+
     def start(self):
         """
         Name:MainWindow.start()
@@ -100,21 +102,21 @@ class MainWindow:
                 self.device = u6.U6()
             else:
                 self.device = ue9.UE9()
-            
+
             self.serialDisplay.config(text=self.device.serialNumber)
 
             # Create and start the thread
             self.thread = ei1050.EI1050Reader(self.device, self.targetQueue)
 
             # Start scheduleing
-            self.window.after(1000,self.updateLabels)
+            self.window.after(1000, self.updateLabels)
             self.thread.start()
 
             # Change button
             self.startButton.config(text="Stop", command=self.stop)
         except:
             showErrorWindow(sys.exc_info()[0], sys.exc_info()[1])
-        
+
     def stop(self):
         """
         Name:MainWindow.stop()
@@ -134,32 +136,32 @@ class MainWindow:
         if self.thread.exception is not None:
             showErrorWindow(self.thread.exception[0], self.thread.exception[1])
 
-        else:   
+        else:
             # Change out the display
             latestReading = None
             while not self.targetQueue.empty():
                 latestReading = self.targetQueue.get()
 
             if latestReading is not None:
-                self.tempDisplay.config(text = str(latestReading.getTemperature()) + " deg C")
-                self.humidDisplay.config(text = str(latestReading.getHumidity()) + " %")
-                self.statusDisplay.config(text = str(latestReading.getStatus()))
+                self.tempDisplay.config(text=str(latestReading.getTemperature()) + " deg C")
+                self.humidDisplay.config(text=str(latestReading.getHumidity()) + " %")
+                self.statusDisplay.config(text=str(latestReading.getStatus()))
 
-            self.window.after(1000,self.updateLabels)
+            self.window.after(1000, self.updateLabels)
 
     def showInstructions(self):
         tkMessageBox.showinfo("Instructions", '''U3 SHT configured with pins as follows:
-Green(Data) -- FIO4             
-White(Clock) -- FIO5             
-Black(GND) -- GND             
-Red(Power) -- FIO7             
+Green(Data) -- FIO4
+White(Clock) -- FIO5
+Black(GND) -- GND
+Red(Power) -- FIO7
 Brown(Enable) -- FIO7
 
 U6/UE9 SHT configured with pins as follows:
-Green(Data) -- FIO0             
-White(Clock) -- FIO1             
-Black(GND) -- GND             
-Red(Power) -- FIO3             
+Green(Data) -- FIO0
+White(Clock) -- FIO1
+Black(GND) -- GND
+Red(Power) -- FIO3
 Brown(Enable) -- FIO3''')
 
     def close(self):
@@ -169,15 +171,19 @@ Brown(Enable) -- FIO3''')
                 self.thread.join()
             if self.device is not None:
                 self.device.close()
-        except: print "error terminating app"
+        except:
+            print("Error terminating app")
         finally:
             self.window.destroy()
-            
+
+
 def showErrorWindow(title, info):
         """
         Name:showErrorWindow()
         Desc:Shows an error popup for last exception encountered
         """
-        tkMessageBox.showerror(title, str(info) + "\n\nPlease check your wiring. If you need help, click instructions.")
-        
+        tkMessageBox.showerror(title, str(info) + "\n\nPlease check your " +
+                               "wiring. If you need help, click instructions.")
+
+
 MainWindow()
