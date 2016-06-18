@@ -273,3 +273,4 @@ Version History
       calculating the voltage value.
     - Replaced print statements with print function calls in the modules for
       Python 3 compatibility.
+    - Updated LabJackException for Windows Python 3 compatibility.

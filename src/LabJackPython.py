@@ -13,12 +13,12 @@ A typical user should start with their device's module, such as u3.py.
 # It's built-in on 2.6; 2.5 requires an import.
 from __future__ import with_statement
 
-import atexit # For auto-closing devices
+import atexit  # For auto-closing devices
 import socket
-import ctypes # import after socket or cygwin crashes "Aborted (core dump)"
+import ctypes  # import after socket or cygwin crashes "Aborted (core dump)"
 import struct
 import sys
-import threading # For a thread-safe device lock
+import threading  # For a thread-safe device lock
 
 import Modbus
 
@@ -31,19 +31,20 @@ MAX_USB_PACKET_LENGTH = 64
 
 NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS = 5
 
-_os_name = "" #Set to "nt" or "posix" in _loadLibrary.
+_os_name = ""  #Set to "nt" or "posix" in _loadLibrary.
 
-_use_ptr = True #Set to True or False in _loadLibrary. Indicates whether to use
-                #the Ptr version of certain UD calls or not. Windows only.
+_use_ptr = True  #Set to True or False in _loadLibrary. Indicates whether to use
+                 #the Ptr version of certain UD calls or not. Windows only.
+
 
 class LabJackException(Exception):
     """Custom Exception meant for dealing specifically with LabJack Exceptions.
 
     Error codes are either going to be a LabJackUD error code or a -1.  The -1 implies
-    a python wrapper specific error.  
-    
+    a python wrapper specific error.
+
     WINDOWS ONLY
-    If errorString is not specified then errorString is set by errorCode
+    If errorString is not specified then errorString is set by errorCode.
     """
     def __init__(self, ec = 0, errorString = ''):
         self.errorCode = ec
@@ -53,21 +54,24 @@ class LabJackException(Exception):
             try:
                 pString = ctypes.create_string_buffer(256)
                 staticLib.ErrorToString(ctypes.c_long(self.errorCode), ctypes.byref(pString))
-                self.errorString = pString.value
+                self.errorString = pString.value.decode("ascii").split("\0", 1)[0]
             except:
                 self.errorString = str(self.errorCode)
-    
+
     def __str__(self):
           return self.errorString
+
 
 class LowlevelErrorException(LabJackException):
     """Raised when a low-level command raises an error."""
     pass
 
+
 class NullHandleException(LabJackException):
     """Raised when the return value of OpenDevice is null."""
     def __init__(self):
         self.errorString = "Couldn't open device. Please check that the device you are trying to open is connected."
+
 
 def errcheck(ret, func, args):
     """
