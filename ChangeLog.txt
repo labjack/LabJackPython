@@ -274,3 +274,5 @@ Version History
     - Replaced print statements with print function calls in the modules for
       Python 3 compatibility.
     - Updated LabJackException for Windows Python 3 compatibility.
+    - Fixed a Python 3 bug for U6 and UE9 i2c methods where float division was
+      being used to calculate an integer value.

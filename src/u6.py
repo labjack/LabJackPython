@@ -964,13 +964,13 @@ class U6(Device):
         result = self._writeRead(command, 40, [ 0xF8, 0x11, 0x16 ])
         
         return { 'NumAsynchBytesInRXBuffer' : result[7], 'AsynchBytes' : result[8:] }
-    
+
     def i2c(self, Address, I2CBytes, EnableClockStretching = False, NoStopWhenRestarting = False, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 0, SCLPinNum = 1, NumI2CBytesToReceive = 0, AddressByte = None):
         """
         Name: U6.i2c(Address, I2CBytes,
                      EnableClockStretching = False, NoStopWhenRestarting = False,
                      ResetAtStart = False, SpeedAdjust = 0,
-                     SDAPinNum = 0, SCLPinNum = 1, 
+                     SDAPinNum = 0, SCLPinNum = 1,
                      NumI2CBytesToReceive = 0, AddressByte = None)
         Args: Address, the address (Not shifted over)
               I2CBytes, a list of bytes to send
@@ -982,23 +982,23 @@ class U6(Device):
               SDAPinNum, Which pin will be data
               SCLPinNum, Which pin is clock
               NumI2CBytesToReceive, Number of I2C bytes to expect back.
-              AddressByte, The address as you would put it in the lowlevel
+              AddressByte, The address as you would put it in the low-level
                            packet. Overrides Address. Optional.
         Desc: Sends and receives serial data using I2C synchronous
               communication. Section 5.2.21 of the User's Guide.
         """
         numBytes = len(I2CBytes)
-        
+
         oddPacket = False
-        if numBytes%2 != 0:
+        if numBytes % 2 != 0:
             oddPacket = True
             I2CBytes.append(0)
-            numBytes = numBytes+1
-        
-        command = [ 0 ] * (14+numBytes)
+            numBytes = numBytes + 1
+
+        command = [0] * (14+numBytes)
         #command[0] = Checksum8
         command[1] = 0xF8
-        command[2] = 4 + (numBytes/2)
+        command[2] = 4 + (numBytes//2)
         command[3] = 0x3B
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
@@ -1008,11 +1008,11 @@ class U6(Device):
             command[6] |= (1 << 2)
         if ResetAtStart:
             command[6] |= (1 << 1)
-        
+
         command[7] = SpeedAdjust
         command[8] = SDAPinNum
         command[9] = SCLPinNum
-        
+
         if AddressByte is not None:
             command[10] = AddressByte
         else:
@@ -1020,25 +1020,25 @@ class U6(Device):
         #command[11] = Reserved
         command[12] = numBytes
         if oddPacket:
-            command[12] = numBytes-1
+            command[12] = numBytes - 1
         command[13] = NumI2CBytesToReceive
         command[14:] = I2CBytes
-        
+
         oddResponse = False
-        if NumI2CBytesToReceive%2 != 0:
-            NumI2CBytesToReceive = NumI2CBytesToReceive+1
+        if NumI2CBytesToReceive % 2 != 0:
+            NumI2CBytesToReceive = NumI2CBytesToReceive + 1
             oddResponse = True
-        
-        result = self._writeRead(command, (12+NumI2CBytesToReceive), [0xF8, (3+(NumI2CBytesToReceive/2)), 0x3B])
-        
+
+        result = self._writeRead(command, (12 + NumI2CBytesToReceive), [0xF8, (3 + (NumI2CBytesToReceive/2)), 0x3B])
+
         if NumI2CBytesToReceive != 0:
             if oddResponse:
-                return { 'AckArray' : result[8:12], 'I2CBytes' : result[12:-1] }
+                return {'AckArray': result[8:12], 'I2CBytes': result[12:-1]}
             else:
-                return { 'AckArray' : result[8:12], 'I2CBytes' : result[12:] }
+                return {'AckArray': result[8:12], 'I2CBytes': result[12:]}
         else:
-            return { 'AckArray' : result[8:12] }
-            
+            return {'AckArray': result[8:12]}
+
     def sht1x(self, DataPinNum = 0, ClockPinNum = 1, SHTOptions = 0xc0):
         """
         Name: U6.sht1x(DataPinNum = 0, ClockPinNum = 1, SHTOptions = 0xc0)

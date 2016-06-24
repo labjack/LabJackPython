@@ -1502,20 +1502,20 @@ class UE9(Device):
         """
         if not isinstance(I2CBytes, list):
             raise LabJackException("I2CBytes must be a list")
-        
+
         numBytes = len(I2CBytes)
-        
+
         oddPacket = False
-        if numBytes%2 != 0:
+        if numBytes % 2 != 0:
             I2CBytes.append(0)
             numBytes = numBytes + 1
             oddPacket = True
-        
-        command = [ 0 ] * (14 + numBytes)
-        
+
+        command = [0] * (14+numBytes)
+
         #command[0] = Checksum8
         command[1] = 0xF8
-        command[2] = 4 + (numBytes/2)
+        command[2] = 4 + (numBytes//2)
         command[3] = 0x3B
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
@@ -1525,7 +1525,7 @@ class UE9(Device):
             command[6] |= (1 << 2)
         if EnableClockStretching:
             command[6] |= (1 << 3)
-        
+
         command[7] = SpeedAdjust
         command[8] = SDAPinNum
         command[9] = SCLPinNum
@@ -1535,25 +1535,25 @@ class UE9(Device):
             command[10] = Address << 1
         command[12] = numBytes
         if oddPacket:
-            command[12] = numBytes-1
+            command[12] = numBytes - 1
         command[13] = NumI2CBytesToReceive
         command[14:] = I2CBytes
-        
+
         oddResponse = False
-        if NumI2CBytesToReceive%2 != 0:
-            NumI2CBytesToReceive = NumI2CBytesToReceive+1
+        if NumI2CBytesToReceive % 2 != 0:
+            NumI2CBytesToReceive = NumI2CBytesToReceive + 1
             oddResponse = True
-        
-        result = self._writeRead(command, 12+NumI2CBytesToReceive, [0xF8, (3+(NumI2CBytesToReceive/2)), 0x3B])
-                
+
+        result = self._writeRead(command, 12 + NumI2CBytesToReceive, [0xF8, (3 + (NumI2CBytesToReceive/2)), 0x3B])
+
         if len(result) > 12:
             if oddResponse:
-                return { 'AckArray' : result[8:12], 'I2CBytes' : result[12:-1] }
+                return {'AckArray': result[8:12], 'I2CBytes': result[12:-1]}
             else:
-                return { 'AckArray' : result[8:12], 'I2CBytes' : result[12:] }
+                return {'AckArray': result[8:12], 'I2CBytes': result[12:]}
         else:
-            return { 'AckArray' : result[8:], 'I2CBytes' : [] }
-    
+            return {'AckArray': result[8:], 'I2CBytes': []}
+
     def sht1x(self, DataPinNum = 0, ClockPinNum = 1, SHTOptions = 0xc0):
         """
         Name: UE9.sht1x(DataPinNum = 0, ClockPinNum = 1, SHTOptions = 0xc0)
