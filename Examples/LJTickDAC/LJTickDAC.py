@@ -1,7 +1,7 @@
 """
 Name: LJTickDAC
 Desc: A simple GUI application to demonstrate the usage of the I2C and
-LabJack Python modules to set the value of DACA and DACB in a LJ-TickDAC
+LabJackPython modules to set the value of DACA and DACB in a LJTick-DAC.
 """
 import struct
 import sys
@@ -10,12 +10,12 @@ import time
 
 try:
     import Tkinter
-except ImportError: # Python 3
+except ImportError:  # Python 3
     import tkinter as Tkinter
 
 try:
     import tkMessageBox
-except ImportError: # Python 3
+except ImportError:  # Python 3
     import tkinter.messagebox as tkMessageBox
 
 # Attempt to load the labjack driver
@@ -25,8 +25,10 @@ try:
     import u6
     import ue9
 except:
-    tkMessageBox.showerror("Driver error", "The driver could not be imported.\nIf you are on windows, please install the UD driver from www.labjack.com")
+    tkMessageBox.showerror("Driver error", '''The driver could not be imported.
+Please install the UD driver (Windows) or Exodriver (Linux and Mac OS X) from www.labjack.com''')
     sys.exit(1)
+
 
 def toDouble(buffer):
     """
@@ -34,12 +36,10 @@ def toDouble(buffer):
     Args: buffer, an array with 8 bytes
     Desc: Converts the 8 byte array into a floating point number.
     """
-    if type(buffer) == type(''):
-        bufferStr = buffer[:8]
-    else:
-        bufferStr = ''.join(chr(x) for x in buffer[:8])
-    dec, wh = struct.unpack('<Ii', bufferStr)
-    return float(wh) + float(dec)/2**32
+    right, left = struct.unpack("<Ii", struct.pack("B" * 8, *buffer[0:8]))
+
+    return float(left) + float(right)/(2**32)
+
 
 class LJTickDAC(Tkinter.Tk):
     """
@@ -53,12 +53,12 @@ class LJTickDAC(Tkinter.Tk):
     AUTO = 0
     FONT_SIZE = 10
     FONT = "Arial"
-    AIN_PIN_DEFAULT = -1 # AIN must be configured
+    AIN_PIN_DEFAULT = -1  # AIN must be configured
     DAC_PIN_DEFAULT = 0
     U3_DAC_PIN_OFFSET = 4
     EEPROM_ADDRESS = 0x50
     DAC_ADDRESS = 0x12
-    
+
     def __init__(self):
         # Create the window
         Tkinter.Tk.__init__(self)
@@ -102,9 +102,11 @@ class LJTickDAC(Tkinter.Tk):
         # Show settings window
         self.searchForDevices()
         settingsWindow = SettingsWindow(self, self.deviceType, self.dacPin, self.ainPin, self.u3Available, self.u6Available, self.ue9Available)
-        try: settingsWindow.attributes('-topmost', True)
-        except: pass
-        
+        try:
+            settingsWindow.attributes('-topmost', True)
+        except:
+            pass
+
     def updateDevice(self):
         """
         Name: updateDevice()
@@ -119,25 +121,27 @@ class LJTickDAC(Tkinter.Tk):
             sdaPin = sclPin + 1
 
         # Get voltage for DACA
-        try:voltageA = float(self.dacAEntry.get())
+        try:
+            voltageA = float(self.dacAEntry.get())
         except:
             self.showErrorWindow("Invalid entry", "Please enter a numerical value for DAC A")
             return
 
         # Get voltage DACB
-        try:voltageB = float(self.dacBEntry.get())
+        try:
+            voltageB = float(self.dacBEntry.get())
         except:
             self.showErrorWindow("Invalid entry", "Please enter a numerical value for DAC B")
             return
 
         # Make requests
         try:
-            self.device.i2c(LJTickDAC.DAC_ADDRESS, [48, int(((voltageA*self.aSlope)+self.aOffset)/256), int(((voltageA*self.aSlope)+self.aOffset)%256)], SDAPinNum = sdaPin, SCLPinNum = sclPin)
-            self.device.i2c(LJTickDAC.DAC_ADDRESS, [49, int(((voltageB*self.bSlope)+self.bOffset)/256), int(((voltageB*self.bSlope)+self.bOffset)%256)], SDAPinNum = sdaPin, SCLPinNum = sclPin)
+            self.device.i2c(LJTickDAC.DAC_ADDRESS, [48, int(((voltageA*self.aSlope)+self.aOffset)/256), int(((voltageA*self.aSlope)+self.aOffset) % 256)], SDAPinNum=sdaPin, SCLPinNum=sclPin)
+            self.device.i2c(LJTickDAC.DAC_ADDRESS, [49, int(((voltageB*self.bSlope)+self.bOffset)/256), int(((voltageB*self.bSlope)+self.bOffset) % 256)], SDAPinNum=sdaPin, SCLPinNum=sclPin)
         except:
             self.showErrorWindow("I2C Error", "Whoops! Something went wrong when setting the LJTickDAC. Is the device detached?\n\nPython error:" + str(sys.exc_info()[1]))
             self.showSetup()
-            
+
     def searchForDevices(self):
         """
         Name: searchForDevices()
@@ -146,26 +150,27 @@ class LJTickDAC(Tkinter.Tk):
         self.u3Available = len(LabJackPython.listAll(LJTickDAC.U3)) > 0
         self.u6Available = len(LabJackPython.listAll(LJTickDAC.U6)) > 0
         self.ue9Available = len(LabJackPython.listAll(LJTickDAC.UE9)) > 0
-        
+
     def loadFirstDevice(self):
         """
         Name: loadFirstDevice()
         Desc: Determines which devices are available and loads the first one found
         """
         try:
-
             self.searchForDevices()
-            
+
             # Determine which device to use
-            if self.u3Available: self.deviceType = LJTickDAC.U3
-            elif self.u6Available: self.deviceType = LJTickDAC.U6
-            elif self.ue9Available: self.deviceType = LJTickDAC.UE9
+            if self.u3Available:
+                self.deviceType = LJTickDAC.U3
+            elif self.u6Available:
+                self.deviceType = LJTickDAC.U6
+            elif self.ue9Available:
+                self.deviceType = LJTickDAC.UE9
             else:
                 self.showErrorWindow("Fatal Error", "No LabJacks were found to be connected to your computer.\nPlease check your wiring and try again.")
                 sys.exit()
 
             self.loadDevice(self.deviceType)
-            
         except:
             self.showErrorWindow("Fatal Error - First Load", "Python error:" + str(sys.exc_info()[1]))
             sys.exit()
@@ -175,9 +180,8 @@ class LJTickDAC(Tkinter.Tk):
         Name: loadDevice(deviceType)
         Desc: loads the first device of device type
         """
-
         self.deviceType = deviceType
-        
+
         # Determine which device to use
         if self.deviceType == LJTickDAC.U3:
             self.device = u3.U3()
@@ -185,17 +189,20 @@ class LJTickDAC(Tkinter.Tk):
             self.device = u6.U6()
         else:
             self.device = ue9.UE9()
-            
+
         # Display serial number
         self.serialDisplay.config(text=self.device.serialNumber)
 
         # Configure pins if U3
         if self.deviceType == LJTickDAC.U3:
-            self.device.configIO(FIOAnalog=15, TimerCounterPinOffset=8) # Configures FIO0-2 as analog
-        
-        # Get the calibration constants
+            self.device.configIO(FIOAnalog=15, TimerCounterPinOffset=8)  # Configures FIO0-2 as analog
+
+        # Get the calibration constants from the device
+        self.device.getCalibrationData()
+
+        # Get the calibration constants from the LJTick-DAC
         self.getCalConstants()
-        
+
     def showSetup(self):
         """
         Name: showSetup()
@@ -217,13 +224,14 @@ class LJTickDAC(Tkinter.Tk):
         Desc: updates the configuration of the application
         """
         try:
-            if self.ainReadThread is not None: self.ainReadThread.stop()
+            if self.ainReadThread is not None:
+                self.ainReadThread.stop()
             self.device.close()
             self.ainPin = ainPin
             self.dacPin = dacPin
             self.loadDevice(deviceType)
 
-            if ainPin != -1: # AIN is configured
+            if ainPin != -1:  # AIN is configured
                 self.ainReadThread = AINReadThread(self.ainDisplay, self.device, self.deviceType, self.ainPin)
                 self.ainReadThread.start()
             else:
@@ -237,8 +245,10 @@ class LJTickDAC(Tkinter.Tk):
         Name: cleanUp()
         Desc: Closes devices, terminates threads, and closes windows
         """
-        if self.ainReadThread is not None: self.ainReadThread.stop()
-        if self.device is not None: self.device.close()
+        if self.ainReadThread is not None:
+            self.ainReadThread.stop()
+        if self.device is not None:
+            self.device.close()
         self.destroy()
 
     def getCalConstants(self):
@@ -256,25 +266,26 @@ class LJTickDAC(Tkinter.Tk):
             sdaPin = sclPin + 1
 
         # Make request
-        data = self.device.i2c(LJTickDAC.EEPROM_ADDRESS, [64], NumI2CBytesToReceive=36, SDAPinNum = sdaPin, SCLPinNum = sclPin)
+        data = self.device.i2c(LJTickDAC.EEPROM_ADDRESS, [64], NumI2CBytesToReceive=36, SDAPinNum=sdaPin, SCLPinNum=sclPin)
         response = data['I2CBytes']
         self.aSlope = toDouble(response[0:8])
         self.aOffset = toDouble(response[8:16])
         self.bSlope = toDouble(response[16:24])
         self.bOffset = toDouble(response[24:32])
 
-        if 255 in response: self.showErrorWindow("Pins", "The calibration constants seem a little off. Please go into settings and make sure the pin numbers are correct and that the LJTickDAC is properly attached.")
-        
+        if 255 in response:
+            self.showErrorWindow("Pins", "The calibration constants seem a little off. Please go into settings and make sure the pin numbers are correct and that the LJTickDAC is properly attached.")
+
+
 class SettingsWindow(Tkinter.Toplevel):
     """
     Name: SettingsWindow
     Desc: A dialog window that allows the user to set the pins and device
     used by the application.
     """
-
     FONT_SIZE = 12
     FONT = "Arial"
-    
+
     def __init__(self, parent, currentDevice, currentDACPin, currentAINPin, u3Available, u6Available, ue9Available):
         # Create window
         Tkinter.Toplevel.__init__(self, parent)
@@ -292,13 +303,16 @@ class SettingsWindow(Tkinter.Toplevel):
         deviceFrame = Tkinter.Frame(self)
         u3Radio = Tkinter.Radiobutton(deviceFrame, text="U3", variable=self.deviceVar, value=LJTickDAC.U3, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE), command=self.adjustText)
         u3Radio.grid(row=0, column=0)
-        if not u3Available: u3Radio.config(state=Tkinter.DISABLED)
+        if not u3Available:
+            u3Radio.config(state=Tkinter.DISABLED)
         u6Radio = Tkinter.Radiobutton(deviceFrame, text="U6", variable=self.deviceVar, value=LJTickDAC.U6, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE), command=self.adjustText)
         u6Radio.grid(row=0, column=1)
-        if not u6Available: u6Radio.config(state=Tkinter.DISABLED)
+        if not u6Available:
+            u6Radio.config(state=Tkinter.DISABLED)
         ue9Radio = Tkinter.Radiobutton(deviceFrame, text="UE9", variable=self.deviceVar, value=LJTickDAC.UE9, font=(SettingsWindow.FONT, SettingsWindow.FONT_SIZE), command=self.adjustText)
         ue9Radio.grid(row=0, column=2)
-        if not ue9Available: ue9Radio.config(state=Tkinter.DISABLED)
+        if not ue9Available:
+            ue9Radio.config(state=Tkinter.DISABLED)
         deviceFrame.grid(row=0, column=1, sticky=Tkinter.E+Tkinter.W)
 
         # Create and place radio buttons for the dac pins
@@ -330,7 +344,6 @@ class SettingsWindow(Tkinter.Toplevel):
 
         # Adjust text for device and prepare for future adjustments
         self.adjustText()
-        
 
     def adjustText(self):
         """
@@ -356,6 +369,7 @@ class SettingsWindow(Tkinter.Toplevel):
         """
         self.parent.updateSettings(self.deviceVar.get(), self.ainPin.get(), self.dacPin.get())
         self.destroy()
+
 
 class AINReadThread(threading.Thread):
     """
@@ -385,16 +399,12 @@ class AINReadThread(threading.Thread):
         try:
             self.running = True
             while self.running:
-                if self.deviceType == LJTickDAC.UE9:
-                    # See section 2.7.2 until better calibartion is applied
-                    voltage = self.device.feedback(AINMask=5)['AIN'+str(self.pinNum)]/65536.0*5 
-                elif self.deviceType == LJTickDAC.U3:
-                    voltage = self.device.getAIN(self.pinNum)
-                else: voltage = self.device.getAIN(self.pinNum)
+                voltage = self.device.getAIN(self.pinNum)
                 self.displayLabel.config(text=str(voltage))
                 time.sleep(1)
         except:
             self.displayLabel.config(text="AIN read error. Device detached?\nClick \"Setup\" to start again...")
-        
+
+
 # Create application
 LJTickDAC().mainloop()

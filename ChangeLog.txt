@@ -276,3 +276,5 @@ Version History
     - Updated LabJackException for Windows Python 3 compatibility.
     - Fixed a Python 3 bug for U6 and UE9 i2c methods where float division was
       being used to calculate an integer value.
+    - Updated LJTick-DAC.py to use calibrated analog input readings and use the
+      same getAIN call to read analog inputs.
