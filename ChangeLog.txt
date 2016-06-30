@@ -278,3 +278,4 @@ Version History
       being used to calculate an integer value.
     - Updated LJTick-DAC.py to use calibrated analog input readings and use the
       same getAIN call to read analog inputs.
+    - Removed DCA-10 example as the product is discontinued.
