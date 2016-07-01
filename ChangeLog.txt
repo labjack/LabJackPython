@@ -279,3 +279,5 @@ Version History
     - Updated LJTick-DAC.py to use calibrated analog input readings and use the
       same getAIN call to read analog inputs.
     - Removed DCA-10 example as the product is discontinued.
+    - Updated u3allio.py to use calibration analog input readings.
+    - Added argument check to u3allio.py and u6allio.py. 
