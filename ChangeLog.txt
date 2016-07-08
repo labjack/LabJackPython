@@ -274,10 +274,11 @@ Version History
     - Replaced print statements with print function calls in the modules for
       Python 3 compatibility.
     - Updated LabJackException for Windows Python 3 compatibility.
-    - Fixed a Python 3 bug for U6 and UE9 i2c methods where float division was
-      being used to calculate an integer value.
+    - Updated U6 and UE9 i2c methods for Python 3 compatibility.
     - Updated LJTick-DAC.py to use calibrated analog input readings and use the
       same getAIN call to read analog inputs.
     - Removed DCA-10 example as the product is discontinued.
     - Updated u3allio.py to use calibration analog input readings.
     - Added argument check to u3allio.py and u6allio.py. 
+    - Updated LabJackPython Modbus related methods for for Python 3
+      compatibility.

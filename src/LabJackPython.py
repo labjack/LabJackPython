@@ -399,55 +399,48 @@ class Device(object):
             if stream:
                 return eGetRaw(self.handle, LJ_ioRAW_IN, 1, numBytes, tempBuff)[1]
             return eGetRaw(self.handle, LJ_ioRAW_IN, 0, numBytes, tempBuff)[1]
-    
+
     def readRegister(self, addr, numReg = None, format = None, unitId = None):
-        """ Reads a specific register from the device and returns the value.
+        """Reads a specific register from the device and returns the value.
         Requires Modbus.py
-        
+
         readHoldingRegister(addr, numReg = None, format = None)
         addr: The address you would like to read
         numReg: Number of consecutive addresses you would like to read
-        format: the unpack format of the returned value ( '>f' or '>I')
-        
+        format: The unpack format of the returned value ( '>f' or '>I')
+
         Modbus is supported for UE9s over USB from Comm Firmware 1.50 and above.
         """
-        
         pkt, numBytes = self._buildReadRegisterPacket(addr, numReg, unitId)
-        
         response = self._modbusWriteRead(pkt, numBytes)
-        
         return self._parseReadRegisterResponse(response, numBytes, addr, format, numReg)
-        
+
     def _buildReadRegisterPacket(self, addr, numReg, unitId):
         """
         self._buildReadRegisterPacket(addr, numReg)
 
         Builds a raw modbus "Read Register" packet to be written to a device
 
-        returns a tuple:
-        ( < Packet as a list >, < number of bytes to read > )
+        Returns a tuple:
+        (<Packet as a list>, <number of bytes to read>)
         """
         # Calculates the number of registers for that request, or if numReg is
         # specified, checks that it is a valid number.
         numReg = Modbus.calcNumberOfRegisters(addr, numReg = numReg)
-        
-        pkt = Modbus.readHoldingRegistersRequest(addr, numReg = numReg, unitId = unitId)
-        pkt = [ ord(c) for c in pkt ]
-        
+        pkt = toList(Modbus.readHoldingRegistersRequest(addr, numReg = numReg, unitId = unitId))
         numBytes = 9 + (2 * int(numReg))
-        
         return (pkt, numBytes)
-    
+
     def _parseReadRegisterResponse(self, response, numBytes, addr, format, numReg = None):
         """
         self._parseReadRegisterReponse(reponse, numBytes, addr, format)
 
         Takes a "Read Register" response and converts it to a value
 
-        returns the value
+        Returns the value.
         """
         if len(response) != numBytes:
-            raise LabJackException(9001, "Got incorrect number of bytes from device. Expected %s bytes, got %s bytes. The packet recieved was: %s" % (numBytes, len(response),response))
+            raise LabJackException(9001, "Got incorrect number of bytes from device. Expected %s bytes, got %s bytes. The packet recieved was: %s" % (numBytes, len(response), response))
 
         if isinstance(response, list):
             packFormat = ">" + "B" * numBytes
@@ -457,48 +450,41 @@ class Device(object):
             format = Modbus.calcFormat(addr, numReg)
 
         value = Modbus.readHoldingRegistersResponse(response, payloadFormat=format)
-
         return value
 
-        
     def writeRegister(self, addr, value, unitId = None):
-        """ 
+        """
         Writes a value to a register. Returns the value to be written, if successful.
         Requires Modbus.py
-        
+
         writeRegister(self, addr, value)
         addr: The address you want to write to.
         value: The value, or list of values, you want to write.
-        
-        if you cannot write to that register, a LabJackException is raised.
-        Modbus is not supported for UE9's over USB. If you try it, a LabJackException is raised.
+
+        If you cannot write to that register, a LabJackException is raised.
+        Modbus is not supported for UE9s over USB. If you try it, a LabJackException is raised.
         """
-        
         pkt, numBytes = self._buildWriteRegisterPacket(addr, value, unitId)
-        
         response = self._modbusWriteRead(pkt, numBytes)
-        
         return self._parseWriteRegisterResponse(response, pkt, value)
-        
+
     def _buildWriteRegisterPacket(self, addr, value, unitId):
         """
         self._buildWriteRegisterPacket(addr, value)
 
-        Builds a raw modbus "Write Register" packet to be written to a device
+        Builds a raw modbus "Write Register" packet to be written to a device.
 
-        returns a tuple:
-        ( < Packet as a list >, < number of bytes to read > )
+        Returns a tuple:
+        (<Packet as a list>, <number of bytes to read>)
         """
-
-        if type(value) is list:
+        if isinstance(value, list):
             return self._buildWriteMultipleRegisters(addr, value, unitId)
 
         fmt = Modbus.calcFormat(addr)
         if fmt != '>H':
             return self._buildWriteFloatToRegister(addr, value, unitId, fmt)
 
-        request = Modbus.writeRegisterRequest(addr, value, unitId)
-        request = [ ord(c) for c in request ]
+        request = toList(Modbus.writeRegisterRequest(addr, value, unitId))
         numBytes = 12
         return request, numBytes
 
@@ -508,40 +494,35 @@ class Device(object):
 
         # Function, Address, Num Regs, Byte count, Data
         payload = struct.pack('>BHHB', 0x10, addr, 0x02, 0x04) + struct.pack(fmt, value)
-        
+
         request = Modbus._buildHeaderBytes(length = len(payload)+1, unitId = unitId)
         request += payload
-        request = [ ord(c) for c in request ]
+        request = toList(request)
         numBytes = 12
-
         return (request, numBytes)
-        
-        
+
     def _buildWriteMultipleRegisters(self, startAddr, values, unitId = None):
-        request = Modbus.writeRegistersRequest(startAddr, values, unitId)
-        request = [ ord(c) for c in request ]
+        request = toList(Modbus.writeRegistersRequest(startAddr, values, unitId))
         numBytes = 12
-
         return (request, numBytes)
-        
+
     def _parseWriteRegisterResponse(self, response, request, value):
         response = list(response)
 
         if request[2] != 0 and request[3] != 0:
             protoID = (request[2] << 8) + request[3]
-            raise Modbus.ModbusException("Got an unexpected protocol ID: %s (expected 0). Please make sure that you have the latest firmware. UE9s need a Comm Firmware of 1.50 or greater.\n\nThe packet you received: %s" % (protoID, hexWithoutQuotes(response)))
-        
+            raise Modbus.ModbusException("Got an unexpected protocol ID: %s (expected 0). Please make sure that you have the latest firmware. UE9s need Comm Firmware of 1.50 or greater.\n\nThe packet you received: %s" % (protoID, hexWithoutQuotes(response)))
 
         if request[7] != response[7]:
             raise LabJackException(9002, "Modbus error number %s raised while writing to register. Make sure you're writing to an address that allows writes.\n\nThe packet you received: %s" % (response[8], hexWithoutQuotes(response)))
 
         return value
-    
+
     def setDIOState(self, IOnum, state):
         value = (int(state) & 0x01)
         self.writeRegister(6000+IOnum, value)
         return True
-    
+
     def _modbusWriteRead(self, request, numBytes):
         with self.deviceLock:
             self.write(request, modbus = True, checksum = False)
@@ -556,7 +537,7 @@ class Device(object):
                 if self.debug:
                     print("Response: " + hexWithoutQuotes(result))
                 return result
-    
+
     def _checkCommandBytes(self, results, commandBytes):
         """
         Checks all the stuff from a command
@@ -2991,7 +2972,7 @@ def toDouble(bytes):
     return float(left) + float(right)/(2**32)
     
 def hexWithoutQuotes(l):
-    """ Return a string listing hex without all the single quotes.
+    """Return a string listing hex without all the single quotes.
     
     >>> l = range(10)
     >>> print(hexWithoutQuotes(l))
@@ -2999,6 +2980,22 @@ def hexWithoutQuotes(l):
 
     """
     return str([hex(i) for i in l]).replace("'", "")
+
+def toList(buffer):
+    """Takes a list, bytes object or string and converts it to a list
+    of integers.
+
+    Args:
+        buffer: A list, bytes object or string.
+
+    Returns:
+        A list of integers.
+    """
+    if isinstance(buffer, str):
+        return [ord(ch) for ch in buffer]
+    else:
+        return [int(val) for val in buffer]
+
 
 # device types:
 LJ_dtUE9 = 9
