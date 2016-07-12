@@ -23,7 +23,7 @@ print("IP Address Filter demonstration:")
 '''
 print("  Setting IPs to filter")
 # Set the 5 IP filters here
-ip0 = "192.168.1.136"
+ip0 = "192.168.1.10"
 ip1 = "192.168.1.11"
 ip2 = "192.168.1.12"
 ip3 = "192.168.1.13"
