@@ -280,5 +280,6 @@ Version History
     - Removed DCA-10 example as the product is discontinued.
     - Updated u3allio.py to use calibration analog input readings.
     - Added argument check to u3allio.py and u6allio.py. 
-    - Updated LabJackPython Modbus related methods for for Python 3
+    - Updated Modbus methods in LabJackPython module for Python 3
       compatibility.
+    - Updated Windows UD device open for Python 3 compatibility.

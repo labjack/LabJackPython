@@ -1296,23 +1296,23 @@ def _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, 
     if devNumber is not None:
         devs = listAll(deviceType)
         pAddress = list(devs.keys())[devNumber-1]
-    
+
     handle = ctypes.c_long()
-    pAddress = str(pAddress)
-    ec = staticLib.OpenLabJack(deviceType, connectionType, 
+    pAddress = str(pAddress).encode("ascii")
+    ec = staticLib.OpenLabJack(deviceType, connectionType,
                                 pAddress, firstFound, ctypes.byref(handle))
-    
+
     #Error codes > 0 are errors, < 0 are warnings and 0 is no error.
     #Warnings return a valid device handle.
     if ec > 0:
         raise LabJackException(ec)
     if ec < 0:
         print("Warning: " + str(LabJackException(ec)))
-    
+
     devHandle = handle.value
-    
+
     return devHandle
-    
+
 def _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber):
     devType = ctypes.c_ulong(deviceType)
     openDev = staticLib.LJUSB_OpenDevice
