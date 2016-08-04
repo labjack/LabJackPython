@@ -962,31 +962,31 @@ class U3(Device):
               Resolution, the resolution of the samples (0 - 3)
               PChannels, a list of channel numbers to stream
               NChannels, a list of channel options bytes
-              
+
               Set Either:
-              
+
               ScanFrequency, the frequency in Hz to scan the channel list (PChannels).
                              sample rate (Hz) = ScanFrequency * NumChannels
-              
+
               -- OR --
-              
+
               SamplesPerPacket, how many samples make one packet
               InternalStreamClockFrequency, 0 = 4 MHz, 1 = 48 MHz
               DivideClockBy256, True = divide the clock by 256
               ScanInterval, clock/ScanInterval = frequency.
-              
+
               See Section 5.2.10 of the User's Guide for more details.
-              
+
               Deprecated:
-              
+
               SampleFrequency, the frequency in Hz to sample.  Use ScanFrequency
                                since SampleFrequency has always set the scan
                                frequency and the name is confusing.
-        
+
         Desc: Stream mode operates on a table of channels that are scanned
               at the specified scan rate. Before starting a stream, you need 
               to call this function to configure the table and scan clock.
-        
+
         Note: Requires U3 hardware version 1.21 or greater.
         """
         if len(PChannels) != NumChannels:
@@ -995,7 +995,7 @@ class U3(Device):
             raise LabJackException("Length of NChannels didn't match NumChannels")
         if len(PChannels) != len(NChannels):
             raise LabJackException("Length of PChannels didn't match the length of NChannels")
-        
+
         if (ScanFrequency is not None) or (SampleFrequency is not None):
             if ScanFrequency is None:
                 ScanFrequency = SampleFrequency
@@ -1003,66 +1003,65 @@ class U3(Device):
                 if ScanFrequency < 25:
                     SamplesPerPacket = ScanFrequency
                 DivideClockBy256 = True
-                ScanInterval = 15625//ScanFrequency
+                ScanInterval = 15625 // ScanFrequency
             else:
                 DivideClockBy256 = False
-                ScanInterval = 4000000//ScanFrequency
-        
+                ScanInterval = 4000000 // ScanFrequency
+
         # Force Scan Interval into correct range
-        ScanInterval = min( ScanInterval, 65535 )
-        ScanInterval = int( ScanInterval )
-        ScanInterval = max( ScanInterval, 1 )
-        
-        # Same with Samples per packet
-        SamplesPerPacket = max( SamplesPerPacket, 1)
-        SamplesPerPacket = int( SamplesPerPacket )
-        SamplesPerPacket = min ( SamplesPerPacket, 25)
-        
-        command = [ 0 ] * ( 12 + (NumChannels * 2) )
-        
+        ScanInterval = min(ScanInterval, 65535)
+        ScanInterval = int(ScanInterval)
+        ScanInterval = max(ScanInterval, 1)
+
+        # Same with Samples Per Packet
+        SamplesPerPacket = max(SamplesPerPacket, 1)
+        SamplesPerPacket = int(SamplesPerPacket)
+        SamplesPerPacket = min(SamplesPerPacket, 25)
+
+        command = [0] * (12+(NumChannels*2))
+
         #command[0] = Checksum8
         command[1] = 0xF8
-        command[2] = NumChannels+3
+        command[2] = NumChannels + 3
         command[3] = 0x11
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
         command[6] = NumChannels
         command[7] = SamplesPerPacket
         #command[8] = Reserved
-        
-        command[9] |= ( InternalStreamClockFrequency & 0x01 ) << 3
+
+        command[9] |= (InternalStreamClockFrequency&0x01) << 3
         if DivideClockBy256:
             command[9] |= 1 << 2
-        command[9] |= ( Resolution & 3 )
-        
-        t = struct.pack("<H", ScanInterval)
-        command[10] = ord(t[0])
-        command[11] = ord(t[1])
-        
+        command[9] |= Resolution & 3
+
+        command[10] = ScanInterval & 0xFF
+        command[11] = (ScanInterval >> 8) & 0xFF
+
         for i in range(NumChannels):
             command[12+(i*2)] = PChannels[i]
             if NChannels[i] == 32:
                 command[13+(i*2)] = 30
             else:
                 command[13+(i*2)] = NChannels[i]
-        
+
         self._writeRead(command, 8, [0xF8, 0x01, 0x11])
-        
+
         self.streamSamplesPerPacket = SamplesPerPacket
         self.streamChannelNumbers = PChannels
         self.streamNegChannels = NChannels
-        
+
         self.streamConfiged = True
         if InternalStreamClockFrequency == 1:
             freq = float(48000000)
         else:
             freq = float(4000000)
-        
+
         if DivideClockBy256:
             freq /= 256
-        
+
         freq = freq/ScanInterval
-        
+
         if SamplesPerPacket < 25:
             #limit to one packet
             self.packetsPerRequest = 1
@@ -1070,60 +1069,64 @@ class U3(Device):
             self.packetsPerRequest = max(1, int(freq/SamplesPerPacket))
             self.packetsPerRequest = min(self.packetsPerRequest, 48)
     streamConfig.section = 2
-    
+
     def processStreamData(self, result, numBytes = None):
         """
         Name: U3.processStreamData(result, numBytes = None)
-        Args: result, the string returned from streamData()
+        Args: result, the string or bytes object returned from
+                      streamData().
               numBytes, the number of bytes per packet.
         Desc: Breaks stream data into individual channels and applies
               calibrations.
-              
+
         >>> reading = d.streamData(convert = False)
         >>> print(proccessStreamData(reading['result']))
         defaultDict(list, {'AIN0' : [3.123, 3.231, 3.232, ...]})
         """
         if numBytes is None:
             numBytes = 14 + (self.streamSamplesPerPacket * 2)
-        
+
         returnDict = collections.defaultdict(list)
-        
+
+        isHV = self.deviceName.endswith('HV')
+        numChannels = len(self.streamChannelNumbers)
+
         for packet in self.breakupPackets(result, numBytes):
             for sample in self.samplesFromPacket(packet):
-                if self.streamPacketOffset >= len(self.streamChannelNumbers):
+                if self.streamPacketOffset >= numChannels:
                     self.streamPacketOffset = 0
-                
+
                 if self.streamChannelNumbers[self.streamPacketOffset] in (193, 194):
-                    value = struct.unpack('<BB', sample )
+                    value = struct.unpack('<BB', sample)
                 elif self.streamChannelNumbers[self.streamPacketOffset] >= 200:
-                    value = struct.unpack('<H', sample )[0]
-                else:  
+                    value = struct.unpack('<H', sample)[0]
+                else:
                     if self.streamNegChannels[self.streamPacketOffset] == 31:
                         # do unsigned
-                        value = struct.unpack('<H', sample )[0]
+                        value = struct.unpack('<H', sample)[0]
                         singleEnded = True
                     else:
                         # do signed
-                        value = struct.unpack('<H', sample )[0]
+                        value = struct.unpack('<H', sample)[0]
                         singleEnded = False
-                    
+
                     lvChannel = True
-                    if self.deviceName.lower().endswith('hv') and self.streamChannelNumbers[self.streamPacketOffset] < 4:
+                    if isHV and self.streamChannelNumbers[self.streamPacketOffset] < 4:
                         lvChannel = False
-                    
+
                     isSpecial = False
                     if self.streamNegChannels[self.streamPacketOffset] == 32:
                         isSpecial = True
 
                     value = self.binaryToCalibratedAnalogVoltage(value, isLowVoltage = lvChannel, isSingleEnded = singleEnded, channelNumber = self.streamChannelNumbers[self.streamPacketOffset], isSpecialSetting = isSpecial)
-                
+
                 returnDict["AIN%s" % self.streamChannelNumbers[self.streamPacketOffset]].append(value)
-            
+
                 self.streamPacketOffset += 1
 
         return returnDict
     processStreamData.section = 3
-    
+
     def watchdog(self, ResetOnTimeout = False, SetDIOStateOnTimeout = False, TimeoutPeriod = 60, DIOState = 0, DIONumber = 0, onlyRead=False):
         """
         Name: U3.watchdog(ResetOnTimeout = False, SetDIOStateOnTimeout = False,

@@ -31,11 +31,13 @@ MAX_USB_PACKET_LENGTH = 64
 
 NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS = 5
 
-_os_name = ""  #Set to "nt" or "posix" in _loadLibrary.
+_os_name = ""  # Set to "nt" or "posix" in _loadLibrary.
 
-_use_ptr = True  #Set to True or False in _loadLibrary. Indicates whether to use
-                 #the Ptr version of certain UD calls or not. Windows only.
+_use_ptr = True  # Set to True or False in _loadLibrary. Indicates whether to use
+                 # the Ptr version of certain UD calls or not. Windows only.
 
+_use_py2 = sys.version_info < (3, 0)  # Indicates to use Python 2.x or
+                                      # Python 3+ when needed.
 
 class LabJackException(Exception):
     """Custom Exception meant for dealing specifically with LabJack Exceptions.
@@ -287,7 +289,7 @@ class Device(object):
         """write([writeBuffer], modbus = False)
             
         Writes the data contained in writeBuffer to the device.  writeBuffer must be a list of 
-        bytes.
+        byte values.
         """
         if self.handle is None:
             raise LabJackException("The device handle is None.")
@@ -310,23 +312,27 @@ class Device(object):
 
     def read(self, numBytes, stream = False, modbus = False):
         """read(numBytes, stream = False, modbus = False)
-            
-        Blocking read until a packet is received.
+
+        Blocking read until a packet is received. Returns a list of
+        byte values when modbus is False. When modbus is true, returns
+        a string in Python 2.x, or a bytes object in Python 3+.
         """
         if self.handle is None:
             raise LabJackException("The device handle is None.")
-        
+
+        result = []
         if isinstance(self.handle, LJSocketHandle):
-            return self._readFromLJSocketHandle(numBytes, modbus, stream)
-            
+            result = self._readFromLJSocketHandle(numBytes, modbus, stream)
         elif isinstance(self.handle, UE9TCPHandle):
-            return self._readFromUE9TCPHandle(numBytes, stream, modbus)
+            result = self._readFromUE9TCPHandle(numBytes, stream, modbus)
         else:
             if _os_name == 'posix':
-                return self._readFromExodriver(numBytes, stream, modbus)
+                result = self._readFromExodriver(numBytes, stream, modbus)
             elif _os_name == 'nt':
-                return self._readFromUDDriver(numBytes, stream, modbus)
-        
+                result = self._readFromUDDriver(numBytes, stream, modbus)
+
+        return result
+
     def _readFromLJSocketHandle(self, numBytes, modbus, spont = False):
         """
         Reads from LJSocket. Returns the result as a list.
@@ -371,7 +377,7 @@ class Device(object):
             readBytes = staticLib.LJUSB_Read(self.handle, ctypes.byref(newA), numBytes)
             # return a list of integers in command/response mode
             return [(newA[i] & 0xff) for i in range(readBytes)]
-            
+
     def _readFromUDDriver(self, numBytes, stream, modbus):
         if self.devType == 0x501:
             newA = (ctypes.c_byte*numBytes)()
@@ -383,16 +389,16 @@ class Device(object):
                 eGetBuff = list()
                 eGetBuff = eGetRaw(self.handle, LJ_ioRAW_IN, 0, len(tempBuff), tempBuff)[1]
 
-                #parse the modbus response out (reponse is the Modbus extended low=level function)
+                # Parse the Modbus response out (response is the Modbus extended low-level function)
                 retBuff = list()
                 if len(eGetBuff) >= 9 and eGetBuff[1] == 0xF8 and eGetBuff[3] == 0x07:
-                    #figuring out the length of the modbus response
+                    # Figuring out the length of the Modbus response
                     mbSize = len(eGetBuff) - 8
                     if len(eGetBuff) >= 14:
                         mbSize = min(mbSize, eGetBuff[13] + 6)
                     i = min(mbSize, numBytes)
                     i = max(i, 0)                    
-                    retBuff = eGetBuff[8:8+i] #getting the response only
+                    retBuff = eGetBuff[8:8+i]  # Getting the response only
                 return retBuff
 
             tempBuff = [0] * numBytes
@@ -648,7 +654,8 @@ class Device(object):
             self._autoCloseSetup = True
 
     def close(self):
-        """close()
+        """
+        close()
         
         This function is not specifically supported in the LabJackUD driver
         for Windows and so simply calls the UD function Close.  For Mac and unix
@@ -670,22 +677,23 @@ class Device(object):
         self.handle = None
 
     def reset(self):
-        """Reset the LabJack device.
-    
+        """
+        Reset the LabJack device.
+
         For Windows, Linux, and Mac
     
         Sample Usage:
     
         >>> d = ue9.UE9()
         >>> d.reset()
-        
+
         @type  None
         @param Function takes no arguments
         
         @rtype: None
         @return: Function returns nothing.
             
-        @raise LabJackException: 
+        @raise LabJackException:
         """
         if _os_name == 'nt':
             ec = staticLib.ResetLabJack(self.handle)
@@ -693,7 +701,7 @@ class Device(object):
             if ec != 0: raise LabJackException(ec)
         elif _os_name == 'posix':
             sndDataBuff = [0] * 4
-            
+
             #Make the reset packet
             sndDataBuff[0] = 0x9C #Checksum
             sndDataBuff[1] = 0x99
@@ -712,14 +720,13 @@ class Device(object):
               numBytesPerPacket, how big each packe is
         Desc: This function will break up a list into smaller chunks and return
               each chunk one at a time.
-        
+
         >>> l = range(15)
         >>> for packet in d.breakupPackets(l, 5):
         ...     print(packet)
         [ 0, 1, 2, 3, 4 ]
         [ 5, 6, 7, 8, 9 ]
         [ 10, 11, 12, 13, 14]
-        
         """
         start, end = 0, numBytesPerPacket
         while end <= len(packets):
@@ -741,13 +748,10 @@ class Device(object):
         HEADER_SIZE = 12
         FOOTER_SIZE = 2
         BYTES_PER_PACKET = 2
-        l = str(packet)
-        l = l[HEADER_SIZE:]
-        l = l[:-FOOTER_SIZE]
-        while len(l) > 0:
-            yield l[:BYTES_PER_PACKET]
-            l = l[BYTES_PER_PACKET:]
-            
+        l = packet[HEADER_SIZE:-FOOTER_SIZE]
+        for i in range(0, len(l), BYTES_PER_PACKET):
+            yield l[i:i+BYTES_PER_PACKET]
+
     def streamStart(self):
         """
         Name: Device.streamStart()
@@ -757,24 +761,24 @@ class Device(object):
         """
         if not self.streamConfiged:
             raise LabJackException("Stream must be configured before it can be started.")
-        
-        if self.streamStarted: 
+
+        if self.streamStarted:
             raise LabJackException("Stream already started.")
-        
-        command = [ 0xA8, 0xA8 ]
+
+        command = [0xA8, 0xA8]
         results = self._writeRead(command, 4, [], False, False, False)
-        
+
         if results[2] != 0:
-            raise LowlevelErrorException(results[2], "StreamStart returned an error:\n    %s" % lowlevelErrorToString(results[2]) )
-        
+            raise LowlevelErrorException(results[2], "StreamStart returned an error:\n    %s" % lowlevelErrorToString(results[2]))
+
         self.streamPacketOffset = 0
         self.streamStarted = True
-    
+
     def streamData(self, convert=True):
-        """       
+        """
         Name: Device.streamData()
         Args: convert, should the packets be converted as they are read.
-                       set to False to get much faster speeds, but you will 
+                       set to False to get much faster speeds, but you will
                        have to process the results later.
         Desc: Reads stream data from a LabJack device. See our stream example
               to get an idea of how this function should be called. The return
@@ -786,7 +790,8 @@ class Device(object):
                         buffer overflow on the LabJack.
               * firstPacket: The PacketCounter value in the first USB packet.
               * result: The raw bytes returned from read(). The only way to get
-                        data if called with convert = False.
+                        data if called with convert = False. In Python 2 this
+                        is a string, and in Python 3+ is a bytes object.
               * AINi, where i is an entry in the passed in PChannels. If called
                         with convert = True, this is a list of all the readings
                         in this block.
@@ -797,11 +802,9 @@ class Device(object):
             raise LabJackException("Please start streaming before reading.")
 
         numBytes = 14 + (self.streamSamplesPerPacket * 2)
-
         while True:
-        
             result = self.read(numBytes * self.packetsPerRequest, stream = True)
-            
+
             if len(result) == 0:
                 yield None
                 continue
@@ -810,37 +813,36 @@ class Device(object):
 
             errors = 0
             missed = 0
-            firstPacket = ord(result[10])
+            firstPacket = streamByteToInt(result[10])
             for i in range(numPackets):
-                e = ord(result[11+(i*numBytes)])
+                e = streamByteToInt(result[11+(i*numBytes)])
                 if e != 0:
                     errors += 1
                     if self.debug and e != 60 and e != 59:
                         print(e)
                     if e == 60:
-                        missed += struct.unpack('<I', result[6+(i*numBytes):10+(i*numBytes)] )[0]
-            
-            returnDict = dict(numPackets = numPackets, result = result, errors = errors, missed = missed, firstPacket = firstPacket )
-            
+                        missed += struct.unpack('<I', result[6+(i*numBytes):10+(i*numBytes)])[0]
+
+            returnDict = dict(numPackets = numPackets, result = result, errors = errors, missed = missed, firstPacket = firstPacket)
+
             if convert:
                 returnDict.update(self.processStreamData(result, numBytes = numBytes))
-            
+
             yield returnDict
-    
+
     def streamStop(self):
         """
         Name: Device.streamStop()
         Args: None
         Desc: Stops streaming on the device.
         """
-        command = [ 0xB0, 0xB0 ]
+        command = [0xB0, 0xB0]
         results = self._writeRead(command, 4, [], False, False, False)
-        
-        if results[2] != 0:
-            raise LowlevelErrorException(results[2], "StreamStop returned an error:\n    %s" % lowlevelErrorToString(results[2]) )
-        
-        self.streamStarted = False
 
+        if results[2] != 0:
+            raise LowlevelErrorException(results[2], "StreamStop returned an error:\n    %s" % lowlevelErrorToString(results[2]))
+
+        self.streamStarted = False
 
     def getName(self):
         """
@@ -2669,12 +2671,7 @@ def LJHash(hashStr, size):
         retBuff += outBuff[i]
         
     return retBuff
-    
-    
-    
-    
-    
-    
+
 def __listAllUE9Unix(connectionType):
     """Private listAll function for use on unix and mac machines to find UE9s.
     """
@@ -2960,7 +2957,6 @@ class UE9TCPHandle(object):
             print("UE9 Handle close exception: %s" % e)
             pass
 
-    
 def toDouble(bytes):
     """
     Name: toDouble(buffer)
@@ -2968,12 +2964,13 @@ def toDouble(bytes):
     Desc: Converts the 8 byte array into a floating point number.
     """
     right, left = struct.unpack("<Ii", struct.pack("B" * 8, *bytes[0:8]))
-    
+
     return float(left) + float(right)/(2**32)
-    
+
 def hexWithoutQuotes(l):
-    """Return a string listing hex without all the single quotes.
-    
+    """
+    Return a string listing hex without all the single quotes.
+
     >>> l = range(10)
     >>> print(hexWithoutQuotes(l))
     [0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9]
@@ -2982,7 +2979,8 @@ def hexWithoutQuotes(l):
     return str([hex(i) for i in l]).replace("'", "")
 
 def toList(buffer):
-    """Takes a list, bytes object or string and converts it to a list
+    """
+    Takes a list, bytes object or string and converts it to a list
     of integers.
 
     Args:
@@ -2995,6 +2993,23 @@ def toList(buffer):
         return [ord(ch) for ch in buffer]
     else:
         return [int(val) for val in buffer]
+
+def streamByteToInt(byte):
+    """
+    Takes a byte from a stream read packet, which could be a
+    string or integer from the bytes object, and and converts it
+    to an integer.
+
+    Args:
+        x: A byte (chr or int) from a stream read.
+
+    Returns:
+        The converted integer.
+    """
+    if _use_py2:
+        return ord(byte)
+    else:
+        return byte
 
 
 # device types:
