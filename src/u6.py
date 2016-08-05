@@ -570,10 +570,10 @@ class U6(Device):
             #command[5] = Checksum16 (MSB)
         
         self._writeRead(command, 8, [0xF8, 0x01, command[3]])
-    
+
     def eraseCal(self):
         return self.eraseMem(EraseCal=True)
-    
+
     def streamConfig(self, NumChannels = 1, ResolutionIndex = 0, SamplesPerPacket = 25, SettlingFactor = 0, InternalStreamClockFrequency = 0, DivideClockBy256 = False, ScanInterval = 1, ChannelNumbers = [0], ChannelOptions = [0], ScanFrequency = None, SampleFrequency = None):
         """
         Name: U6.streamConfig(NumChannels = 1, ResolutionIndex = 0,
@@ -592,34 +592,34 @@ class U6(Device):
                                 Set bit 7 for differential reading.
                                 GainIndex: 0(b00)=x1,  1(b01)=x10, 2(b10)=x100,
                                            3(b11)=x1000
-              
+
               Set Either:
-              
+
               ScanFrequency, the frequency in Hz to scan the channel list (ChannelNumbers).
                              sample rate (Hz) = ScanFrequency * NumChannels
-              
+
               -- OR --
-              
+
               SamplesPerPacket, how many samples make one packet
               InternalStreamClockFrequency, 0 = 4 MHz, 1 = 48 MHz
               DivideClockBy256, True = divide the clock by 256
               ScanInterval, clock/ScanInterval = frequency.
-              
+
               See Section 5.2.12 of the User's Guide for more details.
-              
+
               Deprecated:
               
               SampleFrequency, the frequency in Hz to sample.  Use ScanFrequency
                                since SampleFrequency has always set the scan
                                frequency and the name is confusing.
-        
+
         Desc: Configures streaming on the U6.
         """
         if NumChannels != len(ChannelNumbers) or NumChannels != len(ChannelOptions):
             raise LabJackException("NumChannels must match length of ChannelNumbers and ChannelOptions")
         if len(ChannelNumbers) != len(ChannelOptions):
             raise LabJackException("len(ChannelNumbers) doesn't match len(ChannelOptions)")
-        
+
         if (ScanFrequency is not None) or (SampleFrequency is not None):
             if ScanFrequency is None:
                 ScanFrequency = SampleFrequency
@@ -627,25 +627,25 @@ class U6(Device):
                 if ScanFrequency < 25:
                     SamplesPerPacket = ScanFrequency
                 DivideClockBy256 = True
-                ScanInterval = 15625/ScanFrequency
+                ScanInterval = 15625 // ScanFrequency
             else:
                 DivideClockBy256 = False
-                ScanInterval = 4000000/ScanFrequency
-        
+                ScanInterval = 4000000 // ScanFrequency
+
         # Force Scan Interval into correct range
-        ScanInterval = min( ScanInterval, 65535 )
-        ScanInterval = int( ScanInterval )
-        ScanInterval = max( ScanInterval, 1 )
-        
-        # Same with Samples per packet
-        SamplesPerPacket = max( SamplesPerPacket, 1)
-        SamplesPerPacket = int( SamplesPerPacket )
-        SamplesPerPacket = min ( SamplesPerPacket, 25)
-        
-        command = [ 0 ] * (14 + NumChannels*2)
+        ScanInterval = min(ScanInterval, 65535)
+        ScanInterval = int(ScanInterval)
+        ScanInterval = max(ScanInterval, 1)
+
+        # Same with Samples Per Packet
+        SamplesPerPacket = max(SamplesPerPacket, 1)
+        SamplesPerPacket = int(SamplesPerPacket)
+        SamplesPerPacket = min(SamplesPerPacket, 25)
+
+        command = [0] * (14 + NumChannels*2)
         #command[0] = Checksum8
         command[1] = 0xF8
-        command[2] = NumChannels+4
+        command[2] = NumChannels + 4
         command[3] = 0x11
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
@@ -657,39 +657,37 @@ class U6(Device):
         command[11] = (InternalStreamClockFrequency & 1) << 3
         if DivideClockBy256:
             command[11] |= 1 << 1
-        t = struct.pack("<H", ScanInterval)
-        command[12] = ord(t[0])
-        command[13] = ord(t[1])
+        command[12] = ScanInterval & 0xFF
+        command[13] = (ScanInterval >> 8) & 0xFF
         for i in range(NumChannels):
             command[14+(i*2)] = ChannelNumbers[i]
             command[15+(i*2)] = ChannelOptions[i]
-        
-        
+
         self._writeRead(command, 8, [0xF8, 0x01, 0x11])
-        
+
         # Set up the variables for future use.
         self.streamSamplesPerPacket = SamplesPerPacket
         self.streamChannelNumbers = ChannelNumbers
         self.streamChannelOptions = ChannelOptions
         self.streamConfiged = True
-        
+
         if InternalStreamClockFrequency == 1:
             freq = float(48000000)
         else:
             freq = float(4000000)
-        
+
         if DivideClockBy256:
             freq /= 256
-        
-        freq = freq/ScanInterval
-        
+
+        freq = freq / ScanInterval
+
         if SamplesPerPacket < 25:
-            #limit to one packet
+            # limit to one packet
             self.packetsPerRequest = 1
         else:
             self.packetsPerRequest = max(1, int(freq/SamplesPerPacket))
             self.packetsPerRequest = min(self.packetsPerRequest, 48)
-    
+
     def processStreamData(self, result, numBytes = None):
         """
         Name: U6.processStreamData(result, numPackets = None)
@@ -697,39 +695,40 @@ class U6(Device):
               numBytes, the number of bytes per packet
         Desc: Breaks stream data into individual channels and applies
               calibrations.
-              
+
         >>> reading = d.streamData(convert = False)
         >>> print(proccessStreamData(reading['result']))
         defaultDict(list, {'AIN0': [3.123, 3.231, 3.232, ...]})
         """
         if numBytes is None:
             numBytes = 14 + (self.streamSamplesPerPacket * 2)
-        
+
         returnDict = collections.defaultdict(list)
-        
+
+        numChannels = len(self.streamChannelNumbers)
         j = self.streamPacketOffset
         for packet in self.breakupPackets(result, numBytes):
             for sample in self.samplesFromPacket(packet):
-                if j >= len(self.streamChannelNumbers):
+                if j >= numChannels:
                     j = 0
-                
+
                 if self.streamChannelNumbers[j] in (193, 194):
-                    value = struct.unpack('<BB', sample )
+                    value = struct.unpack('<BB', sample)
                 elif self.streamChannelNumbers[j] >= 200:
-                    value = struct.unpack('<H', sample )[0]
+                    value = struct.unpack('<H', sample)[0]
                 else:
-                    value = struct.unpack('<H', sample )[0]
+                    value = struct.unpack('<H', sample)[0]
                     gainIndex = (self.streamChannelOptions[j] >> 4) & 0x3
                     value = self.binaryToCalibratedAnalogVoltage(gainIndex, value, is16Bits = True, resolutionIndex = 1)
-                
+
                 returnDict["AIN%s" % self.streamChannelNumbers[j]].append(value)
-                
+
                 j += 1
-            
+
             self.streamPacketOffset = j
 
         return returnDict
-        
+
     def watchdog(self, Write = False, ResetOnTimeout = False, SetDIOStateOnTimeout = False, TimeoutPeriod = 60, DIOState = 0, DIONumber = 0):
         """
         Name: U6.watchdog(Write = False, ResetOnTimeout = False,
