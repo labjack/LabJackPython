@@ -1,3 +1,4 @@
+import sys
 import traceback
 from datetime import datetime
 
@@ -10,6 +11,8 @@ import ue9
 MAX_REQUESTS = 75
 # SCAN_FREQUENCY is the scan frequency of stream mode in Hz
 SCAN_FREQUENCY = 5000
+
+d = None
 
 ###############################################################################
 # U3
@@ -68,6 +71,13 @@ print("Configuring UE9 stream")
 
 d.streamConfig(NumChannels=2, ChannelNumbers=[0, 1], ChannelOptions=[0, 0], SettlingTime=0, Resolution=12, ScanFrequency=SCAN_FREQUENCY)
 '''
+
+if d is None:
+    print("""Configure a device first.
+Please open streamTest.py in a text editor and uncomment the lines for your device.
+
+Exiting...""")
+    sys.exit(0)
 
 try:
     print("Start stream")
