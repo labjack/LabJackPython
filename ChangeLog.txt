@@ -26,7 +26,7 @@ Version History
 - 0.6.4 July 31, 2008
     - Updated Examples/U3/u3.py.
 - 0.7.0 November 18, 2008
-    - Modified listAll to display device information in a different, more 
+    - Modified listAll to display device information in a different, more
       intuitive way.
     - Added a Device class for simpler usage.
     - openLabJack can now search for devices to open via ipAddress, localId, or
@@ -97,7 +97,7 @@ Version History
       Firmware 1.50.
 - July 20, 2010
     - Moved version history info into ChangeLog.txt.
-    - Settled on LABJACKPYTHON_VERSION to access version number 
+    - Settled on LABJACKPYTHON_VERSION to access version number
       programmatically.
     - Re-wrote the header to LabJackPython.py, u3.py, u6.py, ue9.py, u12.py, and
       bridge.py
@@ -134,7 +134,7 @@ Version History
     - getName/setName now use UTF-8 instead of a weird UTF-16 thing.
     - Updated LabJackPython.py to support the new LJSocket scan format.
     - Added a lock around assigning Transaction IDs.
-    - Added support for new Exodriver functions getDevCounts() and 
+    - Added support for new Exodriver functions getDevCounts() and
       openAllLabJacks().
     - Updated streamTest-threading.py to use streamData() and be less confusing.
     - Added a work-around for UE9s and Transaction IDs 64768 and 64769.
@@ -156,7 +156,7 @@ Version History
     - Fixed UE9 Modbus over TCP on Windows.
     - Added DAC and EEPROM address variables to LJTickDAC example.
     - Turned off debugging by default in U12 class.
-    - Updated special channels in streaming. 
+    - Updated special channels in streaming.
 - August 26, 2011
     - Updated README file to include a U12 example and license information.
     - Added U6 timer mode 14 support.
@@ -279,7 +279,9 @@ Version History
       same getAIN call to read analog inputs.
     - Removed DCA-10 example as the product is discontinued.
     - Updated u3allio.py to use calibration analog input readings.
-    - Added argument check to u3allio.py and u6allio.py. 
+    - Added argument check to u3allio.py and u6allio.py.
     - Updated Modbus methods in LabJackPython module for Python 3
       compatibility.
     - Updated Windows UD device open for Python 3 compatibility.
+    - Added timeout (in ms) functionality to the U12 read method.
+    - Fixed the U12 rawPulseout method so that it waits for the device response.
