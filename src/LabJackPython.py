@@ -16,11 +16,13 @@ from __future__ import with_statement
 import atexit  # For auto-closing devices
 import socket
 import ctypes  # import after socket or cygwin crashes "Aborted (core dump)"
-import struct
 import sys
 import threading  # For a thread-safe device lock
 
+from struct import pack, unpack
+
 import Modbus
+
 
 LABJACKPYTHON_VERSION = "5-26-2015"
 
@@ -38,6 +40,7 @@ _use_ptr = True  # Set to True or False in _loadLibrary. Indicates whether to us
 
 _use_py2 = sys.version_info < (3, 0)  # Indicates to use Python 2.x or
                                       # Python 3+ when needed.
+
 
 class LabJackException(Exception):
     """Custom Exception meant for dealing specifically with LabJack Exceptions.
@@ -220,7 +223,7 @@ class Device(object):
         #        writeBuffer = [ 0, 0 ] + writeBuffer
             
         packFormat = "B" * len(writeBuffer)
-        tempString = struct.pack(packFormat, *writeBuffer)
+        tempString = pack(packFormat, *writeBuffer)
         
         if modbus:
             self.handle.modbusSocket.send(tempString)
@@ -231,7 +234,7 @@ class Device(object):
 
     def _writeToUE9TCPHandle(self, writeBuffer, modbus):
         packFormat = "B" * len(writeBuffer)
-        tempString = struct.pack(packFormat, *writeBuffer)
+        tempString = pack(packFormat, *writeBuffer)
         
         if modbus is True:
             if self.handle.modbus is None:
@@ -262,7 +265,7 @@ class Device(object):
             newA = (ctypes.c_byte*len(writeBuffer))(0) 
             for i in range(len(writeBuffer)):
                 newA[i] = ctypes.c_byte(writeBuffer[i])
-            
+
             writeBytes = skymoteLib.LJUSB_IntWrite(self.handle, 1, ctypes.byref(newA), len(writeBuffer))
             
             if writeBytes != len(writeBuffer):
@@ -345,7 +348,7 @@ class Device(object):
             rcvString = self.handle.crSocket.recv(numBytes)
         readBytes = len(rcvString)
         packFormat = "B" * readBytes
-        rcvDataBuff = struct.unpack(packFormat, rcvString)
+        rcvDataBuff = unpack(packFormat, rcvString)
         return list(rcvDataBuff)
 
     def _readFromUE9TCPHandle(self, numBytes, stream, modbus):
@@ -361,7 +364,7 @@ class Device(object):
                 rcvString = self.handle.data.recv(numBytes)
         readBytes = len(rcvString)
         packFormat = "B" * readBytes
-        rcvDataBuff = struct.unpack(packFormat, rcvString)
+        rcvDataBuff = unpack(packFormat, rcvString)
         return list(rcvDataBuff)
 
     def _readFromExodriver(self, numBytes, stream, modbus):
@@ -372,7 +375,7 @@ class Device(object):
             if readBytes == 0:
                 return ''
             # return the byte string in stream mode
-            return struct.pack('b' * readBytes, *newA)
+            return pack('b' * readBytes, *newA)
         else:
             readBytes = staticLib.LJUSB_Read(self.handle, ctypes.byref(newA), numBytes)
             # return a list of integers in command/response mode
@@ -450,7 +453,7 @@ class Device(object):
 
         if isinstance(response, list):
             packFormat = ">" + "B" * numBytes
-            response = struct.pack(packFormat, *response)
+            response = pack(packFormat, *response)
 
         if format is None:
             format = Modbus.calcFormat(addr, numReg)
@@ -499,7 +502,7 @@ class Device(object):
             raise TypeError("Value must be a float or int.")
 
         # Function, Address, Num Regs, Byte count, Data
-        payload = struct.pack('>BHHB', 0x10, addr, 0x02, 0x04) + struct.pack(fmt, value)
+        payload = pack('>BHHB', 0x10, addr, 0x02, 0x04) + pack(fmt, value)
 
         request = Modbus._buildHeaderBytes(length = len(payload)+1, unitId = unitId)
         request += payload
@@ -821,7 +824,7 @@ class Device(object):
                     if self.debug and e != 60 and e != 59:
                         print(e)
                     if e == 60:
-                        missed += struct.unpack('<I', result[6+(i*numBytes):10+(i*numBytes)])[0]
+                        missed += unpack('<I', result[6+(i*numBytes):10+(i*numBytes)])[0]
 
             returnDict = dict(numPackets = numPackets, result = result, errors = errors, missed = missed, firstPacket = firstPacket)
 
@@ -872,7 +875,7 @@ class Device(object):
         else:
             try:
                 end = name.index(0x00)
-                name = struct.pack("B"*end, *name[:end]).decode("UTF-8")
+                name = pack("B"*end, *name[:end]).decode("UTF-8")
             except ValueError:
                 name = "My %s" % self.deviceName
                 if self.debug:
@@ -907,14 +910,14 @@ class Device(object):
             raise LabJackException("The name is too long, must be less than 48 characters.")
         
         newname = name.encode('UTF-8')
-        bl = list(struct.unpack("B"*strLen, newname)) + [0x00]
+        bl = list(unpack("B"*strLen, newname)) + [0x00]
         strLen += 1
         
         if strLen%2 != 0:
             bl = bl + [0x00]
             strLen += 1
         
-        bl = struct.unpack(">"+"H"*(strLen/2), struct.pack("B" * strLen, *bl))
+        bl = unpack(">"+"H"*(strLen/2), pack("B" * strLen, *bl))
         
         self.writeRegister(58000, list(bl))
 
@@ -1389,7 +1392,7 @@ def _openUE9OverEthernet(firstFound, pAddress, devNumber):
                 serialBytes = chr(0x10)
                 for j in macAddress[3:]:
                     serialBytes += chr(j)
-                serialNumber = struct.unpack(">I", serialBytes)[0]
+                serialNumber = unpack(">I", serialBytes)[0]
 
                 #Parse out the IP address
                 ipAddress = ""
@@ -1497,7 +1500,7 @@ def _makeDeviceFromHandle(handle, deviceType):
             device.macAddress = "%02X:%02X:%02X:%02X:%02X:%02X" % (rcvDataBuff[33], rcvDataBuff[32], rcvDataBuff[31], rcvDataBuff[30], rcvDataBuff[29], rcvDataBuff[28])
             
             # Parse out serial number
-            device.serialNumber = struct.unpack("<I", struct.pack("BBBB", rcvDataBuff[28], rcvDataBuff[29], rcvDataBuff[30], 0x10))[0]
+            device.serialNumber = unpack("<I", pack("BBBB", rcvDataBuff[28], rcvDataBuff[29], rcvDataBuff[30], 0x10))[0]
             
             # Parse out the IP address
             device.ipAddress = "%s.%s.%s.%s" % (rcvDataBuff[13], rcvDataBuff[12], rcvDataBuff[11], rcvDataBuff[10])
@@ -1532,8 +1535,8 @@ def _makeDeviceFromHandle(handle, deviceType):
             raise e
         
         device.localId = rcvDataBuff[21] & 0xff
-        serialNumber = struct.pack("<BBBB", *rcvDataBuff[15:19])
-        device.serialNumber = struct.unpack('<I', serialNumber)[0]
+        serialNumber = pack("<BBBB", *rcvDataBuff[15:19])
+        device.serialNumber = unpack('<I', serialNumber)[0]
         device.ipAddress = ""
         device.firmwareVersion = "%d.%02d" % (rcvDataBuff[10], rcvDataBuff[9])
         device.bootloaderVersion = "%s.%02d" % (rcvDataBuff[12], rcvDataBuff[11])
@@ -1570,8 +1573,8 @@ def _makeDeviceFromHandle(handle, deviceType):
             raise e
         
         device.localId = rcvDataBuff[21] & 0xff
-        serialNumber = struct.pack("<BBBB", *rcvDataBuff[15:19])
-        device.serialNumber = struct.unpack('<I', serialNumber)[0]
+        serialNumber = pack("<BBBB", *rcvDataBuff[15:19])
+        device.serialNumber = unpack('<I', serialNumber)[0]
         device.ipAddress = ""
         
         device.firmwareVersion = "%s.%02d" % (rcvDataBuff[10], rcvDataBuff[9])
@@ -1896,7 +1899,7 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
             
             if IOType == LJ_ioRAW_IN and Channel == 1:
                 # We return the raw byte string if we are streaming
-                x1 = struct.pack('b' * len(x1), *newA)
+                x1 = pack('b' * len(x1), *newA)
             elif IOType == LJ_ioRAW_IN and Channel == 0:
                 x1 = [0] * int(pv.value)
                 for i in range(len(x1)):
@@ -2722,7 +2725,7 @@ def __listAllUE9Unix(connectionType):
                         serialBytes = chr(0x10)
                         for j in macAddress[3:]:
                             serialBytes += chr(j)
-                        serial = struct.unpack(">I", serialBytes)[0]
+                        serial = unpack(">I", serialBytes)[0]
 
                         #Parse out the IP address
                         ipAddress = ""
@@ -2963,7 +2966,7 @@ def toDouble(bytes):
     Args: buffer, an array with 8 bytes
     Desc: Converts the 8 byte array into a floating point number.
     """
-    right, left = struct.unpack("<Ii", struct.pack("B" * 8, *bytes[0:8]))
+    right, left = unpack("<Ii", pack("B" * 8, *bytes[0:8]))
 
     return float(left) + float(right)/(2**32)
 

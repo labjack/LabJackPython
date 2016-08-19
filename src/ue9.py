@@ -13,13 +13,14 @@ import collections
 import datetime
 import select
 import socket
-import struct
 import warnings
 
 try:
   import ConfigParser
 except ImportError: # Python 3
   import configparser as ConfigParser
+
+from struct import pack, unpack
 
 from LabJackPython import (
     Device,
@@ -35,6 +36,7 @@ from LabJackPython import (
     verifyChecksum,
     _use_py2,
     )
+
 
 def openAllUE9():
     """
@@ -54,17 +56,17 @@ def parseIpAddress(bytes):
     return "%s.%s.%s.%s" % (bytes[3], bytes[2], bytes[1], bytes[0] )
     
 def unpackInt(bytes):
-    return struct.unpack("<I", struct.pack("BBBB", *bytes))[0]
+    return unpack("<I", pack("BBBB", *bytes))[0]
 
 def unpackShort(bytes):
-    return struct.unpack("<H", struct.pack("BB", *bytes))[0]
+    return unpack("<H", pack("BB", *bytes))[0]
 
 DEFAULT_CAL_CONSTANTS = { "AINSlopes" : { '0' : 0.000077503, '1' : 0.000038736, '2' : 0.000019353, '3' : 0.0000096764, '8' : 0.00015629  }, "AINOffsets" : { '0' : -0.012000, '1' : -0.012000, '2' : -0.012000, '3' : -0.012000, '8' : -5.1760 }, "TempSlope" : 0.012968, "DACSlopes" : { '0' : 842.59, '1' : 842.59}, "DACOffsets" : { '0' : 0.0, '1': 0.0} }
 
 class UE9(Device):
     """
     UE9 Class for all UE9 specific low-level commands.
-    
+
     Example:
     >>> import ue9
     >>> d = ue9.UE9()
@@ -175,13 +177,13 @@ class UE9(Device):
             
         if PortA is not None:
             command[6] |= (1 << 5)
-            t = struct.pack("<H", PortA)
+            t = pack("<H", PortA)
             command[22] = ord(t[0])
             command[23] = ord(t[1])
         
         if PortB is not None:
             command[6] |= (1 << 5)
-            t = struct.pack("<H", PortB)
+            t = pack("<H", PortB)
             command[24] = ord(t[0])
             command[25] = ord(t[1])
 
@@ -206,14 +208,14 @@ class UE9(Device):
         self.ipAddress = parseIpAddress(result[10:14])
         self.gateway = parseIpAddress(result[14:18])
         self.subnet = parseIpAddress(result[18:22])
-        self.portA = struct.unpack("<H", struct.pack("BB", *result[22:24]))[0]
-        self.portB = struct.unpack("<H", struct.pack("BB", *result[24:26]))[0]
+        self.portA = unpack("<H", pack("BB", *result[22:24]))[0]
+        self.portB = unpack("<H", pack("BB", *result[24:26]))[0]
         self.DHCPEnabled = bool(result[26])
         self.productId = result[27]
 
         self.macAddress = "%02X:%02X:%02X:%02X:%02X:%02X" % (result[33], result[32], result[31], result[30], result[29], result[28])
         
-        self.serialNumber = struct.unpack("<I", struct.pack("BBBB", result[28], result[29], result[30], 0x10))[0]
+        self.serialNumber = unpack("<I", pack("BBBB", result[28], result[29], result[30], 0x10))[0]
         
         self.hwVersion = "%s.%02d" % (result[35], result[34])
         self.commFWVersion = "%s.%02d" % (result[37], result[36])
@@ -226,11 +228,11 @@ class UE9(Device):
         Name: UE9.flushBuffer()
         Args: None
         Desc: Resets the pointers to the stream buffer to make it empty.
-        
+
         >>> myUe9 = ue9.UE9()
         >>> myUe9.flushBuffer()
         """
-        command = [ 0x08, 0x08 ]
+        command = [0x08, 0x08]
         self._writeRead(command, 2, [], False, False, False)
 
     def discoveryUDP(self):
@@ -260,14 +262,14 @@ class UE9(Device):
         sndBuffer[5] = 0x00
     
         packFormat = "B" * len(sndBuffer)
-        tempString = struct.pack(packFormat, *sndBuffer)
+        tempString = pack(packFormat, *sndBuffer)
         
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     
         s.sendto(tempString, addr)
         
         inputs = [s]
-        
+
         ue9s = {}
         
         listen = True
@@ -283,8 +285,8 @@ class UE9(Device):
         s.close()
         
         for ip, data in ue9s.items():
-            data = list(struct.unpack("B"*38, data))
-            ue9 = { 'LocalID' : data[8], 'PowerLevel' : data[9] , 'IPAddress' : parseIpAddress(data[10:14]), 'Gateway' : parseIpAddress(data[14:18]), 'Subnet' : parseIpAddress(data[18:23]), 'PortA' : struct.unpack("<H", struct.pack("BB", *data[22:24]))[0], 'PortB' : struct.unpack("<H", struct.pack("BB", *data[24:26]))[0], 'DHCPEnabled' : bool(data[26]), 'ProductID' : data[27], 'MACAddress' : "%02X:%02X:%02X:%02X:%02X:%02X" % (data[33], data[32], data[31], data[30], data[29], data[28]), 'SerialNumber' : struct.unpack("<I", struct.pack("BBBB", data[28], data[29], data[30], 0x10))[0], 'HWVersion' : "%s.%02d" % (data[35], data[34]), 'CommFWVersion' : "%s.%02d" % (data[37], data[36])}
+            data = list(unpack("B"*38, data))
+            ue9 = { 'LocalID' : data[8], 'PowerLevel' : data[9] , 'IPAddress' : parseIpAddress(data[10:14]), 'Gateway' : parseIpAddress(data[14:18]), 'Subnet' : parseIpAddress(data[18:23]), 'PortA' : unpack("<H", pack("BB", *data[22:24]))[0], 'PortB' : unpack("<H", pack("BB", *data[24:26]))[0], 'DHCPEnabled' : bool(data[26]), 'ProductID' : data[27], 'MACAddress' : "%02X:%02X:%02X:%02X:%02X:%02X" % (data[33], data[32], data[31], data[30], data[29], data[28]), 'SerialNumber' : unpack("<I", pack("BBBB", data[28], data[29], data[30], 0x10))[0], 'HWVersion' : "%s.%02d" % (data[35], data[34]), 'CommFWVersion' : "%s.%02d" % (data[37], data[36])}
             ue9s[ip] = ue9
         
         return ue9s
@@ -1109,7 +1111,6 @@ class UE9(Device):
 
             result = self.read(numBytes * self.packetsPerRequest, stream = True)
             numPackets = len(result) // numBytes
-
             i = 0
             while i < numPackets:
                 offset = (i*numBytes)
@@ -1131,7 +1132,7 @@ class UE9(Device):
                 i+=1
 
             if len(result) == 0  and self.ethernet == False:
-                # No data over USB:
+                # No data over USB
                 yield None
                 continue
 
@@ -1216,11 +1217,11 @@ class UE9(Device):
                     j = 0
 
                 if self.streamChannelNumbers[j] in (193, 194):
-                    value = struct.unpack('<BB', sample)
+                    value = unpack('<BB', sample)
                 elif self.streamChannelNumbers[j] >= 200:
-                    value = struct.unpack('<H', sample)[0]
+                    value = unpack('<H', sample)[0]
                 else:
-                    value = struct.unpack('<H', sample)[0]
+                    value = unpack('<H', sample)[0]
                     gain = self.streamChannelOptions[j] & 0x0F
                     value = self.binaryToCalibratedAnalogVoltage(value, gain)
 
@@ -1266,7 +1267,7 @@ class UE9(Device):
         if UpdateDAC0onTimeout:
             command[7] |= (1 << 0)
         
-        t = struct.pack("<H", TimeoutPeriod)
+        t = pack("<H", TimeoutPeriod)
         command[8] = ord(t[0])
         command[9] = ord(t[1])
         
@@ -1280,7 +1281,7 @@ class UE9(Device):
         command[15] = (int(DAC1Enabled) << 7) + ((DAC1 >> 8) & 0xf)
         
         result = self._writeRead(command, 8, [0xF8, 0x01, 0x09])
-        
+
         return { 'UpdateDAC0onTimeout' : bool(result[7]& 1), 'UpdateDAC1onTimeout' : bool((result[7] >> 1) & 1), 'UpdateDigitalIOAonTimeout' : bool((result[7] >> 3) & 1), 'UpdateDigitalIOBonTimeout' : bool((result[7] >> 4) & 1), 'ResetControlOnTimeout' : bool((result[7] >> 5) & 1), 'ResetCommOnTimeout' : bool((result[7] >> 6) & 1) }
 
     def watchdogRead(self):
@@ -1295,9 +1296,9 @@ class UE9(Device):
         command[3] = 0x09
         
         command = setChecksum8(command, 6)
-        
+
         result = self._writeRead(command, 16, [0xF8, 0x05, 0x09], checksum = False)
-        return { 'UpdateDAC0onTimeout' : bool(result[7]& 1), 'UpdateDAC1onTimeout' : bool((result[7] >> 1) & 1), 'UpdateDigitalIOAonTimeout' : bool((result[7] >> 3) & 1), 'UpdateDigitalIOBonTimeout' : bool((result[7] >> 4) & 1), 'ResetControlOnTimeout' : bool((result[7] >> 5) & 1), 'ResetCommOnTimeout' : bool((result[7] >> 6) & 1), 'TimeoutPeriod' : struct.unpack('<H', struct.pack("BB", *result[8:10]))[0], 'DIOConfigA' : result[10], 'DIOConfigB' : result[11], 'DAC0' : struct.unpack('<H', struct.pack("BB", *result[12:14]))[0], 'DAC1' : struct.unpack('<H', struct.pack("BB", *result[14:16]))[0] }
+        return { 'UpdateDAC0onTimeout' : bool(result[7]& 1), 'UpdateDAC1onTimeout' : bool((result[7] >> 1) & 1), 'UpdateDigitalIOAonTimeout' : bool((result[7] >> 3) & 1), 'UpdateDigitalIOBonTimeout' : bool((result[7] >> 4) & 1), 'ResetControlOnTimeout' : bool((result[7] >> 5) & 1), 'ResetCommOnTimeout' : bool((result[7] >> 6) & 1), 'TimeoutPeriod' : unpack('<H', pack("BB", *result[8:10]))[0], 'DIOConfigA' : result[10], 'DIOConfigB' : result[11], 'DAC0' : unpack('<H', pack("BB", *result[12:14]))[0], 'DAC1' : unpack('<H', pack("BB", *result[14:16]))[0] }
 
     def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 1, CLKPinNum = 0, MISOPinNum = 3, MOSIPinNum = 2, CSPINNum = None):
         """
@@ -1401,7 +1402,7 @@ class UE9(Device):
             command[7] |= ( 1 << 6 )
         
         BaudFactor = (2**16) - 48000000/(2 * DesiredBaud)
-        t = struct.pack("<H", BaudFactor)
+        t = pack("<H", BaudFactor)
         command[8] = ord(t[0])
         command[9] = ord(t[1])
         
@@ -1418,7 +1419,7 @@ class UE9(Device):
         else:
             returnDict['UARTEnable'] = False
             
-        returnDict['BaudFactor'] = struct.unpack("<H", struct.pack("BB", *result[8:]))[0]
+        returnDict['BaudFactor'] = unpack("<H", pack("BB", *result[8:]))[0]
 
         return returnDict
 
@@ -1790,9 +1791,9 @@ class UE9(Device):
         results['TMR5ValueL'] = defaults[5]
         results['TMR5ValueH'] = defaults[6]
         
-        results['DAC0'] = struct.unpack( "<H", struct.pack("BB", *defaults[16:18]) )[0]
+        results['DAC0'] = unpack( "<H", pack("BB", *defaults[16:18]) )[0]
         
-        results['DAC1'] = struct.unpack( "<H", struct.pack("BB", *defaults[20:22]) )[0]
+        results['DAC1'] = unpack( "<H", pack("BB", *defaults[20:22]) )[0]
         
         defaults = self.readDefaults(3)
         
