@@ -37,5 +37,5 @@ setup(name='LabJackPython',
       maintainer_email='support@labjack.com',
       classifiers=CLASSIFIERS,
       package_dir = {'': 'src'},
-      py_modules=['LabJackPython', 'Modbus', 'u3', 'u6', 'ue9', 'u12', 'skymote']
+      py_modules=['LabJackPython', 'Modbus', 'u3', 'u6', 'ue9', 'u12']
       )
