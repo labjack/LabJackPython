@@ -26,11 +26,14 @@ Desc: Defines the U12 class, which makes working with a U12 much easier. The
 import atexit
 import ctypes
 import math
-import struct
 import sys
 import time
 
+from struct import pack, unpack
+
+
 _os_name = "" #Set to "nt" or "posix" in _loadLibrary
+
 
 class U12Exception(Exception):
     """Custom Exception meant for dealing specifically with U12 Exceptions.
@@ -580,7 +583,7 @@ class U12(object):
         10004XXXX
         """
         results = self.rawReadRAM()
-        return struct.unpack(">I", struct.pack("BBBB", results['DataByte3'], results['DataByte2'], results['DataByte1'], results['DataByte0']))[0]
+        return unpack(">I", pack("BBBB", results['DataByte3'], results['DataByte2'], results['DataByte1'], results['DataByte0']))[0]
 
     def rawReadLocalId(self):
         """

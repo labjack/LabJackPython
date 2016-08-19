@@ -5,8 +5,10 @@
 from __future__ import with_statement
 
 import datetime
-import struct
 import threading
+
+from struct import pack, unpack
+
 
 AES_CHANNEL               = 64000
 IP_PART1_CHANNEL          = 64008
@@ -49,7 +51,7 @@ def _buildHeaderBytes(length = 6, unitId = None):
         
         BASE_TRANS_ID = ( BASE_TRANS_ID + 1 ) % MAX_TRANS_ID
         
-        return struct.pack('>HHHB', *basicHeader)
+        return pack('>HHHB', *basicHeader)
     
 def _checkTransId(transId):
     with GLOBAL_TRANSACTION_ID_LOCK:
@@ -63,8 +65,8 @@ def _checkTransId(transId):
 def readHoldingRegistersRequest(addr, numReg = None, unitId = None):
     if numReg is None:
         numReg = calcNumberOfRegisters(addr)
-        
-    packet = _buildHeaderBytes(unitId = unitId) + struct.pack('>BHH', 0x03, addr, numReg)
+
+    packet = _buildHeaderBytes(unitId = unitId) + pack('>BHH', 0x03, addr, numReg)
 
     return packet
 
@@ -74,10 +76,10 @@ def readHoldingRegistersResponse(packet, payloadFormat=None):
     #  H  H  H    c  c  c  payload
     #  0  1  2    3  4  5  6+
     HEADER_LENGTH = 9
-    header = struct.unpack('>HHHBBB', packet[:HEADER_LENGTH])
+    header = unpack('>HHHBBB', packet[:HEADER_LENGTH])
     #print "header", [ c for c in header ]
     #print "header", header
-    
+
     # Check that protocol ID is 0
     if header[1] != 0:
         raise ModbusException("Got an unexpected protocol ID: %s (expected 0). Please make sure that you have the latest firmware. UE9s need a Comm Firmware of 1.50 or greater.\n\nThe packet you received: %s" % (header[1], repr(packet)))
@@ -108,15 +110,8 @@ def readHoldingRegistersResponse(packet, payloadFormat=None):
     if payloadFormat == '>s': 
        payloadFormat = '>' + 's' *  payloadLength
 
-    #print "Info: "
-    #print payloadFormat
-    #print type(packet)
-    #print [ ord(c) for c in packet ]
-    
-    # Mike C.: unpack_from new in 2.5.  Won't work on Joyent.
-    # payload = struct.unpack_from(payloadFormat, packet, offset = HEADER_LENGTH)
-    payload = struct.unpack(payloadFormat, packet[HEADER_LENGTH:])
-    
+    payload = unpack(payloadFormat, packet[HEADER_LENGTH:])
+
     if len(payload) == 1:
         return payload[0]
     else:
@@ -125,10 +120,8 @@ def readHoldingRegistersResponse(packet, payloadFormat=None):
 def readInputRegistersRequest(addr, numReg = None):
     if numReg is None:
         numReg = calcNumberOfRegisters(addr)
-    
-    packet = _buildHeaderBytes() + struct.pack('>BHH', 0x04, addr, numReg)
-    #print "making readHoldingRegistersRequest packet"
-    #print [ ord(c) for c in packet ]
+
+    packet = _buildHeaderBytes() + pack('>BHH', 0x04, addr, numReg)
     return packet
 
 def readInputRegistersResponse(packet, payloadFormat=None):
@@ -137,10 +130,8 @@ def readInputRegistersResponse(packet, payloadFormat=None):
     #  H  H  H    c  c  c  payload
     #  0  1  2    3  4  5  6+
     HEADER_LENGTH = 9
-    header = struct.unpack('>HHHBBB', packet[:HEADER_LENGTH])
-    #print "header", [ c for c in header ]
-    #print "header", header
-    
+    header = unpack('>HHHBBB', packet[:HEADER_LENGTH])
+
     # Check for valid Trans ID
     _checkTransId(header[0])
 
@@ -167,12 +158,7 @@ def readInputRegistersResponse(packet, payloadFormat=None):
     if payloadFormat == '>s': 
        payloadFormat = '>' + 's' *  payloadLength
 
-    #print payloadFormat
-    #print [ ord(c) for c in packet ]
-    
-    # Mike C.: unpack_from new in 2.5.  Won't work on Joyent.
-    # payload = struct.unpack_from(payloadFormat, packet, offset = HEADER_LENGTH)
-    payload = struct.unpack(payloadFormat, packet[HEADER_LENGTH:])
+    payload = unpack(payloadFormat, packet[HEADER_LENGTH:])
 
     return payload
 
@@ -180,7 +166,7 @@ def writeRegisterRequest(addr, value, unitId = None):
     if not isinstance(value, int):
         raise TypeError("Value written must be an integer.")
 
-    packet = _buildHeaderBytes(unitId = unitId) + struct.pack('>BHH', 0x06, addr, value)
+    packet = _buildHeaderBytes(unitId = unitId) + pack('>BHH', 0x06, addr, value)
 
     return packet
     
@@ -196,15 +182,15 @@ def writeRegistersRequest(startAddr, values, unitId = None):
     
     header = _buildHeaderBytes(length = 7+(numReg*2), unitId = unitId)
     
-    header += struct.pack('>BHHB', *(16, startAddr, numReg, numReg*2) )
-    
+    header += pack('>BHHB', *(16, startAddr, numReg, numReg*2) )
+
     format = '>' + 'H' * numReg
-    packet = header + struct.pack(format, *values)
+    packet = header + pack(format, *values)
     return packet
 
 def writeRegisterRequestValue(data):
     """Return the value to be written in a writeRegisterRequest Packet."""
-    packet = struct.unpack('>H', data[10:])
+    packet = unpack('>H', data[10:])
     return packet[0]
 
 class ModbusException(Exception):
@@ -290,16 +276,16 @@ def getRequestType(packet):
 def getTransactionId(packet):
     """Pulls out the transaction id of the packet"""
     if isinstance(packet, list):
-        return struct.unpack(">H", struct.pack("BB", *packet[:2]) )[0]
+        return unpack(">H", pack("BB", *packet[:2]) )[0]
     else:
-        return struct.unpack(">H", packet[:2])[0]
+        return unpack(">H", packet[:2])[0]
         
 def getProtocolId(packet):
     """Pulls out the transaction id of the packet"""
     if isinstance(packet, list):
-        return struct.unpack(">H", struct.pack("BB", *packet[2:4]) )[0]
+        return unpack(">H", pack("BB", *packet[2:4]) )[0]
     else:
-        return struct.unpack(">H", packet[2:4])[0]
+        return unpack(">H", packet[2:4])[0]
         
 def parseIntoPackets(packet):
     while True:
@@ -318,11 +304,11 @@ def parseIntoPackets(packet):
 def parseSpontaneousDataPacket(packet):
     if isinstance(packet, list):
         localId = packet[6]
-        packet = struct.pack("B"*len(packet), *packet)
+        packet = pack("B"*len(packet), *packet)
     else:
         localId = ord(packet[6])
-    transId = struct.unpack(">H", packet[0:2])[0]
-    report = struct.unpack(">HBBfHH"+"f"*8, packet[9:53])
+    transId = unpack(">H", packet[0:2])[0]
+    report = unpack(">HBBfHH"+"f"*8, packet[9:53])
     
     results = dict()
     results['unitId'] = localId

@@ -11,7 +11,6 @@ Guide:
 http://labjack.com/support/u6/users-guide/5.2
 """
 import collections
-import struct
 import sys
 import warnings
 
@@ -19,6 +18,8 @@ try:
     import ConfigParser
 except ImportError:  # Python 3
     import configparser as ConfigParser
+
+from struct import pack, unpack
 
 from LabJackPython import (
     Device,
@@ -274,8 +275,8 @@ class U6(Device):
         self.firmwareVersion = "%s.%02d" % (result[10], result[9])
         self.bootloaderVersion = "%s.%02d" % (result[12], result[11]) 
         self.hardwareVersion = "%s.%02d" % (result[14], result[13])
-        self.serialNumber = struct.unpack("<I", struct.pack(">BBBB", *result[15:19]))[0]
-        self.productId = struct.unpack("<H", struct.pack(">BB", *result[19:21]))[0]
+        self.serialNumber = unpack("<I", pack(">BBBB", *result[15:19]))[0]
+        self.productId = unpack("<H", pack(">BB", *result[19:21]))[0]
         self.localId = result[21]
         self.versionInfo = result[37]
         self.deviceName = 'U6'
@@ -713,11 +714,11 @@ class U6(Device):
                     j = 0
 
                 if self.streamChannelNumbers[j] in (193, 194):
-                    value = struct.unpack('<BB', sample)
+                    value = unpack('<BB', sample)
                 elif self.streamChannelNumbers[j] >= 200:
-                    value = struct.unpack('<H', sample)[0]
+                    value = unpack('<H', sample)[0]
                 else:
-                    value = struct.unpack('<H', sample)[0]
+                    value = unpack('<H', sample)[0]
                     gainIndex = (self.streamChannelOptions[j] >> 4) & 0x3
                     value = self.binaryToCalibratedAnalogVoltage(gainIndex, value, is16Bits = True, resolutionIndex = 1)
 
@@ -757,7 +758,7 @@ class U6(Device):
         if SetDIOStateOnTimeout:
             command[7] |= (1 << 4)
         
-        t = struct.pack("<H", TimeoutPeriod)
+        t = pack("<H", TimeoutPeriod)
         command[8] = ord(t[0])
         command[9] = ord(t[1])
         command[10] = ((DIOState & 1 ) << 7)
@@ -784,7 +785,7 @@ class U6(Device):
             else:
                 watchdogStatus['SetDIOStateOnTimeout'] = False
         
-        watchdogStatus['TimeoutPeriod'] = struct.unpack('<H', struct.pack("BB", *result[8:10]))
+        watchdogStatus['TimeoutPeriod'] = unpack('<H', pack("BB", *result[8:10]))
         
         if (result[10] >> 7) & 1:
             watchdogStatus['DIOState'] = 1
@@ -909,7 +910,7 @@ class U6(Device):
         if DesiredBaud is not None:
             BaudFactor = (2**16) - 48000000/(2 * DesiredBaud)   
         
-        t = struct.pack("<H", BaudFactor)
+        t = pack("<H", BaudFactor)
         command[8] = ord(t[0])
         command[9] = ord(t[1])
         
@@ -1464,9 +1465,9 @@ class U6(Device):
         
         defaults = self.readDefaults(2)
         
-        results['DAC0'] = struct.unpack( "<H", struct.pack("BB", *defaults[16:18]) )[0]
+        results['DAC0'] = unpack( "<H", pack("BB", *defaults[16:18]) )[0]
         
-        results['DAC1'] = struct.unpack( "<H", struct.pack("BB", *defaults[20:22]) )[0]
+        results['DAC1'] = unpack( "<H", pack("BB", *defaults[20:22]) )[0]
         
         defaults = self.readDefaults(3)
         
@@ -2171,14 +2172,14 @@ class Timer(FeedbackCommand):
         return "<u6.Timer( timer = %s, UpdateReset = %s, Value = %s, Mode = %s )>" % (self.timer, self.updateReset, self.value, self.mode)
     
     def handle(self, input):
-        inStr = struct.pack('B' * len(input), *input)
+        inStr = pack('B' * len(input), *input)
         if self.mode == 8:
-            return struct.unpack('<i', inStr )[0]
+            return unpack('<i', inStr )[0]
         elif self.mode == 9:
-            maxCount, current = struct.unpack('<HH', inStr )
+            maxCount, current = unpack('<HH', inStr )
             return current, maxCount
         else:
-            return struct.unpack('<I', inStr )[0]
+            return unpack('<I', inStr )[0]
 
 
 class Timer0(Timer):
@@ -2466,7 +2467,7 @@ class Counter(FeedbackCommand):
 
     def handle(self, input):
         inStr = ''.join([chr(x) for x in input])
-        return struct.unpack('<I', inStr )[0]
+        return unpack('<I', inStr )[0]
 
 
 class Counter0(Counter):

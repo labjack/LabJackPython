@@ -17,7 +17,6 @@ Section Number Mapping:
 
 """
 import collections
-import struct
 import sys
 import warnings
 
@@ -25,6 +24,8 @@ try:
     import ConfigParser
 except ImportError: # Python 3
     import configparser as ConfigParser
+
+from struct import pack, unpack
 
 from LabJackPython import (
     Device,
@@ -48,7 +49,7 @@ def openAllU3():
     object.
     """
     returnDict = dict()
-    
+
     for i in range(deviceCount(3)):
         d = U3(firstFound = False, devNumber = i+1)
         returnDict[str(d.serialNumber)] = d
@@ -69,14 +70,14 @@ class U3(Device):
     def __init__(self, debug = False, autoOpen = True, **kargs):
         """
         Name: U3.__init__(debug = False, autoOpen = True, **openArgs)
-        
+
         Args: debug, enables debug output
               autoOpen, if true, the class will try to open a U3 using openArgs
               **openArgs, the arguments to pass to the open call. See U3.open()
         
         Desc: Instantiates a new U3 object. If autoOpen == True, then it will
               also open a U3.
-              
+
         Examples:
         Simplest:
         >>> import u3
@@ -85,7 +86,7 @@ class U3(Device):
         For debug output:
         >>> import u3
         >>> d = u3.U3(debug = True)
-        
+
         To open a U3 with Local ID = 2:
         >>> import u3
         >>> d = u3.U3(localId = 2)
@@ -94,7 +95,7 @@ class U3(Device):
         self.debug = debug
         self.calData = None
         self.ledState = True
-        
+
         if autoOpen:
             self.open(**kargs)
     __init__.section = 1 
@@ -252,8 +253,8 @@ class U3(Device):
         self.firmwareVersion = "%d.%02d" % (result[10], result[9])
         self.bootloaderVersion = "%d.%02d" % (result[12], result[11])
         self.hardwareVersion = "%d.%02d" % (result[14], result[13])
-        self.serialNumber = struct.unpack("<I", struct.pack(">BBBB", *result[15:19]))[0]
-        self.productId = struct.unpack("<H", struct.pack(">BB", *result[19:21]))[0]
+        self.serialNumber = unpack("<I", pack(">BBBB", *result[15:19]))[0]
+        self.productId = unpack("<H", pack(">BB", *result[19:21]))[0]
         self.localId = result[21]
         self.timerCounterMask = result[22]
         self.fioAnalog = result[23]
@@ -1097,17 +1098,17 @@ class U3(Device):
                     self.streamPacketOffset = 0
 
                 if self.streamChannelNumbers[self.streamPacketOffset] in (193, 194):
-                    value = struct.unpack('<BB', sample)
+                    value = unpack('<BB', sample)
                 elif self.streamChannelNumbers[self.streamPacketOffset] >= 200:
-                    value = struct.unpack('<H', sample)[0]
+                    value = unpack('<H', sample)[0]
                 else:
                     if self.streamNegChannels[self.streamPacketOffset] == 31:
                         # do unsigned
-                        value = struct.unpack('<H', sample)[0]
+                        value = unpack('<H', sample)[0]
                         singleEnded = True
                     else:
                         # do signed
-                        value = struct.unpack('<H', sample)[0]
+                        value = unpack('<H', sample)[0]
                         singleEnded = False
 
                     lvChannel = True
@@ -1167,7 +1168,7 @@ class U3(Device):
         if SetDIOStateOnTimeout:
             command[7] |= 1 << 4
         
-        t = struct.pack("<H", TimeoutPeriod)
+        t = pack("<H", TimeoutPeriod)
         command[8] = ord(t[0])
         command[9] = ord(t[1])
         
@@ -1195,7 +1196,7 @@ class U3(Device):
             else:
                 watchdogStatus['SetDIOStateOnTimeout'] = False
         
-        watchdogStatus['TimeoutPeriod'] = struct.unpack('<H', struct.pack("BB", *result[8:10]))
+        watchdogStatus['TimeoutPeriod'] = unpack('<H', pack("BB", *result[8:10]))
         
         if (result[10] >> 7) & 1:
             watchdogStatus['DIOState'] = 1
@@ -1325,7 +1326,7 @@ class U3(Device):
             command[9] = (2**8) - self.timerClockBase//DesiredBaud
         else:
             BaudFactor = (2**16) - 48000000//(2 * DesiredBaud)
-            t = struct.pack("<H", BaudFactor)
+            t = pack("<H", BaudFactor)
             command[8] = ord(t[0])
             command[9] = ord(t[1])
         
@@ -1349,7 +1350,7 @@ class U3(Device):
         if olderHardware:
             returnDict['BaudFactor'] = result[9]
         else:
-            returnDict['BaudFactor'] = struct.unpack("<H", struct.pack("BB", *result[8:]))[0]
+            returnDict['BaudFactor'] = unpack("<H", pack("BB", *result[8:]))[0]
 
         return returnDict
     asynchConfig.section = 2
@@ -1759,9 +1760,9 @@ class U3(Device):
         
         defaults = self.readDefaults(2)
         
-        results['DAC0'] = struct.unpack( "<H", struct.pack("BB", *defaults[16:18]) )[0]
+        results['DAC0'] = unpack( "<H", pack("BB", *defaults[16:18]) )[0]
         
-        results['DAC1'] = struct.unpack( "<H", struct.pack("BB", *defaults[20:22]) )[0]
+        results['DAC1'] = unpack( "<H", pack("BB", *defaults[20:22]) )[0]
         
         defaults = self.readDefaults(3)
         
@@ -2485,14 +2486,14 @@ class Timer(FeedbackCommand):
         return "<u3.Timer( timer = %s, UpdateReset = %s, Value = %s, Mode = %s )>" % (self.timer, self.updateReset, self.value, self.mode)
     
     def handle(self, input):
-        inStr = struct.pack('B' * len(input), *input)
+        inStr = pack('B' * len(input), *input)
         if self.mode == 8:
-            return struct.unpack('<i', inStr )[0]
+            return unpack('<i', inStr )[0]
         elif self.mode == 9:
-            maxCount, current = struct.unpack('<HH', inStr )
+            maxCount, current = unpack('<HH', inStr )
             return current, maxCount
         else:
-            return struct.unpack('<I', inStr )[0]
+            return unpack('<I', inStr )[0]
 
 class Timer0(Timer):
     """
@@ -2777,7 +2778,7 @@ class Counter(FeedbackCommand):
 
     def handle(self, input):
         inStr = ''.join([chr(x) for x in input])
-        return struct.unpack('<I', inStr )[0]
+        return unpack('<I', inStr )[0]
     
 class Counter0(Counter):
     '''
