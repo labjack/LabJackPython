@@ -32,6 +32,7 @@ from LabJackPython import (
     toDouble,
     )
 
+
 def openAllU6():
     """
     A helpful function which will open all the connected U6s. Returns a
@@ -698,7 +699,7 @@ class U6(Device):
               calibrations.
 
         >>> reading = d.streamData(convert = False)
-        >>> print(proccessStreamData(reading['result']))
+        >>> print(processStreamData(reading['result']))
         defaultDict(list, {'AIN0': [3.123, 3.231, 3.232, ...]})
         """
         if numBytes is None:

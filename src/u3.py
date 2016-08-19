@@ -38,9 +38,11 @@ from LabJackPython import (
     toDouble,
     )
 
+
 FIO0, FIO1, FIO2, FIO3, FIO4, FIO5, FIO6, FIO7, \
 EIO0, EIO1, EIO2, EIO3, EIO4, EIO5, EIO6, EIO7, \
 CIO0, CIO1, CIO2, CIO3 = range(20)
+
 
 def openAllU3():
     """
@@ -1081,7 +1083,7 @@ class U3(Device):
               calibrations.
 
         >>> reading = d.streamData(convert = False)
-        >>> print(proccessStreamData(reading['result']))
+        >>> print(processStreamData(reading['result']))
         defaultDict(list, {'AIN0' : [3.123, 3.231, 3.232, ...]})
         """
         if numBytes is None:
