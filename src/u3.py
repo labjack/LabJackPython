@@ -55,9 +55,9 @@ def openAllU3():
     for i in range(deviceCount(3)):
         d = U3(firstFound = False, devNumber = i+1)
         returnDict[str(d.serialNumber)] = d
-        
+
     return returnDict
-        
+
 
 class U3(Device):
     """
@@ -100,8 +100,8 @@ class U3(Device):
 
         if autoOpen:
             self.open(**kargs)
-    __init__.section = 1 
-        
+    __init__.section = 1
+
     def open(self, firstFound = True, serial = None, localId = None, devNumber = None, handleOnly = False, LJSocket = None):
         """
         Name: U3.open(firstFound = True, localId = None, devNumber = None,
@@ -136,27 +136,27 @@ class U3(Device):
         """
         Device.open(self, 3, firstFound = firstFound, serial = serial, localId = localId, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket )
     open.section = 1
-    
+
     def configU3(self, LocalID = None, TimerCounterConfig = None, FIOAnalog = None, FIODirection = None, FIOState = None, EIOAnalog = None, EIODirection = None, EIOState = None, CIODirection = None, CIOState = None, DAC1Enable = None, DAC0 = None, DAC1 = None, TimerClockConfig = None, TimerClockDivisor = None, CompatibilityOptions = None):
         """
         Name: U3.configU3(LocalID = None, TimerCounterConfig = None, FIOAnalog = None, FIODirection = None, FIOState = None, EIOAnalog = None, EIODirection = None, EIOState = None, CIODirection = None, CIOState = None, DAC1Enable = None, DAC0 = None, DAC1 = None, TimerClockConfig = None, TimerClockDivisor = None, CompatibilityOptions = None)
-        
+
         Args: See section 5.2.2 of the users guide.
-        
-        Desc: Sends the low-level configU3 command. Also saves relevant 
+
+        Desc: Sends the low-level configU3 command. Also saves relevant
               information to the U3 object for later use.
-              
+
         Example:
         Simplest:
         >>> import u3
         >>> d = u3.U3()
         >>> print(d.configU3())
         {
-         'LocalID': 1, 
-         'SerialNumber': 320035782, 
-         'DeviceName': 'U3-LV', 
-         'FIODirection': 0, 
-         'FirmwareVersion': '1.24', 
+         'LocalID': 1,
+         'SerialNumber': 320035782,
+         'DeviceName': 'U3-LV',
+         'FIODirection': 0,
+         'FirmwareVersion': '1.24',
          ... , 
          'ProductID': 3
         }
@@ -172,26 +172,26 @@ class U3(Device):
          'ProductID': 3
         }
         """
-        
+
         writeMask = 0
-        
+
         if FIOAnalog is not None or FIODirection is not None or FIOState is not None or EIOAnalog is not None or EIODirection is not None or EIOState is not None or CIODirection is not None or CIOState is not None:
             writeMask |= 2
-        
+
         if DAC1Enable is not None or DAC0 is not None or DAC1 is not None:
             writeMask |= 4
-        
+
         if LocalID is not None:
             writeMask |= 8
-        
+
         if TimerClockConfig is not None or TimerClockDivisor is not None:
             writeMask |= 16
-        
+
         if CompatibilityOptions is not None:
             writeMask |= 32
-        
+
         command = [ 0 ] * 26
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x0A
@@ -200,57 +200,57 @@ class U3(Device):
         #command[5] = Checksum16 (MSB)
         command[6] = writeMask
         #command[7] = WriteMask1
-        
+
         if LocalID is not None:
             command[8] = LocalID
-        
+
         if TimerCounterConfig is not None:
             command[9] = TimerCounterConfig
-        
+
         if FIOAnalog is not None:
             command[10] = FIOAnalog
-        
+
         if FIODirection is not None:
             command[11] = FIODirection
-        
+
         if FIOState is not None:
             command[12] = FIOState
-        
+
         if EIOAnalog is not None:
             command[13] = EIOAnalog
-        
+
         if EIODirection is not None:
             command[14] = EIODirection
-        
+
         if EIOState is not None:
             command[15] = EIOState
-        
+
         if CIODirection is not None:
             command[16] = CIODirection
-        
+
         if CIOState is not None:
             command[17] = CIOState
-        
+
         if DAC1Enable is not None:
             command[18] = DAC1Enable
-        
+
         if DAC0 is not None:
             command[19] = DAC0
-        
+
         if DAC1 is not None:
             command[20] = DAC1
-        
+
         if TimerClockConfig is not None:
             command[21] = TimerClockConfig
-        
+
         if TimerClockDivisor is not None:
             command[22] = TimerClockDivisor
-        
+
         if CompatibilityOptions is not None:
             command[23] = CompatibilityOptions
-        
+
         result = self._writeRead(command, 38, [0xF8, 0x10, 0x08])
-        
+
         # Error-free, time to parse the response
         self.firmwareVersion = "%d.%02d" % (result[10], result[9])
         self.bootloaderVersion = "%d.%02d" % (result[12], result[11])
@@ -274,20 +274,22 @@ class U3(Device):
         self.timerClockDivisor = result[35]
         if result[35] == 0:
             self.timerClockDivisor = 256
-        
+
         self.compatibilityOptions = result[36]
         self.versionInfo = result[37]
         self.deviceName = 'U3'
+        self.isHV = False
         if self.versionInfo == 1:
             self.deviceName += 'B'
         elif self.versionInfo == 2:
             self.deviceName += '-LV'
         elif self.versionInfo == 18:
             self.deviceName += '-HV'
-        
-        return { 'FirmwareVersion' : self.firmwareVersion, 'BootloaderVersion' : self.bootloaderVersion, 'HardwareVersion' : self.hardwareVersion, 'SerialNumber' : self.serialNumber, 'ProductID' : self.productId, 'LocalID' : self.localId, 'TimerCounterMask' : self.timerCounterMask, 'FIOAnalog' : self.fioAnalog, 'FIODirection' : self.fioDirection, 'FIOState' : self.fioState, 'EIOAnalog' : self.eioAnalog, 'EIODirection' : self.eioDirection, 'EIOState' : self.eioState, 'CIODirection' : self.cioDirection, 'CIOState' : self.cioState, 'DAC1Enable' : self.dac1Enable, 'DAC0' : self.dac0, 'DAC1' : self.dac1, 'TimerClockConfig' : self.timerClockConfig, 'TimerClockDivisor' : self.timerClockDivisor, 'CompatibilityOptions' : self.compatibilityOptions, 'VersionInfo' : self.versionInfo, 'DeviceName' : self.deviceName }
+            self.isHV = True
+
+        return {'FirmwareVersion': self.firmwareVersion, 'BootloaderVersion': self.bootloaderVersion, 'HardwareVersion': self.hardwareVersion, 'SerialNumber': self.serialNumber, 'ProductID': self.productId, 'LocalID': self.localId, 'TimerCounterMask': self.timerCounterMask, 'FIOAnalog': self.fioAnalog, 'FIODirection': self.fioDirection, 'FIOState': self.fioState, 'EIOAnalog': self.eioAnalog, 'EIODirection': self.eioDirection, 'EIOState': self.eioState, 'CIODirection': self.cioDirection, 'CIOState': self.cioState, 'DAC1Enable': self.dac1Enable, 'DAC0': self.dac0, 'DAC1': self.dac1, 'TimerClockConfig': self.timerClockConfig, 'TimerClockDivisor': self.timerClockDivisor, 'CompatibilityOptions': self.compatibilityOptions, 'VersionInfo': self.versionInfo, 'DeviceName': self.deviceName}
     configU3.section = 2
-    
+
     def configIO(self, TimerCounterPinOffset = None, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None):
         """
         Name: U3.configIO(TimerCounterPinOffset = 4, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None)
@@ -565,7 +567,7 @@ class U3(Device):
         """
         Name: U3.getAIN(posChannel, negChannel = 31, longSettle=False,
                                                      quickSample=False)
-        
+
         Args: posChannel, the positive channel to read from.
               negChannel, the negitive channel to read from.
               longSettle, set to True for longSettle
@@ -580,28 +582,28 @@ class U3(Device):
         0.0501680038869
         """
         isSpecial = False
-        
+
         if negChannel == 32:
             isSpecial = True
             negChannel = 30
-        
+
         bits = self.getFeedback(AIN(posChannel, negChannel, longSettle, quickSample))[0]
-        
+
         singleEnded = True
         if negChannel != 31:
             singleEnded = False
-        
+
         lvChannel = True
-        
+
         try:
-            if self.deviceName.endswith("-HV") and posChannel < 4:
+            if self.isHV and posChannel < 4:
                 lvChannel = False
         except AttributeError:
             pass
-        
+
         if isSpecial:
             negChannel = 32
-        
+
         return self.binaryToCalibratedAnalogVoltage(bits, isLowVoltage = lvChannel, isSingleEnded = singleEnded, isSpecialSetting = isSpecial, channelNumber = posChannel)
     getAIN.section = 3
 
@@ -1091,7 +1093,6 @@ class U3(Device):
 
         returnDict = collections.defaultdict(list)
 
-        isHV = self.deviceName.endswith('HV')
         numChannels = len(self.streamChannelNumbers)
 
         for packet in self.breakupPackets(result, numBytes):
@@ -1114,7 +1115,7 @@ class U3(Device):
                         singleEnded = False
 
                     lvChannel = True
-                    if isHV and self.streamChannelNumbers[self.streamPacketOffset] < 4:
+                    if self.isHV and self.streamChannelNumbers[self.streamPacketOffset] < 4:
                         lvChannel = False
 
                     isSpecial = False

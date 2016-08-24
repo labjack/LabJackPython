@@ -289,5 +289,5 @@ Version History
       imported and used directly.
     - Removed the skymote.py module. The SkyMote products did not make a
       release.
-    - Updated U6-Pro checks to use boolean instead of string comparison to
-      improve binaryToCalibratedAnalogVoltage performance a little.
+    - Updated some checks in modules to use boolean instead of string
+      comparisons to improve performance a little.

@@ -1540,12 +1540,14 @@ def _makeDeviceFromHandle(handle, deviceType):
         device.hardwareVersion = "%d.%02d" % (rcvDataBuff[14], rcvDataBuff[13])
         device.versionInfo = rcvDataBuff[37]
         device.deviceName = 'U3'
+        device.isHV = False
         if device.versionInfo == 1:
             device.deviceName += 'B'
         elif device.versionInfo == 2:
             device.deviceName += '-LV'
         elif device.versionInfo == 18:
             device.deviceName += '-HV'
+            device.isHV = True
 
         device.changed['localId'] = device.localId
         device.changed['serialNumber'] = device.serialNumber
@@ -1553,6 +1555,7 @@ def _makeDeviceFromHandle(handle, deviceType):
         device.changed['firmwareVersion'] = device.firmwareVersion
         device.changed['versionInfo'] = device.versionInfo
         device.changed['deviceName'] = device.deviceName
+        device.changed['isHV'] = device.isHV
         device.changed['hardwareVersion'] = device.hardwareVersion
         device.changed['bootloaderVersion'] = device.bootloaderVersion
     elif deviceType == 6:
