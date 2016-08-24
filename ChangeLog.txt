@@ -291,3 +291,5 @@ Version History
       release.
     - Updated some checks in modules to use boolean instead of string
       comparisons to improve performance a little.
+    - Updated _makeDeviceFromHandle function for the UE9 to get more
+      information.

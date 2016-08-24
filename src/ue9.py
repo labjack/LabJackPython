@@ -351,11 +351,11 @@ class UE9(Device):
 
     def controlConfig(self, PowerLevel = None, FIODir = None, FIOState = None, EIODir = None, EIOState = None, CIODirection = None, CIOState = None, MIODirection = None, MIOState = None, DoNotLoadDigitalIODefaults = None, DAC0Enable = None, DAC0 = None, DAC1Enable = None, DAC1 = None):
         """
-        Name: UE9.controlConfig(PowerLevel = None, FIODir = None, 
+        Name: UE9.controlConfig(PowerLevel = None, FIODir = None,
               FIOState = None, EIODir = None,
               EIOState = None, CIODirection = None, CIOState = None,
-              MIODirection = None, MIOState = None, 
-              DoNotLoadDigitalIODefaults = None, DAC0Enable = None, 
+              MIODirection = None, MIOState = None,
+              DoNotLoadDigitalIODefaults = None, DAC0Enable = None,
               DAC0 = None, DAC1Enable = None, DAC1 = None)
         Args: PowerLevel, 0 = Fixed High, 48 MHz, 1 = Fixed low, 6 MHz
               FIODir, Direction of FIOs
@@ -374,7 +374,7 @@ class UE9(Device):
         Desc: Configures various parameters associated with the Control
               processor. Affects only the power-up values, not current 
               state. See section 5.3.2 of the User's Guide.
-        
+
         >>> myUe9 = ue9.UE9()
         >>> myUe9.controlConfig()
         {'CIODirection': 0,
@@ -396,7 +396,7 @@ class UE9(Device):
          'ResetSource': 119}
         """
         command = [ 0 ] * 18
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x06
@@ -404,82 +404,81 @@ class UE9(Device):
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
         #command[6] = Writemask. Set it along the way.
-        
+
         if PowerLevel is not None:
             command[6] |= 1
             command[7] = PowerLevel
-        
+
         if FIODir is not None:
             command[6] |= (1 << 1)
             command[8] = FIODir
-        
+
         if FIOState is not None:
             command[6] |= (1 << 1)
             command[9] = FIOState
-        
+
         if EIODir is not None:
             command[6] |= (1 << 1)
             command[10] = EIODir
-        
+
         if EIOState is not None:
             command[6] |= (1 << 1)
             command[11] = EIOState
-        
+
         if CIODirection is not None:
             command[6] |= (1 << 1)
-            command[12] = ( CIODirection & 0xf) << 4
-        
+            command[12] = (CIODirection & 0xf) << 4
+
         if CIOState is not None:
             command[6] |= (1 << 1)
             command[12] |= ( CIOState & 0xf )
-        
+
         if DoNotLoadDigitalIODefaults is not None:
             command[6] |= (1 << 1)
             if DoNotLoadDigitalIODefaults:
                 command[13] |= (1 << 7)
-        
+
         if MIODirection is not None:
             command[6] |= (1 << 1)
-            command[13] |= ( MIODirection & 7 ) << 4
-        
+            command[13] |= (MIODirection & 7) << 4
+
         if MIOState is not None:
             command[6] |= (1 << 1)
-            command[13] |= ( MIOState & 7 )
-        
+            command[13] |= (MIOState & 7)
+
         if DAC0Enable is not None:
             command[6] |= (1 << 2)
             if DAC0Enable:
                 command[15] = (1 << 7)
-        
+
         if DAC0 is not None:
             command[6] |= (1 << 2)
             command[14] = DAC0 & 0xff
-            command[15] |= (DAC0 >> 8 ) & 0xf
-        
+            command[15] |= (DAC0 >> 8) & 0xf
+
         if DAC1Enable is not None:
             command[6] |= (1 << 2)
             if DAC1Enable:
                 command[17] = (1 << 7)
-        
+
         if DAC1 is not None:
             command[6] |= (1 << 2)
             command[16] = DAC1 & 0xff
-            command[17] |= (DAC1 >> 8 ) & 0xf
-        
-        result = self._writeRead(command, 24, [ 0xF8, 0x09, 0x08 ])
-        
+            command[17] |= (DAC1 >> 8) & 0xf
+
+        result = self._writeRead(command, 24, [0xF8, 0x09, 0x08])
+
         self.powerLevel = result[7]
         self.controlFWVersion = "%s.%02d" % (result[10], result[9])
         self.firmwareVersion = [self.controlFWVersion, self.commFWVersion]
         self.controlBLVersion = "%s.%02d" % (result[12], result[11])
         self.hiRes = bool(result[13] & 1)
-        
         self.deviceName = 'UE9'
         if self.hiRes:
             self.deviceName = 'UE9-Pro'
-        
-        return { 'PowerLevel' : self.powerLevel, 'ResetSource' : result[8], 'ControlFWVersion' : self.controlFWVersion, 'ControlBLVersion' : self.controlBLVersion, 'HiRes Flag' : self.hiRes, 'FIODir' : result[14], 'FIOState' : result[15], 'EIODir' : result[16], 'EIOState' : result[17], 'CIODirection' : (result[18] >> 4) & 0xf, 'CIOState' : result[18] & 0xf, 'MIODirection' : (result[19] >> 4) & 7, 'MIOState' : result[19] & 7, 'DAC0 Enabled' : bool(result[21] >> 7 & 1), 'DAC0' : (result[21] & 0xf) + result[20], 'DAC1 Enabled' : bool(result[23] >> 7 & 1), 'DAC1' : (result[23] & 0xf) + result[22], 'DeviceName' : self.deviceName }
-        
+
+        return {'PowerLevel': self.powerLevel, 'ResetSource': result[8], 'ControlFWVersion': self.controlFWVersion, 'ControlBLVersion': self.controlBLVersion, 'HiRes Flag': self.hiRes, 'FIODir': result[14], 'FIOState': result[15], 'EIODir': result[16], 'EIOState': result[17], 'CIODirection': (result[18] >> 4) & 0xf, 'CIOState': result[18] & 0xf, 'MIODirection': (result[19] >> 4) & 7, 'MIOState': result[19] & 7, 'DAC0 Enabled': bool(result[21] >> 7 & 1), 'DAC0': (result[21] & 0xf) + result[20], 'DAC1 Enabled': bool(result[23] >> 7 & 1), 'DAC1': (result[23] & 0xf) + result[22], 'DeviceName': self.deviceName}
+
     def feedback(self, FIOMask = 0, FIODir = 0, FIOState = 0, EIOMask = 0, EIODir = 0, EIOState = 0, CIOMask = 0, CIODirection = 0, CIOState = 0, MIOMask = 0, MIODirection = 0, MIOState = 0, DAC0Update = False, DAC0Enabled = False, DAC0 = 0, DAC1Update = False, DAC1Enabled = False, DAC1 = 0, AINMask = 0, AIN14ChannelNumber = 0, AIN15ChannelNumber = 0, Resolution = 0, SettlingTime = 0, AIN1_0_BipGain = 0, AIN3_2_BipGain = 0, AIN5_4_BipGain  = 0, AIN7_6_BipGain = 0, AIN9_8_BipGain = 0, AIN11_10_BipGain = 0, AIN13_12_BipGain = 0, AIN15_14_BipGain = 0):
         """
         Name: UE9.feedback(FIOMask = 0, FIODir = 0, FIOState = 0,
@@ -1607,7 +1606,7 @@ class UE9(Device):
         Name: UE9.getAIN(channel, BipGain = 0x00, Resolution = 12,
                          SettlingTime = 0)
         """
-        bits = self.singleIO(4, channel, BipGain = BipGain, Resolution = Resolution, SettlingTime = SettlingTime )
+        bits = self.singleIO(4, channel, BipGain = BipGain, Resolution = Resolution, SettlingTime = SettlingTime)
         return self.binaryToCalibratedAnalogVoltage(bits["AIN%s"%channel], BipGain, Resolution)
 
     def getTemperature(self):
@@ -1616,8 +1615,8 @@ class UE9(Device):
         """
         if self.calData is None:
             self.getCalibrationData()
-        
-        bits = self.singleIO(4, 133, BipGain = 0x00, Resolution = 12, SettlingTime = 0 )
+
+        bits = self.singleIO(4, 133, BipGain = 0x00, Resolution = 12, SettlingTime = 0)
         return self.binaryToCalibratedAnalogTemperature(bits["AIN133"])
 
     def binaryToCalibratedAnalogVoltage(self, bits, gain, resolution = 0):
@@ -1637,17 +1636,17 @@ class UE9(Device):
         2.52598272
         """
         if self.calData is not None:
-            if self.deviceName.endswith("Pro") and resolution > 17:
+            if self.hiRes and resolution > 17:
                 slope = self.calData['ProAINSlopes'][str(gain)]
                 offset = self.calData['ProAINOffsets'][str(gain)]
             else:
                 slope = self.calData['AINSlopes'][str(gain)]
                 offset = self.calData['AINOffsets'][str(gain)]
         else:
-            #Nornal and hi-res nominal calibration values are the same.
+            #Normal and hi-res nominal calibration values are the same.
             slope = DEFAULT_CAL_CONSTANTS['AINSlopes'][str(gain)]
             offset = DEFAULT_CAL_CONSTANTS['AINOffsets'][str(gain)]
-        
+
         return (bits * slope) + offset
 
     def binaryToCalibratedAnalogTemperature(self, bits):
@@ -1686,58 +1685,55 @@ class UE9(Device):
               if the device is a UE9 or not. It also makes calls to
               readMem, so please don't call this while streaming.
         """
-        # Insure that we know if we are dealing with a Pro or not.
-        self.controlConfig()
-        
         ainslopes = { '0' : None, '1' : None, '2' : None, '3' : None, '8' : None }
         ainoffsets = { '0' : None, '1' : None, '2' : None, '3' : None, '8' : None }
         proainslopes = { '0' : None, '8' : None }
         proainoffsets = { '0' : None, '8' : None }
         dacslopes = { '0' : None, '1' : None }
         dacoffsets = { '0' : None, '1' : None }
-        
+
         tempslope = None
-        
+
         memBlock = self.readMem(0)
         ainslopes['0'] = toDouble(memBlock[:8])
         ainoffsets['0'] = toDouble(memBlock[8:16])
-        
+
         ainslopes['1'] = toDouble(memBlock[16:24])
         ainoffsets['1'] = toDouble(memBlock[24:32])
-        
+
         ainslopes['2'] = toDouble(memBlock[32:40])
         ainoffsets['2'] = toDouble(memBlock[40:48])
-        
+
         ainslopes['3'] = toDouble(memBlock[48:56])
         ainoffsets['3'] = toDouble(memBlock[56:])
-        
+
         memBlock = self.readMem(1)
         ainslopes['8'] = toDouble(memBlock[:8])
         ainoffsets['8'] = toDouble(memBlock[8:16])
-        
+
         # Read DAC and Temperature slopes
         memBlock = self.readMem(2)
         dacslopes['0'] = toDouble(memBlock[:8])
         dacoffsets['0'] = toDouble(memBlock[8:16])
-        
+
         dacslopes['1'] = toDouble(memBlock[16:24])
         dacoffsets['1'] = toDouble(memBlock[24:32])
-        
+
         tempslope = toDouble(memBlock[32:40])
-        
-        if self.deviceName.endswith("Pro"):
+
+        if self.hiRes:
             memBlock = self.readMem(3)
             proainslopes['0'] = toDouble(memBlock[:8])
             proainoffsets['0'] = toDouble(memBlock[8:16])
-            
+
             memBlock = self.readMem(4)
             proainslopes['8'] = toDouble(memBlock[:8])
             proainoffsets['8'] = toDouble(memBlock[8:16])
-        
-        self.calData = { "AINSlopes" : ainslopes, "AINOffsets" : ainoffsets, "ProAINSlopes" : proainslopes, "ProAINOffsets" : proainoffsets, 'TempSlope' : tempslope, "DACSlopes" : dacslopes, "DACOffsets" : dacoffsets }
-        
+
+        self.calData = {"AINSlopes": ainslopes, "AINOffsets": ainoffsets, "ProAINSlopes": proainslopes, "ProAINOffsets": proainoffsets, 'TempSlope': tempslope, "DACSlopes": dacslopes, "DACOffsets": dacoffsets}
+
         return self.calData
-    
+
     def readDefaultsConfig(self):
         """
         Name: UE9.readDefaultsConfig( ) 

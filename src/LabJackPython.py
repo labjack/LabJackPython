@@ -1493,26 +1493,47 @@ def _makeDeviceFromHandle(handle, deviceType):
             device.write(sndDataBuff, checksum = False)
             rcvDataBuff = device.read(38)
 
-            # Local ID
             device.localId = rcvDataBuff[8] & 0xff
-
-            # MAC Address
-            device.macAddress = "%02X:%02X:%02X:%02X:%02X:%02X" % (rcvDataBuff[33], rcvDataBuff[32], rcvDataBuff[31], rcvDataBuff[30], rcvDataBuff[29], rcvDataBuff[28])
-
-            # Parse out serial number
-            device.serialNumber = unpack("<I", pack("BBBB", rcvDataBuff[28], rcvDataBuff[29], rcvDataBuff[30], 0x10))[0]
-
-            # Parse out the IP address
             device.ipAddress = "%s.%s.%s.%s" % (rcvDataBuff[13], rcvDataBuff[12], rcvDataBuff[11], rcvDataBuff[10])
-
-            # Comm FW Version
+            device.serialNumber = unpack("<I", pack("BBBB", rcvDataBuff[28], rcvDataBuff[29], rcvDataBuff[30], 0x10))[0]
+            device.macAddress = "%02X:%02X:%02X:%02X:%02X:%02X" % (rcvDataBuff[33], rcvDataBuff[32], rcvDataBuff[31], rcvDataBuff[30], rcvDataBuff[29], rcvDataBuff[28])
+            device.hwVersion = "%s.%02d" % (rcvDataBuff[35], rcvDataBuff[34])
             device.commFWVersion = "%s.%02d" % (rcvDataBuff[37], rcvDataBuff[36])
 
             device.changed['localId'] = device.localId
-            device.changed['macAddress'] = device.macAddress
-            device.changed['serialNumber'] = device.serialNumber
             device.changed['ipAddress'] = device.ipAddress
+            device.changed['serialNumber'] = device.serialNumber
+            device.changed['macAddress'] = device.macAddress
+            device.changed['hwVersion'] = device.hwVersion
             device.changed['commFWVersion'] = device.commFWVersion
+        except Exception:
+            e = sys.exc_info()[1]
+            device.close()
+            raise e
+
+        sndDataBuff = [0] * 18
+        sndDataBuff[0] = 0x07
+        sndDataBuff[1] = 0xF8
+        sndDataBuff[2] = 0x06
+        sndDataBuff[3] = 0x08
+
+        try:
+            device.write(sndDataBuff, checksum = False)
+            rcvDataBuff = device.read(24)
+
+            device.powerLevel = rcvDataBuff[7]
+            device.controlFWVersion = "%s.%02d" % (rcvDataBuff[10], rcvDataBuff[9])
+            device.controlBLVersion = "%s.%02d" % (rcvDataBuff[12], rcvDataBuff[11])
+            device.hiRes = bool(rcvDataBuff[13] & 1)
+            device.deviceName = 'UE9'
+            if device.hiRes:
+                device.deviceName = 'UE9-Pro'
+
+            device.changed['powerLevel'] = device.powerLevel
+            device.changed['controlFWVersion'] = device.controlFWVersion
+            device.changed['controlBLVersion'] = device.controlBLVersion
+            device.changed['hiRes'] = device.hiRes
+            device.changed['deviceName'] = device.deviceName
         except Exception:
             e = sys.exc_info()[1]
             device.close()
