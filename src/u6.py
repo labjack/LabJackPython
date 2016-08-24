@@ -95,6 +95,7 @@ def dictAsString(d):
     s += "}"
     return s
 
+
 class CalibrationInfo(object):
     """ A class to hold the calibration info for a U6 """
     def __init__(self):
@@ -173,6 +174,7 @@ class CalibrationInfo(object):
     def __str__(self):
         return str(self.__dict__)
 
+
 class U6(Device):
     """
     U6 Class for all U6 specific low-level commands.
@@ -191,9 +193,7 @@ class U6(Device):
               **kargs, The arguments to be passed to open.
         Desc: Your basic constructor.
         """
-        
         Device.__init__(self, None, devType = 6)
-        
         self.firmwareVersion = 0
         self.bootloaderVersion = 0
         self.hardwareVersion = 0
@@ -209,6 +209,7 @@ class U6(Device):
         self.dac1 = 0
         self.calInfo = CalibrationInfo()
         self.deviceName = 'U6'
+        self.isPro = False
         self.debug = debug
 
         if autoOpen:
@@ -236,7 +237,7 @@ class U6(Device):
         Name: U6.configU6(LocalID = None)
         Args: LocalID, if set, will write the new value to U6
         Desc: Writes the Local ID, and reads some hardware information.
-        
+
         >>> myU6 = u6.U6()
         >>> myU6.configU6()
         {'BootloaderVersion': '6.15',
@@ -248,20 +249,20 @@ class U6(Device):
          'VersionInfo': 4}
         """
         command = [ 0 ] * 26
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x0A
         command[3] = 0x08
         #command[4]  = Checksum16 (LSB)
         #command[5]  = Checksum16 (MSB)
-        
+
         if LocalID is not None:
             command[6] = (1 << 3)
             command[8] = LocalID
             
         #command[7] = Reserved
-        
+
         #command[9-25] = Reserved 
         try:
             result = self._writeRead(command, 38, [0xF8, 0x10, 0x08])
@@ -272,7 +273,7 @@ class U6(Device):
                 result = self._writeRead(command, 38, [0xF8, 0x10, 0x08], checkBytes = False)
             else:
                 raise e
-        
+
         self.firmwareVersion = "%s.%02d" % (result[10], result[9])
         self.bootloaderVersion = "%s.%02d" % (result[12], result[11]) 
         self.hardwareVersion = "%s.%02d" % (result[14], result[13])
@@ -281,11 +282,13 @@ class U6(Device):
         self.localId = result[21]
         self.versionInfo = result[37]
         self.deviceName = 'U6'
+        self.isPro = False
         if self.versionInfo == 12:
             self.deviceName = 'U6-Pro'
-        
-        return { 'FirmwareVersion' : self.firmwareVersion, 'BootloaderVersion' : self.bootloaderVersion, 'HardwareVersion' : self.hardwareVersion, 'SerialNumber' : self.serialNumber, 'ProductID' : self.productId, 'LocalID' : self.localId, 'VersionInfo' : self.versionInfo, 'DeviceName' : self.deviceName }
-        
+            self.isPro = True
+
+        return {'FirmwareVersion': self.firmwareVersion, 'BootloaderVersion': self.bootloaderVersion, 'HardwareVersion': self.hardwareVersion, 'SerialNumber': self.serialNumber, 'ProductID': self.productId, 'LocalID': self.localId, 'VersionInfo': self.versionInfo, 'DeviceName': self.deviceName}
+
     def configIO(self, NumberTimersEnabled = None, EnableCounter1 = None, EnableCounter0 = None, TimerCounterPinOffset = None, EnableUART = None):
         """
         Name: U6.configIO(NumberTimersEnabled = None, EnableCounter1 = None,
@@ -1100,7 +1103,7 @@ class U6(Device):
         Args: None
         Desc: Gets the slopes and offsets for AIN and DACs,
               as well as other calibration data
-        
+
         >>> myU6 = U6()
         >>> myU6.getCalibrationData()
         >>> myU6.calInfo
@@ -1108,110 +1111,110 @@ class U6(Device):
         """
         if self.debug is True:
             print("Calibration data retrieval")
-        
+
         self.calInfo.nominal = False
-        
-        #reading block 0 from memory
+
+        # Reading block 0 from memory
         rcvBuffer = self._readCalDataBlock(0)
-        
+
         # Positive Channel calibration
         self.calInfo.ain10vSlope = toDouble(rcvBuffer[:8])
         self.calInfo.ain10vOffset = toDouble(rcvBuffer[8:16])
         self.calInfo.ain1vSlope = toDouble(rcvBuffer[16:24])
         self.calInfo.ain1vOffset = toDouble(rcvBuffer[24:])
-        
-        #reading block 1 from memory
+
+        # Reading block 1 from memory
         rcvBuffer = self._readCalDataBlock(1)
-        
+
         self.calInfo.ain100mvSlope = toDouble(rcvBuffer[:8])
         self.calInfo.ain100mvOffset = toDouble(rcvBuffer[8:16])
         self.calInfo.ain10mvSlope = toDouble(rcvBuffer[16:24])
         self.calInfo.ain10mvOffset = toDouble(rcvBuffer[24:])
-        
+
         self.calInfo.ainSlope = [self.calInfo.ain10vSlope, self.calInfo.ain1vSlope, self.calInfo.ain100mvSlope, self.calInfo.ain10mvSlope]
         self.calInfo.ainOffset = [self.calInfo.ain10vOffset, self.calInfo.ain1vOffset, self.calInfo.ain100mvOffset, self.calInfo.ain10mvOffset]
-        
-        #reading block 2 from memory
+
+        # Reading block 2 from memory
         rcvBuffer = self._readCalDataBlock(2)
-        
-        # Negative Channel calibration
+
+        # Negative channel calibration
         self.calInfo.ain10vNegSlope = toDouble(rcvBuffer[:8])
         self.calInfo.ain10vCenter = toDouble(rcvBuffer[8:16])
         self.calInfo.ain1vNegSlope = toDouble(rcvBuffer[16:24])
         self.calInfo.ain1vCenter = toDouble(rcvBuffer[24:])
-        
-        #reading block 3 from memory
+
+        # Reading block 3 from memory
         rcvBuffer = self._readCalDataBlock(3)
-        
+
         self.calInfo.ain100mvNegSlope = toDouble(rcvBuffer[:8])
         self.calInfo.ain100mvCenter = toDouble(rcvBuffer[8:16])
         self.calInfo.ain10mvNegSlope = toDouble(rcvBuffer[16:24])
         self.calInfo.ain10mvCenter = toDouble(rcvBuffer[24:])
-        
+
         self.calInfo.ainNegSlope = [self.calInfo.ain10vNegSlope, self.calInfo.ain1vNegSlope, self.calInfo.ain100mvNegSlope, self.calInfo.ain10mvNegSlope]
         self.calInfo.ainCenter = [self.calInfo.ain10vCenter, self.calInfo.ain1vCenter, self.calInfo.ain100mvCenter, self.calInfo.ain10mvCenter]
-        
-        #reading block 4 from memory
+
+        # Reading block 4 from memory
         rcvBuffer = self._readCalDataBlock(4)
-        
+
         # Miscellaneous
         self.calInfo.dac0Slope = toDouble(rcvBuffer[:8])
         self.calInfo.dac0Offset = toDouble(rcvBuffer[8:16])
         self.calInfo.dac1Slope = toDouble(rcvBuffer[16:24])
         self.calInfo.dac1Offset = toDouble(rcvBuffer[24:])
-        
+
         self.calInfo.dacSlope = [self.calInfo.dac0Slope, self.calInfo.dac1Slope]
         self.calInfo.dacOffset = [self.calInfo.dac0Offset, self.calInfo.dac1Offset]
-        
-        #reading block 5 from memory
+
+        # Reading block 5 from memory
         rcvBuffer = self._readCalDataBlock(5)
-        
+
         self.calInfo.currentOutput0 = toDouble(rcvBuffer[:8])
         self.calInfo.currentOutput1 = toDouble(rcvBuffer[8:16])
         
         self.calInfo.temperatureSlope = toDouble(rcvBuffer[16:24])
         self.calInfo.temperatureOffset = toDouble(rcvBuffer[24:])
-        
-        if self.deviceName.endswith("Pro"):
+
+        if self.isPro:
             # Hi-Res ADC stuff
-            
-            #reading block 6 from memory
+
+            # Reading block 6 from memory
             rcvBuffer = self._readCalDataBlock(6)
-            
+
             # Positive Channel calibration
             self.calInfo.proAin10vSlope = toDouble(rcvBuffer[:8])
             self.calInfo.proAin10vOffset = toDouble(rcvBuffer[8:16])
             self.calInfo.proAin1vSlope = toDouble(rcvBuffer[16:24])
             self.calInfo.proAin1vOffset = toDouble(rcvBuffer[24:])
-            
-            #reading block 7 from memory
+
+            # Reading block 7 from memory
             rcvBuffer = self._readCalDataBlock(7)
-            
+
             self.calInfo.proAin100mvSlope = toDouble(rcvBuffer[:8])
             self.calInfo.proAin100mvOffset = toDouble(rcvBuffer[8:16])
             self.calInfo.proAin10mvSlope = toDouble(rcvBuffer[16:24])
             self.calInfo.proAin10mvOffset = toDouble(rcvBuffer[24:])
-            
+
             self.calInfo.proAinSlope = [self.calInfo.proAin10vSlope, self.calInfo.proAin1vSlope, self.calInfo.proAin100mvSlope, self.calInfo.proAin10mvSlope]
             self.calInfo.proAinOffset = [self.calInfo.proAin10vOffset, self.calInfo.proAin1vOffset, self.calInfo.proAin100mvOffset, self.calInfo.proAin10mvOffset]
-            
-            #reading block 8 from memory
+
+            # Reading block 8 from memory
             rcvBuffer = self._readCalDataBlock(8)
-            
+
             # Negative Channel calibration
             self.calInfo.proAin10vNegSlope = toDouble(rcvBuffer[:8])
             self.calInfo.proAin10vCenter = toDouble(rcvBuffer[8:16])
             self.calInfo.proAin1vNegSlope = toDouble(rcvBuffer[16:24])
             self.calInfo.proAin1vCenter = toDouble(rcvBuffer[24:])
-            
-            #reading block 9 from memory
+
+            # Reading block 9 from memory
             rcvBuffer = self._readCalDataBlock(9)
-            
+
             self.calInfo.proAin100mvNegSlope = toDouble(rcvBuffer[:8])
             self.calInfo.proAin100mvCenter = toDouble(rcvBuffer[8:16])
             self.calInfo.proAin10mvNegSlope = toDouble(rcvBuffer[16:24])
             self.calInfo.proAin10mvCenter = toDouble(rcvBuffer[24:])
-            
+
             self.calInfo.proAinNegSlope = [self.calInfo.proAin10vNegSlope, self.calInfo.proAin1vNegSlope, self.calInfo.proAin100mvNegSlope, self.calInfo.proAin10mvNegSlope]
             self.calInfo.proAinCenter = [self.calInfo.proAin10vCenter, self.calInfo.proAin1vCenter, self.calInfo.proAin100mvCenter, self.calInfo.proAin10mvCenter]
 
@@ -1231,7 +1234,7 @@ class U6(Device):
         else:
             bits = float(bytesVoltage)
 
-        if self.deviceName.endswith("Pro") and (resolutionIndex > 8 or resolutionIndex == 0):
+        if self.isPro and (resolutionIndex > 8 or resolutionIndex == 0):
             #Use hi-res calibration constants
             center = self.calInfo.proAinCenter[gainIndex]
             negSlope = self.calInfo.proAinNegSlope[gainIndex]

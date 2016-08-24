@@ -1481,51 +1481,48 @@ def _makeDeviceFromHandle(handle, deviceType):
     """ A helper function to get set all the info about a device from a handle"""
     device = Device(handle, devType = deviceType)
     device.changed = dict()
-    
+
     if deviceType == LJ_dtUE9:
         sndDataBuff = [0] * 38
         sndDataBuff[0] = 0x89
         sndDataBuff[1] = 0x78
         sndDataBuff[2] = 0x10
         sndDataBuff[3] = 0x01
-        
+
         try:
             device.write(sndDataBuff, checksum = False)
             rcvDataBuff = device.read(38)
-            
+
             # Local ID
             device.localId = rcvDataBuff[8] & 0xff
-            
+
             # MAC Address
             device.macAddress = "%02X:%02X:%02X:%02X:%02X:%02X" % (rcvDataBuff[33], rcvDataBuff[32], rcvDataBuff[31], rcvDataBuff[30], rcvDataBuff[29], rcvDataBuff[28])
-            
+
             # Parse out serial number
             device.serialNumber = unpack("<I", pack("BBBB", rcvDataBuff[28], rcvDataBuff[29], rcvDataBuff[30], 0x10))[0]
-            
+
             # Parse out the IP address
             device.ipAddress = "%s.%s.%s.%s" % (rcvDataBuff[13], rcvDataBuff[12], rcvDataBuff[11], rcvDataBuff[10])
-            
+
             # Comm FW Version
             device.commFWVersion = "%s.%02d" % (rcvDataBuff[37], rcvDataBuff[36])
-            
+
             device.changed['localId'] = device.localId
             device.changed['macAddress'] = device.macAddress
             device.changed['serialNumber'] = device.serialNumber
             device.changed['ipAddress'] = device.ipAddress
             device.changed['commFWVersion'] = device.commFWVersion
-            
         except Exception:
             e = sys.exc_info()[1]
             device.close()
             raise e
-        
     elif deviceType == LJ_dtU3:
         sndDataBuff = [0] * 26
         sndDataBuff[0] = 0x0b
         sndDataBuff[1] = 0xf8
         sndDataBuff[2] = 0x0a
         sndDataBuff[3] = 0x08
-        
         try:
             device.write(sndDataBuff, checksum = False)
             rcvDataBuff = device.read(38)
@@ -1533,7 +1530,7 @@ def _makeDeviceFromHandle(handle, deviceType):
             e = sys.exc_info()[1]
             device.close()
             raise e
-        
+
         device.localId = rcvDataBuff[21] & 0xff
         serialNumber = pack("<BBBB", *rcvDataBuff[15:19])
         device.serialNumber = unpack('<I', serialNumber)[0]
@@ -1549,7 +1546,7 @@ def _makeDeviceFromHandle(handle, deviceType):
             device.deviceName += '-LV'
         elif device.versionInfo == 18:
             device.deviceName += '-HV'
-        
+
         device.changed['localId'] = device.localId
         device.changed['serialNumber'] = device.serialNumber
         device.changed['ipAddress'] = device.ipAddress
@@ -1558,7 +1555,6 @@ def _makeDeviceFromHandle(handle, deviceType):
         device.changed['deviceName'] = device.deviceName
         device.changed['hardwareVersion'] = device.hardwareVersion
         device.changed['bootloaderVersion'] = device.bootloaderVersion
-        
     elif deviceType == 6:
         command = [ 0 ] * 26
         command[1] = 0xF8
@@ -1571,29 +1567,31 @@ def _makeDeviceFromHandle(handle, deviceType):
             e = sys.exc_info()[1]
             device.close()
             raise e
-        
+
         device.localId = rcvDataBuff[21] & 0xff
         serialNumber = pack("<BBBB", *rcvDataBuff[15:19])
         device.serialNumber = unpack('<I', serialNumber)[0]
         device.ipAddress = ""
-        
+
         device.firmwareVersion = "%s.%02d" % (rcvDataBuff[10], rcvDataBuff[9])
         device.bootloaderVersion = "%s.%02d" % (rcvDataBuff[12], rcvDataBuff[11])
         device.hardwareVersion = "%s.%02d" % (rcvDataBuff[14], rcvDataBuff[13])
         device.versionInfo = rcvDataBuff[37]
         device.deviceName = 'U6'
+        device.isPro = False
         if device.versionInfo == 12:
             device.deviceName = 'U6-Pro'
-        
+            device.isPro = True
+
         device.changed['localId'] = device.localId
         device.changed['serialNumber'] = device.serialNumber
         device.changed['ipAddress'] = device.ipAddress
         device.changed['firmwareVersion'] = device.firmwareVersion
         device.changed['versionInfo'] = device.versionInfo
         device.changed['deviceName'] = device.deviceName
+        device.changed['isPro'] = device.isPro
         device.changed['hardwareVersion'] = device.hardwareVersion
         device.changed['bootloaderVersion'] = device.bootloaderVersion
-        
     elif deviceType == 0x501:
         pkt, readlen = device._buildReadRegisterPacket(65104, 4, 0)
         device.modbusPrependZeros = False
@@ -1606,17 +1604,17 @@ def _makeDeviceFromHandle(handle, deviceType):
                 break
             except Modbus.ModbusException:
                 pass
-        
+
         if serial is None:
             raise LabJackException("Error reading serial number.")
-        
+
         device.serialNumber = serial
         device.localId = 0
         device.deviceName = "SkyMote Bridge"
         device.changed['localId'] = device.localId
         device.changed['deviceName'] = device.deviceName
         device.changed['serialNumber'] = device.serialNumber
-        
+
     return device
 
 #Windows
