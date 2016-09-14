@@ -287,8 +287,8 @@ Version History
     - Fixed the U12 rawPulseout method so that it waits for the device response.
     - Changed struct pack and unpack function usage in modules. They are now
       imported and used directly.
-    - Removed the skymote.py module. The SkyMote products did not make a
-      release.
+    - Removed SkyMote support, which includes skymote.py. The SkyMote products
+      did not make a release.
     - Updated some checks in modules to use boolean instead of string
       comparisons to improve performance a little.
     - Updated _makeDeviceFromHandle function for the UE9 to get more

@@ -31,7 +31,7 @@ LJSOCKET_TIMEOUT = 62
 BROADCAST_SOCKET_TIMEOUT = 1
 MAX_USB_PACKET_LENGTH = 64
 
-NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS = 5
+NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS = 4
 
 _os_name = ""  # Set to "nt" or "posix" in _loadLibrary.
 
@@ -176,15 +176,6 @@ except LabJackException:
     print("%s: %s" % (type(e), e))
     staticLib = None
 
-# Attempt to load the windows Skymote library.
-try:
-    skymoteLib = ctypes.WinDLL("liblabjackusb")
-except:
-    try:
-        skymoteLib = ctypes.CDLL("liblabjackusb")
-    except:
-        skymoteLib = None
-
 
 class Device(object):
     """Device(handle, localId = None, serialNumber = None, ipAddress = "", devType = None)
@@ -259,38 +250,28 @@ class Device(object):
             raise LabJackException( "Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
             
         return writeBuffer
-            
-    def _writeToUDDriver(self, writeBuffer, modbus):
-        if self.devType == 0x501:
-            newA = (ctypes.c_byte*len(writeBuffer))(0) 
-            for i in range(len(writeBuffer)):
-                newA[i] = ctypes.c_byte(writeBuffer[i])
 
-            writeBytes = skymoteLib.LJUSB_IntWrite(self.handle, 1, ctypes.byref(newA), len(writeBuffer))
-            
-            if writeBytes != len(writeBuffer):
-                raise LabJackException( "Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
-        else:
-            if modbus is True and self.devType == 9:
-                dataWords = len(writeBuffer)
-                writeBuffer = [0, 0xF8, 0, 0x07, 0, 0] + writeBuffer #modbus low-level function
-                if dataWords % 2 != 0:
-                    dataWords = (dataWords+1)//2
-                    writeBuffer.append(0)
-                else:
-                    dataWords = dataWords//2
-                writeBuffer[2] = dataWords
-                setChecksum(writeBuffer)
-            elif modbus is True and self.modbusPrependZeros:
-                writeBuffer = [ 0, 0 ] + writeBuffer
-            
-            eGetRaw(self.handle, LJ_ioRAW_OUT, 0, len(writeBuffer), writeBuffer)
-        
+    def _writeToUDDriver(self, writeBuffer, modbus):
+        if modbus is True and self.devType == 9:
+            dataWords = len(writeBuffer)
+            writeBuffer = [0, 0xF8, 0, 0x07, 0, 0] + writeBuffer  # Modbus low-level function
+            if dataWords % 2 != 0:
+                dataWords = (dataWords+1) // 2
+                writeBuffer.append(0)
+            else:
+                dataWords = dataWords // 2
+            writeBuffer[2] = dataWords
+            setChecksum(writeBuffer)
+        elif modbus is True and self.modbusPrependZeros:
+            writeBuffer = [0, 0] + writeBuffer
+
+        eGetRaw(self.handle, LJ_ioRAW_OUT, 0, len(writeBuffer), writeBuffer)
+
         return writeBuffer
 
     def write(self, writeBuffer, modbus = False, checksum = True):
         """write([writeBuffer], modbus = False)
-            
+
         Writes the data contained in writeBuffer to the device.  writeBuffer must be a list of 
         byte values.
         """
@@ -382,32 +363,28 @@ class Device(object):
             return [(newA[i] & 0xff) for i in range(readBytes)]
 
     def _readFromUDDriver(self, numBytes, stream, modbus):
-        if self.devType == 0x501:
-            newA = (ctypes.c_byte*numBytes)()
-            readBytes = skymoteLib.LJUSB_IntRead(self.handle, 0x81, ctypes.byref(newA), numBytes)
-            return [(newA[i] & 0xff) for i in range(readBytes)]
-        else:
-            if modbus is True and self.devType == 9:
-                tempBuff = [0] * (8 + numBytes + numBytes%2)
-                eGetBuff = list()
-                eGetBuff = eGetRaw(self.handle, LJ_ioRAW_IN, 0, len(tempBuff), tempBuff)[1]
+        if modbus is True and self.devType == 9:
+            tempBuff = [0] * (8 + numBytes + numBytes%2)
+            eGetBuff = list()
+            eGetBuff = eGetRaw(self.handle, LJ_ioRAW_IN, 0, len(tempBuff), tempBuff)[1]
 
-                # Parse the Modbus response out (response is the Modbus extended low-level function)
-                retBuff = list()
-                if len(eGetBuff) >= 9 and eGetBuff[1] == 0xF8 and eGetBuff[3] == 0x07:
-                    # Figuring out the length of the Modbus response
-                    mbSize = len(eGetBuff) - 8
-                    if len(eGetBuff) >= 14:
-                        mbSize = min(mbSize, eGetBuff[13] + 6)
-                    i = min(mbSize, numBytes)
-                    i = max(i, 0)                    
-                    retBuff = eGetBuff[8:8+i]  # Getting the response only
-                return retBuff
+            # Parse the Modbus response out (response is the Modbus extended
+            # low-level function)
+            retBuff = list()
+            if len(eGetBuff) >= 9 and eGetBuff[1] == 0xF8 and eGetBuff[3] == 0x07:
+                # Figuring out the length of the Modbus response
+                mbSize = len(eGetBuff) - 8
+                if len(eGetBuff) >= 14:
+                    mbSize = min(mbSize, eGetBuff[13] + 6)
+                i = min(mbSize, numBytes)
+                i = max(i, 0)
+                retBuff = eGetBuff[8:8+i]  # Getting the response only
+            return retBuff
 
-            tempBuff = [0] * numBytes
-            if stream:
-                return eGetRaw(self.handle, LJ_ioRAW_IN, 1, numBytes, tempBuff)[1]
-            return eGetRaw(self.handle, LJ_ioRAW_IN, 0, numBytes, tempBuff)[1]
+        tempBuff = [0] * numBytes
+        if stream:
+            return eGetRaw(self.handle, LJ_ioRAW_IN, 1, numBytes, tempBuff)[1]
+        return eGetRaw(self.handle, LJ_ioRAW_IN, 0, numBytes, tempBuff)[1]
 
     def readRegister(self, addr, numReg = None, format = None, unitId = None):
         """Reads a specific register from the device and returns the value.
@@ -659,7 +636,7 @@ class Device(object):
     def close(self):
         """
         close()
-        
+
         This function is not specifically supported in the LabJackUD driver
         for Windows and so simply calls the UD function Close.  For Mac and unix
         drivers, this function MUST be performed when finished with a device.
@@ -667,16 +644,14 @@ class Device(object):
         with a given device open at a time.  If a device is not closed before
         the program is finished it may still be held open and unable to be used
         by other programs until properly closed.
-        
+
         For Windows, Linux, and Mac
         """
         if isinstance(self.handle, UE9TCPHandle) or isinstance(self.handle, LJSocketHandle):
             self.handle.close()
         elif _os_name == 'posix':
             staticLib.LJUSB_CloseDevice(self.handle)
-        elif self.devType == 0x501:
-            skymoteLib.LJUSB_CloseDevice(self.handle)
-            
+
         self.handle = None
 
     def reset(self):
@@ -1058,55 +1033,51 @@ def verifyChecksum(buffer):
 
     return False
 
-
 # 1 = LJ_ctUSB
 def listAll(deviceType, connectionType = 1):
     """listAll(deviceType, connectionType) -> [[local ID, Serial Number, IP Address], ...]
-    
-    Searches for all devices of a given type over a given connection type and returns a list 
-    of all devices found.
-    
+
+    Searches for all devices of a given type over a given connection
+    type and returns a list of all devices found.
+
     WORKS on WINDOWS, MAC, UNIX
     """
-    
     if connectionType == LJ_ctLJSOCKET:
         ipAddress, port = deviceType.split(":")
         port = int(port)
-        
+
         serverSocket = socket.socket()
         serverSocket.connect((ipAddress, port))
         serverSocket.settimeout(10)
-        
+
         f = serverSocket.makefile(bufsize = 0)
         f.write("scan\r\n")
-        
+
         l = f.readline().strip()
         try:
             status, numLines = l.split(' ')
         except ValueError:
             raise Exception("Got invalid line from server: %s" % l)
-            
+
         if status.lower().startswith('ok'):
             lines = []
             for i in range(int(numLines)):
                 l = f.readline().strip()
                 dev = parseline(l)
-                lines.append(dev)       
-            
+                lines.append(dev)
+
             f.close()
             serverSocket.close()
-            
-            #print("Result of scan:")
-            #print(lines)
+
             return lines
-    
+
     if deviceType == 12:
         if U12DriverPresent():
             if sys.platform.startswith("cygwin"):
                 u12Driver = ctypes.cdll.LoadLibrary("ljackuw")
             else:
                 u12Driver = ctypes.windll.LoadLibrary("ljackuw")
-                
+
             # Setup all the ctype arrays
             pSerialNumbers = (ctypes.c_long * 127)(0)
             pIDs = (ctypes.c_long * 127)(0)
@@ -1116,10 +1087,10 @@ def listAll(deviceType, connectionType = 1):
             pNumFound = ctypes.c_long()
             pFcdd = ctypes.c_long(0)
             pHvc = ctypes.c_long(0)
-            
-            #Output dictionary
+
+            # Output dictionary
             deviceList = {}
-            
+
             ec = u12Driver.ListAll(ctypes.cast(pProdID, ctypes.POINTER(ctypes.c_long)),
                                ctypes.cast(pSerialNumbers, ctypes.POINTER(ctypes.c_long)),
                                ctypes.cast(pIDs, ctypes.POINTER(ctypes.c_long)),
@@ -1128,73 +1099,44 @@ def listAll(deviceType, connectionType = 1):
                                ctypes.byref(pNumFound),
                                ctypes.byref(pFcdd),
                                ctypes.byref(pHvc))
+            if ec != 0:
+                raise LabJackException(ec)
 
-            if ec != 0: raise LabJackException(ec)
             for i in range(pNumFound.value):
-                deviceList[pSerialNumbers[i]] = { 'SerialNumber' : pSerialNumbers[i], 'Id' : pIDs[i], 'ProdId' : pProdID[i], 'powerList' : pPowerList[i] }
-                
+                deviceList[pSerialNumbers[i]] = {'SerialNumber': pSerialNumbers[i], 'Id': pIDs[i], 'ProdId': pProdID[i], 'powerList': pPowerList[i]}
+
             return deviceList
-    
-            
         else:
             return {}
-        
-    
+
     if _os_name == 'nt':
-        if deviceType == 0x501:
-            if skymoteLib is None:
-                raise ImportError("Couldn't load liblabjackusb.dll. Please install, and try again.")
-            
-            num = skymoteLib.LJUSB_GetDevCount(0x501)
-            
-            deviceList = dict()
-            
-            for i in range(num):
-               try:
-                   device = openLabJack(0x501, 1, firstFound = False, pAddress = None, devNumber = i+1)
-                   device.close()
-                   deviceList[str(device.serialNumber)] = device.__dict__
-               except LabJackException:
-                   pass
-            
-            return deviceList
-            
-            
         pNumFound = ctypes.c_long()
         pSerialNumbers = (ctypes.c_long * 128)()
         pIDs = (ctypes.c_long * 128)()
         pAddresses = (ctypes.c_double * 128)()
-        
-        ec = staticLib.ListAll(deviceType, connectionType, 
-                              ctypes.byref(pNumFound), 
-                              ctypes.cast(pSerialNumbers, ctypes.POINTER(ctypes.c_long)), 
+
+        ec = staticLib.ListAll(deviceType, connectionType,
+                              ctypes.byref(pNumFound),
+                              ctypes.cast(pSerialNumbers, ctypes.POINTER(ctypes.c_long)),
                               ctypes.cast(pIDs, ctypes.POINTER(ctypes.c_long)), 
                               ctypes.cast(pAddresses, ctypes.POINTER(ctypes.c_long)))
-        
-        if ec != 0 and ec != 1010: raise LabJackException(ec)
-        
+        if ec != 0 and ec != 1010:
+            raise LabJackException(ec)
+
         deviceList = dict()
-    
         for i in range(pNumFound.value):
             if pSerialNumbers[i] != 1010:
                 deviceValue = dict(localId = pIDs[i], serialNumber = pSerialNumbers[i], ipAddress = DoubleToStringAddress(pAddresses[i]), devType = deviceType)
                 deviceList[pSerialNumbers[i]] = deviceValue
-    
         return deviceList
 
     if _os_name == 'posix':
-
         if deviceType == LJ_dtUE9:
             return __listAllUE9Unix(connectionType)
-    
         if deviceType == LJ_dtU3:
             return __listAllU3Unix()
-        
         if deviceType == 6:
             return __listAllU6Unix()
-            
-        if deviceType == 0x501:
-            return __listAllBridgesUnix()
 
 def isHandleValid(handle):
     if _os_name == 'nt':
@@ -1202,16 +1144,13 @@ def isHandleValid(handle):
     else:
         return staticLib.LJUSB_IsHandleValid(handle)
 
-
 def deviceCount(devType = None):
-    """Returns the number of devices connected. """
+    """Returns the number of devices connected."""
     if _os_name == 'nt':
         if devType is None:
             numdev = len(listAll(3))
             numdev += len(listAll(9))
             numdev += len(listAll(6))
-            if skymoteLib is not None:
-                numdev += len(listAll(0x501))
             return numdev
         else:
             return len(listAll(devType))
@@ -1220,33 +1159,27 @@ def deviceCount(devType = None):
             numdev = staticLib.LJUSB_GetDevCount(3)
             numdev += staticLib.LJUSB_GetDevCount(9)
             numdev += staticLib.LJUSB_GetDevCount(6)
-            numdev += staticLib.LJUSB_GetDevCount(0x501)
             return numdev
         else:
             return staticLib.LJUSB_GetDevCount(devType)
 
-
 def getDevCounts():
     if _os_name == "nt":
         # Right now there is no good way to count all the U12s on a Windows box
-        returnDict = { 3 : len(listAll(3)), 6 : len(listAll(6)), 9 : len(listAll(9)), 1 : 0, 0x501: 0}
-        if skymoteLib is not None:
-            returnDict[0x501] = len(listAll(0x501))
+        returnDict = {3: len(listAll(3)), 6: len(listAll(6)), 9: len(listAll(9)), 1: 0}
         return returnDict
     else:
         devCounts = (ctypes.c_uint*NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS)()
         devIds = (ctypes.c_uint*NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS)()
         n = ctypes.c_uint(NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS)
         staticLib.LJUSB_GetDevCounts(ctypes.byref(devCounts), ctypes.byref(devIds), n)
-        
+
         returnDict = dict()
-        
+
         for i in range(NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS):
             returnDict[int(devIds[i])] = int(devCounts[i])
-        
+
         return returnDict
-
-
 
 def openAllLabJacks():
     if _os_name == "nt":
@@ -1255,20 +1188,12 @@ def openAllLabJacks():
         devs[3] = listAll(3)
         devs[6] = listAll(6)
         devs[9] = listAll(9)
-        if skymoteLib is not None:
-            devs[0x501] = listAll(0x501)
-            
         devices = list()
         for prodId, numConnected in devs.items():
             for i, serial in enumerate(numConnected.keys()):
                 d = Device(None, devType = prodId)
-                if prodId == 0x501:
-                    d.open(prodId, devNumber = i)
-                    d = _makeDeviceFromHandle(d.handle, prodId)
-                else:
-                    d.open(prodId, serial = serial)
-                    d = _makeDeviceFromHandle(d.handle, prodId)
-                
+                d.open(prodId, serial = serial)
+                d = _makeDeviceFromHandle(d.handle, prodId)
                 devices.append(d)
     else:
         maxHandles = 10
@@ -1276,16 +1201,12 @@ def openAllLabJacks():
         devIds = (ctypes.c_uint*maxHandles)()
         n = ctypes.c_uint(maxHandles)
         numOpened = staticLib.LJUSB_OpenAllDevices(ctypes.byref(devHandles), ctypes.byref(devIds), n)
-        
+
         devices = list()
-        
         for i in range(numOpened):
             devices.append(_makeDeviceFromHandle(devHandles[i], int(devIds[i])))
-    
-    
+
     return devices
-
-
 
 def _openLabJackUsingLJSocket(deviceType, firstFound, pAddress, LJSocket, handleOnly):
     if LJSocket is not '':
@@ -1294,7 +1215,7 @@ def _openLabJackUsingLJSocket(deviceType, firstFound, pAddress, LJSocket, handle
         handle = LJSocketHandle(ip, port, deviceType, firstFound, pAddress)
     else:
         handle = LJSocketHandle('localhost', 6000, deviceType, firstFound, pAddress)
-      
+
     return handle
 
 def _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, devNumber):
@@ -1307,8 +1228,8 @@ def _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, 
     ec = staticLib.OpenLabJack(deviceType, connectionType,
                                 pAddress, firstFound, ctypes.byref(handle))
 
-    #Error codes > 0 are errors, < 0 are warnings and 0 is no error.
-    #Warnings return a valid device handle.
+    # Error codes > 0 are errors, < 0 are warnings and 0 is no error.
+    # Warnings return a valid device handle.
     if ec > 0:
         raise LabJackException(ec)
     if ec < 0:
@@ -1322,7 +1243,7 @@ def _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber):
     devType = ctypes.c_ulong(deviceType)
     openDev = staticLib.LJUSB_OpenDevice
     openDev.restype = ctypes.c_void_p
-    
+
     if devNumber is not None:
         handle = openDev(devNumber, 0, devType)
         if handle <= 0:
@@ -1423,55 +1344,28 @@ def _openUE9OverEthernet(firstFound, pAddress, devNumber):
     except:
         raise LabJackException("LJE_LABJACK_NOT_FOUND: Couldn't find the specified LabJack.")
 
-def _openWirelessBridgeOnWindows(firstFound, pAddress, devNumber):
-    if skymoteLib is None:
-        raise ImportError("Couldn't load liblabjackusb.dll. Please install, and try again.")
-        
-    devType = ctypes.c_ulong(0x501)
-    openDev = skymoteLib.LJUSB_OpenDevice
-    openDev.restype = ctypes.c_void_p
-    
-    if devNumber is not None:
-        handle = openDev(devNumber, 0, devType)
-        if handle <= 0:
-            raise NullHandleException()
-        return handle
-    elif firstFound:
-        handle = openDev(1, 0, devType)
-        if handle <= 0:
-            raise NullHandleException()
-        return handle
-    else:
-        raise LabJackException("Bridges don't have identifiers yet.")
-        
-    raise LabJackException(LJE_LABJACK_NOT_FOUND) 
-
 #Windows, Linux, and Mac
 def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, devNumber = None, handleOnly = False, LJSocket = None):
     """openLabJack(deviceType, connectionType, firstFound = True, pAddress = 1, LJSocket = None)
-    
-        Note: On Windows, UE9 over Ethernet, pAddress MUST be the IP address. 
+
+    Note: On Windows, UE9 over Ethernet, pAddress MUST be the IP address. 
     """
     handle = None
 
     if connectionType == LJ_ctLJSOCKET:
-        # LJSocket handles work indepenent of OS
-        handle = _openLabJackUsingLJSocket(deviceType, firstFound, pAddress, LJSocket, handleOnly )
+        # LJSocket handles work independent of OS
+        handle = _openLabJackUsingLJSocket(deviceType, firstFound, pAddress, LJSocket, handleOnly)
     elif _os_name == 'posix' and connectionType == LJ_ctUSB:
-        # Linux/Mac need to work in the low level driver.
+        # Using Exodriver on Linux/Mac for USB connections.
         handle = _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber)
-        if isinstance( handle, Device ):
+        if isinstance(handle, Device):
             return handle
     elif _os_name == 'nt':
-        #If windows operating system then use the UD Driver
-        if deviceType == 0x501:
-            handle = _openWirelessBridgeOnWindows(firstFound, pAddress, devNumber)
-            handle = ctypes.c_void_p(handle)
-        elif staticLib is not None:
-            handle = _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, devNumber ) 
-    elif connectionType == LJ_ctETHERNET and deviceType == LJ_dtUE9 :
+        # Using UD driver on Windows.
+        handle = _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, devNumber)
+    elif connectionType == LJ_ctETHERNET and deviceType == LJ_dtUE9:
         handle = _openUE9OverEthernet(firstFound, pAddress, devNumber)
-            
+
     if not handleOnly:
         return _makeDeviceFromHandle(handle, deviceType)
     else:
@@ -1616,28 +1510,6 @@ def _makeDeviceFromHandle(handle, deviceType):
         device.changed['isPro'] = device.isPro
         device.changed['hardwareVersion'] = device.hardwareVersion
         device.changed['bootloaderVersion'] = device.bootloaderVersion
-    elif deviceType == 0x501:
-        pkt, readlen = device._buildReadRegisterPacket(65104, 4, 0)
-        device.modbusPrependZeros = False
-        device.write(pkt, modbus = True, checksum = False)
-        for i in range(5):
-            try:
-                serial = None
-                response = device.read(64, False, True)
-                serial = device._parseReadRegisterResponse(response[:readlen], readlen, 65104, '>Q', numReg = 4)
-                break
-            except Modbus.ModbusException:
-                pass
-
-        if serial is None:
-            raise LabJackException("Error reading serial number.")
-
-        device.serialNumber = serial
-        device.localId = 0
-        device.deviceName = "SkyMote Bridge"
-        device.changed['localId'] = device.localId
-        device.changed['deviceName'] = device.deviceName
-        device.changed['serialNumber'] = device.serialNumber
 
     return device
 
@@ -2797,22 +2669,6 @@ def __listAllU6Unix():
     for i in range(numDevices):
         try:
             device = openLabJack(LJ_dtU6, 1, firstFound = False, devNumber = i+1)
-            device.close()
-        
-            deviceList[str(device.serialNumber)] = device.__dict__
-        except LabJackException:
-            pass
-
-    return deviceList
-    
-def __listAllBridgesUnix():
-    """ List all for Bridges """
-    deviceList = {}
-    numDevices = staticLib.LJUSB_GetDevCount(0x501)
-
-    for i in range(numDevices):
-        try:
-            device = openLabJack(0x501, 1, firstFound = False, devNumber = i+1)
             device.close()
         
             deviceList[str(device.serialNumber)] = device.__dict__
