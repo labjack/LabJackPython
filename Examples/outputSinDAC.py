@@ -1,3 +1,8 @@
+from __future__ import division
+from __future__ import print_function
+from builtins import range
+from builtins import object
+from past.utils import old_div
 # An example script to show how to output a sine wave using a DAC.
 # Because we have to do it all in software, there are limitations on how fast
 # we can update the DAC. Update intervals faster than 5 ms may give weird
@@ -30,16 +35,16 @@ UPDATE_INTERVAL = 0.005
 FREQUENCY = 10
 
 if __name__ == '__main__':
-    print "This program will attempt to generate a sine wave with a frequency of %s Hz, updating once every %s seconds." % (FREQUENCY, UPDATE_INTERVAL)
+    print("This program will attempt to generate a sine wave with a frequency of %s Hz, updating once every %s seconds." % (FREQUENCY, UPDATE_INTERVAL))
     
     
-    print "Opening LabJack...",
+    print("Opening LabJack...", end=' ')
     # Open up our LabJack
     d = u3.U3()
     #d = u6.U6()
     #d = ue9.UE9()
     
-    print "Done"
+    print("Done")
     
     # Make a class to keep track of variables and the like
     class DacSetter(object):
@@ -50,13 +55,13 @@ if __name__ == '__main__':
             self.go = True
             
             # Points between peaks (pbp)
-            pbp = (float(1)/frequency)/updateInterval
+            pbp = old_div((old_div(float(1),frequency)),updateInterval)
             
             # Figure out how many degrees per update we need to go.
-            self.step = float(360)/pbp
+            self.step = old_div(float(360),pbp)
             
             # Stupid sin function only takes radians... but I think in degrees.
-            self.degToRad = ( (2*math.pi) / 360 )
+            self.degToRad = ( old_div((2*math.pi), 360) )
             
         def setDac(self):
             # calculate the value to put in the sin
@@ -88,10 +93,10 @@ if __name__ == '__main__':
     signal.setitimer(signal.ITIMER_REAL, UPDATE_INTERVAL, UPDATE_INTERVAL)
     
     # Run for ~10 seconds. Expect about 2 extra seconds of overhead.
-    signalcount = int(10/UPDATE_INTERVAL)
+    signalcount = int(old_div(10,UPDATE_INTERVAL))
     
     # Print the current time, just to let you know something is happening.
-    print "Start:", datetime.now()
+    print("Start:", datetime.now())
     
     for i in range(signalcount):
         # Wait for signal to be received
@@ -102,12 +107,12 @@ if __name__ == '__main__':
             dacs.setDac()
             
     # Print the stop time, in case you wanted to know.
-    print "Stop:", datetime.now()
+    print("Stop:", datetime.now())
     
     # Done with the timer, let's turn it off.
     signal.setitimer(signal.ITIMER_REAL, 0)
     
     # Print short summary of the difference between how may updates were
     # expected and how many occurred.
-    print "# of Updates = %s, # of signals = %s" % (dacs.count, dacs.setDacCount)
-    print "The closer the number of updates is to the number of signals, the better your waveform will be."
+    print("# of Updates = %s, # of signals = %s" % (dacs.count, dacs.setDacCount))
+    print("The closer the number of updates is to the number of signals, the better your waveform will be.")
