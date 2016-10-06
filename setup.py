@@ -22,9 +22,6 @@ CLASSIFIERS = [
     'Programming Language :: Python :: 2.6',
     'Programming Language :: Python :: 2.7',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.0',
-    'Programming Language :: Python :: 3.1',
-    'Programming Language :: Python :: 3.2',
     'Programming Language :: Python :: 3.3',
     'Programming Language :: Python :: 3.4',
     'Programming Language :: Python :: 3.5',
@@ -44,7 +41,6 @@ setup(name='LabJackPython',
       maintainer='LabJack Corporation',
       maintainer_email='support@labjack.com',
       classifiers=CLASSIFIERS,
-      install_requires=["future"],
       package_dir = {'': 'src'},
       py_modules=['LabJackPython', 'Modbus', 'u3', 'u6', 'ue9', 'u12']
       )
