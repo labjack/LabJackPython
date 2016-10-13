@@ -1,5 +1,8 @@
 import sys
-from setuptools import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
 
 if sys.version_info[:2] < (2, 6):
     msg = ("LabJackPython requires Python 2.6 or later. "
@@ -18,7 +21,6 @@ CLASSIFIERS = [
     'Operating System :: POSIX :: Linux',
     'Programming Language :: Python',
     'Programming Language :: Python :: 2',
-    'Programming Language :: Python :: 2.5',
     'Programming Language :: Python :: 2.6',
     'Programming Language :: Python :: 2.7',
     'Programming Language :: Python :: 3',
