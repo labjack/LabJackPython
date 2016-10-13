@@ -1,5 +1,5 @@
 Version History
-- 0.1.0: Converted many UD functions to Python using ctyes package.
+- 0.1.0: Converted many UD functions to Python using ctypes package.
 - 0.2.0: Made linux support for Open, Read, Write, and driverVersion.
 - 0.3.0: Made Mac support for Open, Read, Write, and driverVersion.
 - 0.4.0 Wrote initial epydoc documentation.
@@ -13,7 +13,7 @@ Version History
 - 0.5.2 January 23, 2007
     - Added a DriverPresent function to test if the necessary drivers are
       present for the wrapper to run.
-- 0.6.0 Febuary 6, 2007
+- 0.6.0 February 6, 2007
     - Added the LJHash function which is used for authorizing LabJack devices.
 - 0.6.1 July 19, 2007
     - Updated the documentation concerning the Mac support.
@@ -31,7 +31,7 @@ Version History
     - Added a Device class for simpler usage.
     - openLabJack can now search for devices to open via ipAddress, localId, or
       serialNumber.
-    - Put most functions into proper camelcase notation.
+    - Put most functions into proper camel case notation.
     - Removed large static function encapsulating all functions.  Works as one
       module now.
     - Changed Read and Write to increase speed.
@@ -293,3 +293,5 @@ Version History
       comparisons to improve performance a little.
     - Updated _makeDeviceFromHandle function for the UE9 to get more
       information.
+    - Updated setup.py to remove Python 2.5 support and add Python 3+ support.
+    - Updated setup.py to use setuptools when available.
