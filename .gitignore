@@ -1,3 +1,5 @@
 *.pyc
-src/build
+src/build/
 build/
+dist/
+src/LabJackPython.egg-info/

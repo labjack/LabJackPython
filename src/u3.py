@@ -2741,6 +2741,7 @@ class Timer1Config(TimerConfig):
     def __repr__(self):
         return "<u3.Timer1Config( TimerMode = %s, Value = %s )>" % (self.timerMode, self.value)
 
+
 class Counter(FeedbackCommand):
     '''
     Counter Feedback command
@@ -2772,7 +2773,7 @@ class Counter(FeedbackCommand):
     def __init__(self, counter, Reset = False):
         self.counter = counter
         self.reset = Reset
-        self.cmdBytes = [ 54 + (counter % 2), int(bool(Reset))]
+        self.cmdBytes = [54 + (counter % 2), int(bool(Reset))]
 
     readLen = 4
 
@@ -2780,9 +2781,10 @@ class Counter(FeedbackCommand):
         return "<u3.Counter( counter = %s, Reset = %s )>" % (self.counter, self.reset)
 
     def handle(self, input):
-        inStr = ''.join([chr(x) for x in input])
-        return unpack('<I', inStr )[0]
-    
+        inStr = pack('B' * len(input), *input)
+        return unpack('<I', inStr)[0]
+
+
 class Counter0(Counter):
     '''
     Counter0 Feedback command
@@ -2793,7 +2795,7 @@ class Counter0(Counter):
 
     Returns the current count from the counter if enabled.  If reset,
     this is the value before the reset.
-    
+
     >>> import u3
     >>> d = u3.U3()
     >>> d.debug = True
@@ -2815,13 +2817,13 @@ class Counter0(Counter):
     Sent:  [0x31, 0xf8, 0x2, 0x0, 0x36, 0x0, 0x0, 0x36, 0x0, 0x0]
     Response:  [0x19, 0xf8, 0x4, 0x0, 0x1c, 0x0, 0x0, 0x0, 0x0, 0xb, 0x11, 0x0, 0x0, 0x0]
     [4363]
-
     '''
     def __init__(self, Reset = False):
         Counter.__init__(self, 0, Reset)
-        
+
     def __repr__(self):
         return "<u3.Counter0( Reset = %s )>" % self.reset
+
 
 class Counter1(Counter):
     '''
@@ -2833,7 +2835,7 @@ class Counter1(Counter):
 
     Returns the current count from the counter if enabled.  If reset,
     this is the value before the reset.
-    
+
     >>> import u3
     >>> d = u3.U3()
     >>> d.debug = True
@@ -2858,6 +2860,6 @@ class Counter1(Counter):
     '''
     def __init__(self, Reset = False):
         Counter.__init__(self, 1, Reset)
-        
+
     def __repr__(self):
         return "<u3.Counter0( Reset = %s )>" % self.reset

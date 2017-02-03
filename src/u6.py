@@ -2456,13 +2456,13 @@ class Counter(FeedbackCommand):
     Returns the current count from the counter if enabled.  If reset,
     this is the value before the reset.
     
-    >>> d.getFeedback( u6.Counter( counter, Reset = False ) )
+    >>> d.getFeedback(u6.Counter(counter, Reset = False))
     [ 2183 ]
     '''
     def __init__(self, counter, Reset):
         self.counter = counter
         self.reset = Reset
-        self.cmdBytes = [ 54 + (counter % 2), int(bool(Reset))]
+        self.cmdBytes = [54 + (counter % 2), int(bool(Reset))]
 
     def __repr__(self):
         return "<u6.Counter( counter = %s, Reset = %s )>" % (self.counter, self.reset)
@@ -2470,8 +2470,8 @@ class Counter(FeedbackCommand):
     readLen = 4
 
     def handle(self, input):
-        inStr = ''.join([chr(x) for x in input])
-        return unpack('<I', inStr )[0]
+        inStr = pack('B' * len(input), *input)
+        return unpack('<I', inStr)[0]
 
 
 class Counter0(Counter):
@@ -2485,7 +2485,7 @@ class Counter0(Counter):
     Returns the current count from the counter if enabled.  If reset,
     this is the value before the reset.
     
-    >>> d.getFeedback( u6.Counter0( Reset = False ) )
+    >>> d.getFeedback(u6.Counter0(Reset = False))
     [ 2183 ]
     '''
     def __init__(self, Reset = False):
@@ -2506,7 +2506,7 @@ class Counter1(Counter):
     Returns the current count from the counter if enabled.  If reset,
     this is the value before the reset.
 
-    >>> d.getFeedback( u6.Counter1( Reset = False ) )
+    >>> d.getFeedback(u6.Counter1(Reset = False))
     [ 2183 ]
     '''
     def __init__(self, Reset = False):
