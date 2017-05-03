@@ -38,10 +38,8 @@ def oneWire(sense_pin, rom_function, rom_id, num_rx, tx_data=[], options=None, d
     command.append(0)  # Reserved
     command.append(rom_function)
 
-    # Invert romID, so data is LSB -> MSB
-    inverted_rom_id = list(reversed(rom_id))
     # Use command.extend([1,2]) to add to array...
-    command.extend(inverted_rom_id)
+    command.extend(rom_id)
 
     command.append(0)  # Reserved
     command.append(len(tx_data))
@@ -103,8 +101,8 @@ def oneWire(sense_pin, rom_function, rom_id, num_rx, tx_data=[], options=None, d
 # Open the device
 d = u3.U3()
 
-# 64 bit Sensor ROM ID MSB -> LSB
-rom_id = [0xD8, 0x00, 0x00, 0x04, 0xCE, 0x1B, 0xAF, 0x28]
+# 64 bit Sensor ROM ID LSB -> MSB
+rom_id = [0x28, 0xAF, 0x1B, 0xCE, 0x04, 0x00, 0x00, 0xD8]
 
 # DIO Pin Numbers are as follows
 # 0 -> 7: FIO0 -> FIO7
