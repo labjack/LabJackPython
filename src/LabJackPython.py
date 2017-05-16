@@ -1252,7 +1252,6 @@ def _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber):
     elif firstFound:
         handle = openDev(1, 0, devType)
         if handle <= 0:
-            print("handle: %s" % handle) 
             raise NullHandleException()
         return handle
     else:      
