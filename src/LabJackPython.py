@@ -132,7 +132,7 @@ def _loadLibrary():
             wlib = ctypes.WinDLL("labjackud")
         if sys.platform.startswith("cygwin"):
             #Cygwin detected. WinDLL not available, but CDLL seems to work.
-            wlib = ctypes.CDLL("labjackud")
+            wlib = ctypes.CDLL("labjackud.dll")
         if wlib is not None:
             try:
                 wlib.eGetPtr
