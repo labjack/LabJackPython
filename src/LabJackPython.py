@@ -9,7 +9,7 @@ inherit from.
 
 A typical user should start with their device's module, such as u3.py.
 """
-# We use the 'with' keyword to manage the thread-safe device lock. 
+# We use the 'with' keyword to manage the thread-safe device lock.
 # It's built-in on 2.6; 2.5 requires an import.
 from __future__ import with_statement
 
@@ -51,7 +51,7 @@ class LabJackException(Exception):
     WINDOWS ONLY
     If errorString is not specified then errorString is set by errorCode.
     """
-    def __init__(self, ec = 0, errorString = ''):
+    def __init__(self, ec=0, errorString=''):
         self.errorCode = ec
         self.errorString = errorString
 
@@ -64,7 +64,7 @@ class LabJackException(Exception):
                 self.errorString = str(self.errorCode)
 
     def __str__(self):
-          return self.errorString
+        return self.errorString
 
 
 class LowlevelErrorException(LabJackException):
@@ -82,8 +82,8 @@ def errcheck(ret, func, args):
     """
     Whenever a function is called through ctypes, the return value is passed to
     this function to be checked for errors.
-    
-    Support for errno didn't come until 2.6, so Python 2.5 people should 
+
+    Support for errno didn't come until 2.6, so Python 2.5 people should
     upgrade.
     """
     if ret == -1:
@@ -179,7 +179,7 @@ except LabJackException:
 
 class Device(object):
     """Device(handle, localId = None, serialNumber = None, ipAddress = "", devType = None)
-            
+
     Creates a simple 0 with the following functions:
     write(writeBuffer) -- Writes a buffer.
     writeRegister(addr, value) -- Writes a value to a modbus register
@@ -189,7 +189,7 @@ class Device(object):
     close() -- Closes the device.
     reset() -- Resets the device.
     """
-    def __init__(self, handle, localId = None, serialNumber = None, ipAddress = "", devType = None):
+    def __init__(self, handle, localId=None, serialNumber=None, ipAddress="", devType=None):
         # Not saving the handle as a void* causes many problems on 64-bit machines.
         if isinstance(handle, int):
             self.handle = ctypes.c_void_p(handle)
@@ -207,48 +207,48 @@ class Device(object):
         self.modbusPrependZeros = True
         self.deviceLock = threading.Lock()
         self.deviceName = "LabJack"
-        
+
 
     def _writeToLJSocketHandle(self, writeBuffer, modbus):
         #if modbus is True and self.modbusPrependZeros:
         #        writeBuffer = [ 0, 0 ] + writeBuffer
-            
+
         packFormat = "B" * len(writeBuffer)
         tempString = pack(packFormat, *writeBuffer)
-        
+
         if modbus:
             self.handle.modbusSocket.send(tempString)
         else:
             self.handle.crSocket.send(tempString)
-        
+
         return writeBuffer
 
     def _writeToUE9TCPHandle(self, writeBuffer, modbus):
         packFormat = "B" * len(writeBuffer)
         tempString = pack(packFormat, *writeBuffer)
-        
+
         if modbus is True:
             if self.handle.modbus is None:
                 raise LabJackException("Modbus port is not available.  Please upgrade to UE9 Comm firmware 1.43 or higher.")
             self.handle.modbus.send(tempString)
         else:
             self.handle.data.send(tempString)
-        
+
         return writeBuffer
 
     def _writeToExodriver(self, writeBuffer, modbus):
         if modbus is True and self.modbusPrependZeros:
-            writeBuffer = [ 0, 0 ] + writeBuffer
-        
-        newA = (ctypes.c_byte*len(writeBuffer))(0) 
+            writeBuffer = [0, 0] + writeBuffer
+
+        newA = (ctypes.c_byte*len(writeBuffer))(0)
         for i in range(len(writeBuffer)):
             newA[i] = ctypes.c_byte(writeBuffer[i])
-        
+
         writeBytes = staticLib.LJUSB_Write(self.handle, ctypes.byref(newA), len(writeBuffer))
-        
+
         if writeBytes != len(writeBuffer):
-            raise LabJackException( "Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
-            
+            raise LabJackException("Could only write %s of %s bytes." % (writeBytes, len(writeBuffer)))
+
         return writeBuffer
 
     def _writeToUDDriver(self, writeBuffer, modbus):
@@ -269,10 +269,10 @@ class Device(object):
 
         return writeBuffer
 
-    def write(self, writeBuffer, modbus = False, checksum = True):
+    def write(self, writeBuffer, modbus=False, checksum=True):
         """write([writeBuffer], modbus = False)
 
-        Writes the data contained in writeBuffer to the device.  writeBuffer must be a list of 
+        Writes the data contained in writeBuffer to the device.  writeBuffer must be a list of
         byte values.
         """
         if self.handle is None:
@@ -290,11 +290,11 @@ class Device(object):
                 wb = self._writeToExodriver(writeBuffer, modbus)
             elif _os_name == 'nt':
                 wb = self._writeToUDDriver(writeBuffer, modbus)
-        
+
         if self.debug:
             print("Sent: " + hexWithoutQuotes(wb))
 
-    def read(self, numBytes, stream = False, modbus = False):
+    def read(self, numBytes, stream = False, modbus=False):
         """read(numBytes, stream = False, modbus = False)
 
         Blocking read until a packet is received. Returns a list of
@@ -317,7 +317,7 @@ class Device(object):
 
         return result
 
-    def _readFromLJSocketHandle(self, numBytes, modbus, spont = False):
+    def _readFromLJSocketHandle(self, numBytes, modbus, spont=False):
         """
         Reads from LJSocket. Returns the result as a list.
         """
@@ -350,7 +350,7 @@ class Device(object):
 
     def _readFromExodriver(self, numBytes, stream, modbus):
         newA = (ctypes.c_byte*numBytes)()
-        
+
         if stream:
             readBytes = staticLib.LJUSB_Stream(self.handle, ctypes.byref(newA), numBytes)
             if readBytes == 0:
@@ -386,7 +386,7 @@ class Device(object):
             return eGetRaw(self.handle, LJ_ioRAW_IN, 1, numBytes, tempBuff)[1]
         return eGetRaw(self.handle, LJ_ioRAW_IN, 0, numBytes, tempBuff)[1]
 
-    def readRegister(self, addr, numReg = None, format = None, unitId = None):
+    def readRegister(self, addr, numReg = None, format = None, unitId=None):
         """Reads a specific register from the device and returns the value.
         Requires Modbus.py
 
@@ -412,12 +412,12 @@ class Device(object):
         """
         # Calculates the number of registers for that request, or if numReg is
         # specified, checks that it is a valid number.
-        numReg = Modbus.calcNumberOfRegisters(addr, numReg = numReg)
-        pkt = toList(Modbus.readHoldingRegistersRequest(addr, numReg = numReg, unitId = unitId))
+        numReg = Modbus.calcNumberOfRegisters(addr, numReg=numReg)
+        pkt = toList(Modbus.readHoldingRegistersRequest(addr, numReg = numReg, unitId=unitId))
         numBytes = 9 + (2 * int(numReg))
         return (pkt, numBytes)
 
-    def _parseReadRegisterResponse(self, response, numBytes, addr, format, numReg = None):
+    def _parseReadRegisterResponse(self, response, numBytes, addr, format, numReg=None):
         """
         self._parseReadRegisterReponse(reponse, numBytes, addr, format)
 
@@ -438,7 +438,7 @@ class Device(object):
         value = Modbus.readHoldingRegistersResponse(response, payloadFormat=format)
         return value
 
-    def writeRegister(self, addr, value, unitId = None):
+    def writeRegister(self, addr, value, unitId=None):
         """
         Writes a value to a register. Returns the value to be written, if successful.
         Requires Modbus.py
@@ -474,7 +474,7 @@ class Device(object):
         numBytes = 12
         return request, numBytes
 
-    def _buildWriteFloatToRegister(self, addr, value, unitId, fmt = '>f'):
+    def _buildWriteFloatToRegister(self, addr, value, unitId, fmt='>f'):
         if not isinstance(value, int) and not isinstance(value, float):
             raise TypeError("Value must be a float or int.")
 
@@ -487,7 +487,7 @@ class Device(object):
         numBytes = 12
         return (request, numBytes)
 
-    def _buildWriteMultipleRegisters(self, startAddr, values, unitId = None):
+    def _buildWriteMultipleRegisters(self, startAddr, values, unitId=None):
         request = toList(Modbus.writeRegistersRequest(startAddr, values, unitId))
         numBytes = 12
         return (request, numBytes)
@@ -538,23 +538,23 @@ class Device(object):
         elif not verifyChecksum(results):
             raise LabJackException("Checksum was incorrect.")
         elif results[6] != 0:
-            raise LowlevelErrorException(results[6], "\nThe %s returned an error:\n    %s" % (self.deviceName , lowlevelErrorToString(results[6])) )
-    
-    def _writeRead(self, command, readLen, commandBytes, checkBytes = True, stream=False, checksum = True):
-    
+            raise LowlevelErrorException(results[6], "\nThe %s returned an error:\n    %s" % (self.deviceName , lowlevelErrorToString(results[6])))
+
+    def _writeRead(self, command, readLen, commandBytes, checkBytes=True, stream=False, checksum=True):
+
         # Acquire the device lock.
         with self.deviceLock:
             self.write(command, checksum = checksum)
-            
+
             result = self.read(readLen, stream=False)
             if self.debug:
                 print("Response: " + hexWithoutQuotes(result))
             if checkBytes:
                 self._checkCommandBytes(result, commandBytes)
-                        
+
             return result
-    
-    
+
+
     def ping(self):
         try:
             if self.devType == LJ_dtUE9:
@@ -566,7 +566,7 @@ class Device(object):
                     self.write(writeBuffer)
                     self.read(2)
                 return True
-            
+
             if self.devType == LJ_dtU3:
                 writeBuffer = [0, 0xf8, 0x01, 0x2a, 0, 0, 0, 0]
                 writeBuffer = setChecksum(writeBuffer)
@@ -579,26 +579,26 @@ class Device(object):
             e = sys.exc_info()[1]
             print(e)
             return False
-        
 
-    def open(self, devType, Ethernet=False, firstFound = True, serial = None, localId = None, devNumber = None, ipAddress = None, handleOnly = False, LJSocket = None):
+
+    def open(self, devType, Ethernet=False, firstFound=True, serial=None, localId=None, devNumber=None, ipAddress=None, handleOnly=False, LJSocket=None):
         """
         Device.open(devType, Ethernet=False, firstFound = True, serial = None, localId = None, devNumber = None, ipAddress = None, handleOnly = False, LJSocket = None)
-        
-        Open a device of type devType. 
+
+        Open a device of type devType.
         """
-        
+
         if self.handle is not None:
             raise LabJackException(9000,"Open called on a device with a handle. Please close the device, and try again. Your device is probably already open.\nLook for lines of code that look like this:\nd = u3.U3()\nd.open() # Wrong! Device is already open.")
-        
+
         ct = LJ_ctUSB
-        
+
         if Ethernet:
             ct = LJ_ctETHERNET
-        
+
         if LJSocket is not None:
             ct = LJ_ctLJSOCKET
-        
+
         d = None
         if devNumber:
             d = openLabJack(devType, ct, firstFound = False, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket)
@@ -614,19 +614,19 @@ class Device(object):
             d = openLabJack(devType, ct, firstFound = True, handleOnly = handleOnly, LJSocket = LJSocket)
         else:
             raise LabJackException("You must use first found, or give a localId, devNumber, or IP Address")
-        
+
         self.handle = d.handle
-        
+
         if not handleOnly:
             self._loadChangedIntoSelf(d)
-            
+
         self._registerAtExitClose()
-                    
+
 
     def _loadChangedIntoSelf(self, d):
         for key, value in d.changed.items():
             self.__setattr__(key, value)
-            
+
     def _registerAtExitClose(self):
         if not self._autoCloseSetup:
             # Only need to register auto-close once per device.
@@ -659,23 +659,23 @@ class Device(object):
         Reset the LabJack device.
 
         For Windows, Linux, and Mac
-    
+
         Sample Usage:
-    
+
         >>> d = ue9.UE9()
         >>> d.reset()
 
         @type  None
         @param Function takes no arguments
-        
+
         @rtype: None
         @return: Function returns nothing.
-            
+
         @raise LabJackException:
         """
         if _os_name == 'nt':
             ec = staticLib.ResetLabJack(self.handle)
-    
+
             if ec != 0: raise LabJackException(ec)
         elif _os_name == 'posix':
             sndDataBuff = [0] * 4
@@ -684,7 +684,7 @@ class Device(object):
             sndDataBuff[0] = 0x9C #Checksum
             sndDataBuff[1] = 0x99
             sndDataBuff[2] = 0x03
-            
+
             try:
                 self._writeRead(sndDataBuff, 4, [], False, False, False)
             except Exception:
@@ -717,7 +717,7 @@ class Device(object):
         Args: packet, a packet of stream data
         Desc: This function breaks a packet into all the two byte samples it
               contains and returns them one at a time.
-        
+
         >>> packet = range(16) # fake packet with 1 sample in it
         >>> for sample in d.samplesFromPacket(packet):
         ...     print(sample)
@@ -832,14 +832,14 @@ class Device(object):
               U6 - 1.00
               U3 - 1.22
               UE9 - 2.00
-        
+
         >>> d = u3.U3()
         >>> d.open()
         >>> d.getName()
         u'My LabJack U3'
         """
         name = list(self.readRegister(58000, format='B'*48, numReg = 24))
-        
+
         if name[1] == 3:
             # Old style string
             name = "My %s" % self.deviceName
@@ -857,10 +857,10 @@ class Device(object):
                     print("Invalid name detected, replacing with %s" % name)
                 self.setName(name)
                 name = name.decode("UTF-8")
-        
+
         return name
-        
-    def setName(self, name = "My LabJack U3"):
+
+    def setName(self, name="My LabJack U3"):
         """
         Name: Device.setName(name = "My LabJack U3")
         Args: name, the name you'd like to assign the the U3
@@ -870,7 +870,7 @@ class Device(object):
               U6 - 1.00
               U3 - 1.22
               UE9 - 2.00
-        
+
         >>> d = u3.U3()
         >>> d.open()
         >>> d.getName()
@@ -880,37 +880,37 @@ class Device(object):
         u'Johann'
         """
         strLen = len(name)
-        
+
         if strLen > 47:
             raise LabJackException("The name is too long, must be less than 48 characters.")
-        
+
         newname = name.encode('UTF-8')
         bl = list(unpack("B"*strLen, newname)) + [0x00]
         strLen += 1
-        
+
         if strLen%2 != 0:
             bl = bl + [0x00]
             strLen += 1
-        
+
         bl = unpack(">"+"H"*(strLen/2), pack("B" * strLen, *bl))
-        
+
         self.writeRegister(58000, list(bl))
 
     name = property(getName, setName)
 
-    def setDefaults(self, SetToFactoryDefaults = False):
+    def setDefaults(self, SetToFactoryDefaults=False):
         """
-        Name: Device.setDefaults(SetToFactoryDefaults = False)
+        Name: Device.setDefaults(SetToFactoryDefaults=False)
         Args: SetToFactoryDefaults, set to True reset to factory defaults.
         Desc: Executing this function causes the current or last used values
               (or the factory defaults) to be stored in flash as the power-up
               defaults.
-        
+
         >>> myU6 = U6()
         >>> myU6.setDefaults()
         """
-        command = [ 0 ] * 8
-        
+        command = [0] * 8
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x01
@@ -919,52 +919,52 @@ class Device(object):
         #command[5] = Checksum16 (MSB)
         command[6] = 0xBA
         command[7] = 0x26
-        
+
         if SetToFactoryDefaults:
             command[6] = 0x82
             command[7] = 0xC7
-        
-        self._writeRead(command, 8, [ 0xF8, 0x01, 0x0E ] )
-        
+
+        self._writeRead(command, 8, [0xF8, 0x01, 0x0E] )
+
     def setToFactoryDefaults(self):
-        return self.setDefaults(SetToFactoryDefaults = True)
-    
+        return self.setDefaults(SetToFactoryDefaults=True)
+
     validDefaultBlocks = range(8)
-    def readDefaults(self, BlockNum, ReadCurrent = False):
+    def readDefaults(self, BlockNum, ReadCurrent=False):
         """
         Name: Device.readDefaults(BlockNum)
         Args: BlockNum, which block to read. Must be 0-7.
               ReadCurrent, True = read current configuration
         Desc: Reads the power-up defaults from flash.
-        
+
         >>> myU6 = U6()
         >>> myU6.readDefaults(0)
-        [ 0, 0, ... , 0]        
+        [ 0, 0, ... , 0]
         """
         if BlockNum not in self.validDefaultBlocks:
             raise LabJackException("Defaults must be in range 0-7")
-        
+
         byte7 = (int(bool(ReadCurrent)) << 7) + BlockNum
-        
-        command = [ 0, 0xF8, 0x01, 0x0E, 0, 0, 0, byte7 ]
-        
-        result = self._writeRead(command, 40, [ 0xF8, 0x11, 0x0E ])
-        
+
+        command = [0, 0xF8, 0x01, 0x0E, 0, 0, 0, byte7]
+
+        result = self._writeRead(command, 40, [0xF8, 0x11, 0x0E])
+
         return result[8:]
-        
+
     def readCurrent(self, BlockNum):
-        self.readDefaults(BlockNum, ReadCurrent = True)
-        
+        self.readDefaults(BlockNum, ReadCurrent=True)
+
     def loadGenericDevice(self, device):
         """ Take a generic Device object, and loads it into the current object.
             The generic Device is consumed in the process.
         """
         self.handle = device.handle
-        
+
         self._loadChangedIntoSelf(device)
-        
+
         self._registerAtExitClose()
-        
+
         device = None
 
 # --------------------- BEGIN LabJackPython ---------------------------------
@@ -973,9 +973,9 @@ def setChecksum(command):
     """Returns a command with checksums places in the proper locations
 
     For Windows, Mac, and Linux
-    
+
     Sample Usage:
-    
+
     >>> from LabJackPython import setChecksum
     >>> command = [0] * 12
     >>> command[1] = 0xf8
@@ -990,16 +990,16 @@ def setChecksum(command):
 
     @rtype: List
     @return: A command list with checksums in the proper locations.
-    """  
-    
+    """
+
     if len(command) < 6:
         raise LabJackException("Command does not contain enough bytes.")
-    
-    try:        
+
+    try:
         a = command[1]
-        
+
         a = (a & 0x78) >> 3
-        
+
         #Check if the command is an extended command
         if a == 15:
             command = setChecksum16(command)
@@ -1020,13 +1020,13 @@ def setChecksum(command):
 def verifyChecksum(buffer):
     """Verifies the checksum of a given buffer using the traditional U3/UE9 Command Structure.
     """
-    
+
     buff0 = buffer[0]
     buff4 = buffer[4]
     buff5 = buffer[5]
 
     tempBuffer = setChecksum(buffer)
-    
+
     if (buff0 == tempBuffer[0]) and (buff4 == tempBuffer[4]) \
     and (buff5 == tempBuffer[5]):
         return True
@@ -1034,7 +1034,7 @@ def verifyChecksum(buffer):
     return False
 
 # 1 = LJ_ctUSB
-def listAll(deviceType, connectionType = 1):
+def listAll(deviceType, connectionType=1):
     """listAll(deviceType, connectionType) -> [[local ID, Serial Number, IP Address], ...]
 
     Searches for all devices of a given type over a given connection
@@ -1050,7 +1050,7 @@ def listAll(deviceType, connectionType = 1):
         serverSocket.connect((ipAddress, port))
         serverSocket.settimeout(10)
 
-        f = serverSocket.makefile(bufsize = 0)
+        f = serverSocket.makefile(bufsize=0)
         f.write("scan\r\n")
 
         l = f.readline().strip()
@@ -1118,7 +1118,7 @@ def listAll(deviceType, connectionType = 1):
         ec = staticLib.ListAll(deviceType, connectionType,
                               ctypes.byref(pNumFound),
                               ctypes.cast(pSerialNumbers, ctypes.POINTER(ctypes.c_long)),
-                              ctypes.cast(pIDs, ctypes.POINTER(ctypes.c_long)), 
+                              ctypes.cast(pIDs, ctypes.POINTER(ctypes.c_long)),
                               ctypes.cast(pAddresses, ctypes.POINTER(ctypes.c_long)))
         if ec != 0 and ec != 1010:
             raise LabJackException(ec)
@@ -1254,25 +1254,25 @@ def _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber):
         if handle <= 0:
             raise NullHandleException()
         return handle
-    else:      
+    else:
         numDevices = staticLib.LJUSB_GetDevCount(deviceType)
-        
+
         for i in range(numDevices):
             handle = openDev(i + 1, 0, devType)
-            
+
             try:
                 if handle <= 0:
                     raise NullHandleException()
                 device = _makeDeviceFromHandle(handle, deviceType)
             except:
                 continue
-            
+
             if device.localId == pAddress or device.serialNumber == pAddress or device.ipAddress == pAddress:
                 return device
             else:
                 device.close()
-        
-    raise LabJackException(LJE_LABJACK_NOT_FOUND) 
+
+    raise LabJackException(LJE_LABJACK_NOT_FOUND)
 
 def _openUE9OverEthernet(firstFound, pAddress, devNumber):
     if firstFound is not True and pAddress is not None:
@@ -1318,12 +1318,12 @@ def _openUE9OverEthernet(firstFound, pAddress, devNumber):
                 ipAddress = ""
                 for j in range(13, 9, -1):
                     ipAddress += str(int(rcvDataBuff[j]))
-                    ipAddress += "." 
+                    ipAddress += "."
                 ipAddress = ipAddress[0:-1]
 
                 #Local ID
                 localId = rcvDataBuff[8] & 0xff
-                
+
                 # Check if we have found the device we are looking for.
                 # pAddress represents either Local ID, Serial Number, or the
                 # IP Address. This is so there are no conflicting identifiers.
@@ -1332,7 +1332,7 @@ def _openUE9OverEthernet(firstFound, pAddress, devNumber):
                 or pAddress in [localId, serialNumber, ipAddress]:
                     handle = UE9TCPHandle(ipAddress)
                     return handle
-                
+
                 count += 1
             else:
                 # Got a bad checksum.
@@ -1347,7 +1347,7 @@ def _openUE9OverEthernet(firstFound, pAddress, devNumber):
 def openLabJack(deviceType, connectionType, firstFound = True, pAddress = None, devNumber = None, handleOnly = False, LJSocket = None):
     """openLabJack(deviceType, connectionType, firstFound = True, pAddress = 1, LJSocket = None)
 
-    Note: On Windows, UE9 over Ethernet, pAddress MUST be the IP address. 
+    Note: On Windows, UE9 over Ethernet, pAddress MUST be the IP address.
     """
     handle = None
 
@@ -1515,34 +1515,34 @@ def _makeDeviceFromHandle(handle, deviceType):
 #Windows
 def AddRequest(Handle, IOType, Channel, Value, x1, UserData):
     """AddRequest(handle, ioType, channel, value, x1, userData)
-        
+
     Windows Only
     """
     if _os_name == 'nt':
         v = ctypes.c_double(Value)
         ud = ctypes.c_double(UserData)
-        
+
         ec = staticLib.AddRequest(Handle, IOType, Channel, v, x1, ud)
         if ec != 0: raise LabJackException(ec)
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 
 #Windows
 def AddRequestS(Handle, pIOType, Channel, Value, x1, UserData):
     """Add a request to the LabJackUD request stack
-    
+
     For Windows
-    
+
     Sample Usage to get the AIN value from channel 0:
-    
+
     >>> u3Handle = OpenLabJack(LJ_dtU3, LJ_ctUSB, "0", 1)
     >>> AddRequestS(u3Handle,"LJ_ioGET_AIN", 0, 0.0, 0, 0.0)
     >>> Go()
     >>> value = GetResult(u3Handle, LJ_ioGET_AIN, 0)
     >>> print("Value: " + str(value))
     Value: 0.366420765873
-    
+
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
     @type  IOType: String
@@ -1555,37 +1555,37 @@ def AddRequestS(Handle, pIOType, Channel, Value, x1, UserData):
     @param x1: Used for some requests
     @type  UserData: number
     @param UserData: Used for some requests
-    
+
     @rtype: None
     @return: Function returns nothing.
-    
+
     @raise LabJackException:
     """
     if _os_name == 'nt':
         v = ctypes.c_double(Value)
         ud = ctypes.c_double(UserData)
-        
+
         ec = staticLib.AddRequestS(Handle, pIOType, Channel, v, x1, ud)
 
         if ec != 0: raise LabJackException(ec)
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 #Windows
 def AddRequestSS(Handle, pIOType, pChannel, Value, x1, UserData):
     """Add a request to the LabJackUD request stack
-    
+
     For Windows
-    
+
     Sample Usage to get the AIN value from channel 0:
-    
+
     >>> u3Handle = OpenLabJack(LJ_dtU3, LJ_ctUSB, "0", 1)
     >>> AddRequestSS(u3Handle,"LJ_ioGET_CONFIG", "LJ_chFIRMWARE_VERSION", 0.0, 0, 0.0)
     >>> Go()
     >>> value = GetResultS(u3Handle, "LJ_ioGET_CONFIG", LJ_chFIRMWARE_VERSION)
     >>> print("Value: " + str(value))
     Value: 1.27
-    
+
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
     @type  IOType: String
@@ -1598,71 +1598,71 @@ def AddRequestSS(Handle, pIOType, pChannel, Value, x1, UserData):
     @param x1: Used for some requests
     @type  UserData: number
     @param UserData: Used for some requests
-    
+
     @rtype: None
     @return: Function returns nothing.
-    
+
     @raise LabJackException:
     """
-    if _os_name == 'nt':      
+    if _os_name == 'nt':
         v = ctypes.c_double(Value)
         ud = ctypes.c_double(UserData)
-        
+
         ec = staticLib.AddRequestSS(Handle, pIOType, pChannel, v, x1, ud)
 
         if ec != 0: raise LabJackException(ec)
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 #Windows
 def Go():
     """Complete all requests currently on the LabJackUD request stack
 
     For Windows Only
-    
+
     Sample Usage:
-    
+
     >>> u3Handle = OpenLabJack(LJ_dtU3, LJ_ctUSB, "0", 1)
     >>> AddRequestSS(u3Handle,"LJ_ioGET_CONFIG", "LJ_chFIRMWARE_VERSION", 0.0, 0, 0.0)
     >>> Go()
     >>> value = GetResultS(u3Handle, "LJ_ioGET_CONFIG", LJ_chFIRMWARE_VERSION)
     >>> print("Value: " + str(value))
     Value: 1.27
-    
+
     @rtype: None
     @return: Function returns nothing.
-    
+
     @raise LabJackException:
     """
-    
+
     if _os_name == 'nt':
         ec = staticLib.Go()
 
         if ec != 0: raise LabJackException(ec)
     else:
-       raise LabJackException("Function only supported for Windows")
+        raise LabJackException("Function only supported for Windows")
 
 #Windows
 def GoOne(Handle):
     """Performs the next request on the LabJackUD request stack
-    
+
     For Windows Only
-    
+
     Sample Usage:
-    
+
     >>> u3Handle = OpenLabJack(LJ_dtU3, LJ_ctUSB, "0", 1)
     >>> AddRequestSS(u3Handle,"LJ_ioGET_CONFIG", "LJ_chFIRMWARE_VERSION", 0.0, 0, 0.0)
     >>> GoOne(u3Handle)
     >>> value = GetResultS(u3Handle, "LJ_ioGET_CONFIG", LJ_chFIRMWARE_VERSION)
     >>> print("Value: " + str(value))
     Value: 1.27
-    
+
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
-    
+
     @rtype: None
     @return: Function returns nothing.
-    
+
     @raise LabJackException:
     """
     if _os_name == 'nt':
@@ -1670,21 +1670,21 @@ def GoOne(Handle):
 
         if ec != 0: raise LabJackException(ec)
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 #Windows
 def eGet(Handle, IOType, Channel, pValue, x1):
     """Perform one call to the LabJack Device
-    
+
     eGet is equivilent to an AddRequest followed by a GoOne.
-    
+
     For Windows Only
-    
+
     Sample Usage:
-    
+
     >>> eGet(u3Handle, LJ_ioGET_AIN, 0, 0, 0)
     0.39392614550888538
-    
+
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
     @type  IOType: number
@@ -1695,11 +1695,11 @@ def eGet(Handle, IOType, Channel, pValue, x1):
     @param Value: Used for some requests
     @type  x1: number
     @param x1: Used for some requests
-    
+
     @rtype: number
     @return: Returns the value requested.
         - value
-        
+
     @raise LabJackException:
     """
     if _os_name == 'nt':
@@ -1708,32 +1708,32 @@ def eGet(Handle, IOType, Channel, pValue, x1):
         ec = staticLib.eGet(Handle, IOType, Channel, ctypes.byref(pv), x1)
         #staticLib.eGet.argtypes = [ctypes.c_long, ctypes.c_long, ctypes.c_long, ctypes.c_double, ctypes.c_long]
         #ec = staticLib.eGet(Handle, IOType, Channel, pValue, x1)
-        
+
         if ec != 0: raise LabJackException(ec)
         #print("EGet:" + str(ppv))
         #print("Other:" + str(ppv.contents))
         return pv.value
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 
 #Windows
 #Raw method -- Used because x1 is an output
 def eGetRaw(Handle, IOType, Channel, pValue, x1):
     """Perform one call to the LabJack Device as a raw command
-    
+
     eGetRaw is equivilent to an AddRequest followed by a GoOne.
-    
+
     For Windows Only
-    
+
     Sample Usage (Calling a echo command):
-    
+
     >>> sendBuff = [0] * 2
     >>> sendBuff[0] = 0x70
     >>> sendBuff[1] = 0x70
     >>> eGetRaw(ue9Handle, LJ_ioRAW_OUT, 0, len(sendBuff), sendBuff)
     (2.0, [112, 112])
-    
+
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
     @type  IOType: number
@@ -1744,12 +1744,12 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
     @param Value: Length of the buffer.
     @type  x1: number
     @param x1: Buffer to send.
-    
+
     @rtype: Tuple
     @return: The tuple (numBytes, returnBuffer)
         - numBytes (number)
         - returnBuffer (List)
-        
+
     @raise LabJackException:
     """
     ec = 0
@@ -1762,14 +1762,14 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
         if IOType in digitalConst:
             ec = staticLib.eGet(Handle, IOType, Channel, ctypes.byref(pv), x1)
         else: #Otherwise as an array
-            
+
             try:
                 #Verify x1 is an array
                 if len(x1) < 1:
-                    raise LabJackException(0, "x1 is not a valid variable for the given IOType") 
+                    raise LabJackException(0, "x1 is not a valid variable for the given IOType")
             except Exception:
-                raise LabJackException(0, "x1 is not a valid variable for the given IOType")  
-            
+                raise LabJackException(0, "x1 is not a valid variable for the given IOType")
+
             #Initialize newA
             newA = None
             if type(x1[0]) == int:
@@ -1789,7 +1789,7 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
             else:
                 #Using eGet if eGetPtr is not available.
                 ec = staticLib.eGet(Handle, IOType, Channel, ctypes.byref(pv), ctypes.byref(newA))
-            
+
             if IOType == LJ_ioRAW_IN and Channel == 1:
                 # We return the raw byte string if we are streaming
                 x1 = pack('b' * len(x1), *newA)
@@ -1797,32 +1797,32 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
                 x1 = [0] * int(pv.value)
                 for i in range(len(x1)):
                     x1[i] = newA[i] & 0xff
-                
+
             else:
                 x1 = [0] * len(x1)
                 for i in range(len(x1)):
                     x1[i] = newA[i]
                     if x1Type == "int":
                         x1[i] = x1[i] & 0xff
-            
+
         if ec != 0: raise LabJackException(ec)
         return pv.value, x1
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 #Windows
 def eGetS(Handle, pIOType, Channel, pValue, x1):
     """Perform one call to the LabJack Device
-    
+
     eGet is equivilent to an AddRequest followed by a GoOne.
-    
+
     For Windows Only
-    
+
     Sample Usage:
-    
+
     >>> eGet(u3Handle, "LJ_ioGET_AIN", 0, 0, 0)
     0.39392614550888538
-    
+
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
     @type  pIOType: String
@@ -1833,11 +1833,11 @@ def eGetS(Handle, pIOType, Channel, pValue, x1):
     @param Value: Used for some requests
     @type  x1: number
     @param x1: Used for some requests
-    
+
     @rtype: number
     @return: Returns the value requested.
         - value
-        
+
     @raise LabJackException:
     """
     if _os_name == 'nt':
@@ -1847,21 +1847,21 @@ def eGetS(Handle, pIOType, Channel, pValue, x1):
         if ec != 0: raise LabJackException(ec)
         return pv.value
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 #Windows
 def eGetSS(Handle, pIOType, pChannel, pValue, x1):
     """Perform one call to the LabJack Device
-    
+
     eGet is equivilent to an AddRequest followed by a GoOne.
-    
+
     For Windows Only
-    
+
     Sample Usage:
-    
+
     >>> eGetSS(u3Handle,"LJ_ioGET_CONFIG", "LJ_chFIRMWARE_VERSION", 0, 0)
     1.27
-    
+
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
     @type  pIOType: String
@@ -1872,11 +1872,11 @@ def eGetSS(Handle, pIOType, pChannel, pValue, x1):
     @param Value: Used for some requests
     @type  x1: number
     @param x1: Used for some requests
-    
+
     @rtype: number
     @return: Returns the value requested.
         - value
-        
+
     @raise LabJackException:
     """
     if _os_name == 'nt':
@@ -1886,14 +1886,14 @@ def eGetSS(Handle, pIOType, pChannel, pValue, x1):
         if ec != 0: raise LabJackException(ec)
         return pv.value
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 
 #Windows
 #Not currently implemented
 def eGetRawS(Handle, pIOType, Channel, pValue, x1):
     """Function not yet implemented.
-    
+
     For Windows only.
     """
     pass
@@ -1901,20 +1901,20 @@ def eGetRawS(Handle, pIOType, Channel, pValue, x1):
 #Windows
 def ePut(Handle, IOType, Channel, Value, x1):
     """Put one value to the LabJack device
-    
+
     ePut is equivilent to an AddRequest followed by a GoOne.
-    
+
     For Windows Only
-    
+
     Sample Usage:
-    
+
     >>> u3Handle = OpenLabJack(LJ_dtU3, LJ_ctUSB, "0", 1)
     >>> eGet(u3Handle, LJ_ioGET_CONFIG, LJ_chLOCALID, 0, 0)
     0.0
     >>> ePut(u3Handle, LJ_ioPUT_CONFIG, LJ_chLOCALID, 8, 0)
     >>> eGet(u3Handle, LJ_ioGET_CONFIG, LJ_chLOCALID, 0, 0)
     8.0
-    
+
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
     @type  IOType: number
@@ -1925,10 +1925,10 @@ def ePut(Handle, IOType, Channel, Value, x1):
     @param Value: Used for some requests
     @type  x1: number
     @param x1: Used for some requests
-    
+
     @rtype: None
     @return: Function returns nothing.
-    
+
     @raise LabJackException:
     """
     if _os_name == 'nt':
@@ -1937,25 +1937,25 @@ def ePut(Handle, IOType, Channel, Value, x1):
 
         if ec != 0: raise LabJackException(ec)
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 #Windows
 def ePutS(Handle, pIOType, Channel, Value, x1):
     """Put one value to the LabJack device
-    
+
     ePut is equivilent to an AddRequest followed by a GoOne.
-    
+
     For Windows Only
-    
+
     Sample Usage:
-    
+
     >>> u3Handle = OpenLabJack(LJ_dtU3, LJ_ctUSB, "0", 1)
     >>> eGet(u3Handle, LJ_ioGET_CONFIG, LJ_chLOCALID, 0, 0)
     0.0
     >>> ePutS(u3Handle, "LJ_ioPUT_CONFIG", LJ_chLOCALID, 8, 0)
     >>> eGet(u3Handle, LJ_ioGET_CONFIG, LJ_chLOCALID, 0, 0)
     8.0
-    
+
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
     @type  IOType: String
@@ -1966,10 +1966,10 @@ def ePutS(Handle, pIOType, Channel, Value, x1):
     @param Value: Used for some requests
     @type  x1: number
     @param x1: Used for some requests
-    
+
     @rtype: None
     @return: Function returns nothing.
-    
+
     @raise LabJackException:
     """
     if _os_name == 'nt':
@@ -1978,25 +1978,25 @@ def ePutS(Handle, pIOType, Channel, Value, x1):
 
         if ec != 0: raise LabJackException(ec)
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 #Windows
 def ePutSS(Handle, pIOType, pChannel, Value, x1):
     """Put one value to the LabJack device
-    
+
     ePut is equivilent to an AddRequest followed by a GoOne.
-    
+
     For Windows Only
-    
+
     Sample Usage:
-    
+
     >>> u3Handle = OpenLabJack(LJ_dtU3, LJ_ctUSB, "0", 1)
     >>> eGet(u3Handle, LJ_ioGET_CONFIG, LJ_chLOCALID, 0, 0)
     0.0
     >>> ePutSS(u3Handle, "LJ_ioPUT_CONFIG", "LJ_chLOCALID", 8, 0)
     >>> eGet(u3Handle, LJ_ioGET_CONFIG, LJ_chLOCALID, 0, 0)
     8.0
-    
+
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
     @type  IOType: String
@@ -2007,10 +2007,10 @@ def ePutSS(Handle, pIOType, pChannel, Value, x1):
     @param Value: Used for some requests
     @type  x1: number
     @param x1: Used for some requests
-    
+
     @rtype: None
     @return: Function returns nothing.
-    
+
     @raise LabJackException:
     """
     if _os_name == 'nt':
@@ -2019,114 +2019,114 @@ def ePutSS(Handle, pIOType, pChannel, Value, x1):
 
         if ec != 0: raise LabJackException(ec)
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 #Windows
 def GetResult(Handle, IOType, Channel):
     """Put one value to the LabJack device
-    
+
     ePut is equivilent to an AddRequest followed by a GoOne.
-    
+
     For Windows Only
-    
+
     Sample Usage:
-    
+
     >>> u3Handle = OpenLabJack(LJ_dtU3, LJ_ctUSB, "0", 1)
     >>> AddRequestSS(u3Handle,"LJ_ioGET_CONFIG", "LJ_chFIRMWARE_VERSION", 0.0, 0, 0.0)
     >>> GoOne(u3Handle)
     >>> value = GetResult(u3Handle, LJ_ioGET_CONFIG, LJ_chFIRMWARE_VERSION)
     >>> print("Value: " + str(value))
     Value: 1.27
-    
+
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
     @type  IOType: number
     @param IOType: IO Request to the LabJack.
     @type  Channel: number
     @param Channel: Channel for the IO request.
-    
+
     @rtype: number
     @return: The value requested.
         - value
-        
+
     @raise LabJackException:
     """
     if _os_name == 'nt':
         pv = ctypes.c_double()
         ec = staticLib.GetResult(Handle, IOType, Channel, ctypes.byref(pv))
 
-        if ec != 0: raise LabJackException(ec)          
+        if ec != 0: raise LabJackException(ec)
         return pv.value
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 #Windows
 def GetResultS(Handle, pIOType, Channel):
     """Put one value to the LabJack device
-    
+
     ePut is equivilent to an AddRequest followed by a GoOne.
-    
+
     For Windows Only
-    
+
     Sample Usage:
-    
+
     >>> u3Handle = OpenLabJack(LJ_dtU3, LJ_ctUSB, "0", 1)
     >>> AddRequestSS(u3Handle,"LJ_ioGET_CONFIG", "LJ_chFIRMWARE_VERSION", 0.0, 0, 0.0)
     >>> GoOne(u3Handle)
     >>> value = GetResultS(u3Handle, "LJ_ioGET_CONFIG", LJ_chFIRMWARE_VERSION)
     >>> print("Value: " + str(value))
     Value: 1.27
-    
+
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
     @type  pIOType: String
     @param pIOType: IO Request to the LabJack.
     @type  Channel: number
     @param Channel: Channel for the IO request.
-    
+
     @rtype: number
     @return: The value requested.
         - value
-        
+
     @raise LabJackException:
     """
     if _os_name == 'nt':
         pv = ctypes.c_double()
         ec = staticLib.GetResultS(Handle, pIOType, Channel, ctypes.byref(pv))
 
-        if ec != 0: raise LabJackException(ec)          
+        if ec != 0: raise LabJackException(ec)
         return pv.value
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 #Windows
 def GetResultSS(Handle, pIOType, pChannel):
     """Put one value to the LabJack device
-    
+
     ePut is equivilent to an AddRequest followed by a GoOne.
-    
+
     For Windows Only
-    
+
     Sample Usage:
-    
+
     >>> u3Handle = OpenLabJack(LJ_dtU3, LJ_ctUSB, "0", 1)
     >>> AddRequestSS(u3Handle,"LJ_ioGET_CONFIG", "LJ_chFIRMWARE_VERSION", 0.0, 0, 0.0)
     >>> GoOne(u3Handle)
     >>> value = GetResultSS(u3Handle, "LJ_ioGET_CONFIG", "LJ_chFIRMWARE_VERSION")
     >>> print("Value:" + str(value))
     Value: 1.27
-    
+
     @type  Handle: number
     @param Handle: Handle to the LabJack device.
     @type  pIOType: String
     @param pIOType: IO Request to the LabJack.
     @type  Channel: String
     @param Channel: Channel for the IO request.
-    
+
     @rtype: number
     @return: The value requested.
         - value
-        
+
     @raise LabJackException:
     """
     if _os_name == 'nt':
@@ -2136,7 +2136,7 @@ def GetResultSS(Handle, pIOType, pChannel):
         if ec != 0: raise LabJackException(ec)
         return pv.value
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 #Windows
 def GetFirstResult(Handle):
@@ -2159,7 +2159,7 @@ def GetFirstResult(Handle):
     @param DeviceType: The LabJack device.
     @type  ConnectionType: number
     @param ConnectionType: The connection method (Ethernet/USB).
-    
+
     @rtype: Tuple
     @return: The tuple (ioType, channel, value, x1, userData)
         - ioType (number): The io of the result.
@@ -2167,23 +2167,23 @@ def GetFirstResult(Handle):
         - value (number): The requested result.
         - x1 (number):  Used only in certain requests.
         - userData (number): Used only in certain requests.
-        
-    @raise LabJackException: 
-    """   
-    if _os_name == 'nt':     
+
+    @raise LabJackException:
+    """
+    if _os_name == 'nt':
         pio = ctypes.c_long()
         pchan = ctypes.c_long()
         pv = ctypes.c_double()
         px = ctypes.c_long()
         pud = ctypes.c_double()
-        ec = staticLib.GetFirstResult(Handle, ctypes.byref(pio), 
-                                       ctypes.byref(pchan), ctypes.byref(pv), 
+        ec = staticLib.GetFirstResult(Handle, ctypes.byref(pio),
+                                       ctypes.byref(pchan), ctypes.byref(pv),
                                        ctypes.byref(px), ctypes.byref(pud))
 
-        if ec != 0: raise LabJackException(ec)          
+        if ec != 0: raise LabJackException(ec)
         return pio.value, pchan.value, pv.value, px.value, pud.value
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 #Windows
 def GetNextResult(Handle):
@@ -2206,7 +2206,7 @@ def GetNextResult(Handle):
     @param DeviceType: The LabJack device.
     @type  ConnectionType: number
     @param ConnectionType: The connection method (Ethernet/USB).
-    
+
     @rtype: Tuple
     @return: The tuple (ioType, channel, value, x1, userData)
         - ioType (number): The io of the result.
@@ -2214,43 +2214,43 @@ def GetNextResult(Handle):
         - value (number): The requested result.
         - x1 (number):  Used only in certain requests.
         - userData (number): Used only in certain requests.
-        
-    @raise LabJackException: 
-    """ 
+
+    @raise LabJackException:
+    """
     if _os_name == 'nt':
         pio = ctypes.c_long()
         pchan = ctypes.c_long()
         pv = ctypes.c_double()
         px = ctypes.c_long()
         pud = ctypes.c_double()
-        ec = staticLib.GetNextResult(Handle, ctypes.byref(pio), 
-                                       ctypes.byref(pchan), ctypes.byref(pv), 
+        ec = staticLib.GetNextResult(Handle, ctypes.byref(pio),
+                                       ctypes.byref(pchan), ctypes.byref(pv),
                                        ctypes.byref(px), ctypes.byref(pud))
 
-        if ec != 0: raise LabJackException(ec)          
+        if ec != 0: raise LabJackException(ec)
         return pio.value, pchan.value, pv.value, px.value, pud.value
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 #Windows
 def DoubleToStringAddress(number):
     """Converts a number (base 10) to an IP string.
-    
+
     For Windows
 
     Sample Usage:
 
     >>> DoubleToStringAddress(3232235985)
     '192.168.1.209'
-    
+
     @type  number: number
     @param number: Number to be converted.
-    
+
     @rtype: String
     @return: The IP string converted from the number (base 10).
-        
-    @raise LabJackException: 
-    """ 
+
+    @raise LabJackException:
+    """
     number = int(number)
     address = "%i.%i.%i.%i" % ((number >> 8*3 & 0xFF), (number >> 8*2 & 0xFF), (number >> 8 & 0xFF), (number & 0xFF))
     return address
@@ -2262,25 +2262,25 @@ def StringToDoubleAddress(pString):
 
     >>> StringToDoubleAddress("192.168.1.209")
     3232235985L
-    
+
     @type  pString: String
     @param pString: String to be converted.
-    
+
     @rtype: number
     @return: The number (base 10) that represents the IP string.
-        
-    @raise LabJackException: 
-    """  
+
+    @raise LabJackException:
+    """
     parts = pString.split('.')
-    
+
     if len(parts) is not 4:
         raise LabJackException(0, "IP address not correctly formatted")
-    
+
     try:
         value = (int(parts[0]) << 8*3) + (int(parts[1]) << 8*2) + (int(parts[2]) << 8) + int(parts[3])
     except ValueError:
         raise LabJackException(0, "IP address not correctly formatted")
-    
+
     return value
 
 #Windows
@@ -2293,10 +2293,10 @@ def StringToConstant(pString):
 
     >>> StringToConstant("LJ_dtU3")
     3
-    
+
     @type  pString: String
     @param pString: String to be converted.
-    
+
     @rtype: number
     @return: The number (base 10) that represents the LabJackUD string.
     """
@@ -2304,7 +2304,7 @@ def StringToConstant(pString):
         a = ctypes.create_string_buffer(pString, 256)
         return staticLib.StringToConstant(a)
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 
 # To hold all the error codes and what they mean:
@@ -2383,12 +2383,12 @@ def lowlevelErrorToString(errorcode):
     except KeyError:
         name = "UNKNOWN_ERROR"
         advice = "Unrecognized error code (%s)" % errorcode
-    
+
     if advice is not "":
         msg = "%s (%s)\n%s" % (name, errorcode, advice)
     else:
         msg = "%s (%s)" % (name, errorcode)
-        
+
     return msg
 
 #Windows
@@ -2401,10 +2401,10 @@ def ErrorToString(ErrorCode):
 
     >>> ErrorToString(1007)
     'LabJack not found'
-    
+
     @type  ErrorCode: number
     @param ErrorCode: Valid LabJackUD error code.
-    
+
     @rtype: String
     @return: The string that represents the valid LabJackUD error code
     """
@@ -2413,7 +2413,7 @@ def ErrorToString(ErrorCode):
         staticLib.ErrorToString(ctypes.c_long(ErrorCode), ctypes.byref(pString))
         return pString.value
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 #Windows, Linux, and Mac
 def GetDriverVersion():
@@ -2425,24 +2425,24 @@ def GetDriverVersion():
 
     >>> GetDriverVersion()
     2.64
-    
+
     >>> GetDriverVersion()
     Mac
-    
+
     @rtype: number/String
     @return: Value of the driver version as a String
         - For Mac machines the return type is "Mac"
         - For Windows and Linux systems the return type is a number that represents the driver version
     """
-    
-    if _os_name == 'nt':        
+
+    if _os_name == 'nt':
         staticLib.GetDriverVersion.restype = ctypes.c_float
         return str(staticLib.GetDriverVersion())
-        
+
     elif _os_name == 'posix':
         staticLib.LJUSB_GetLibraryVersion.restype = ctypes.c_float
         return "%.2f" % staticLib.LJUSB_GetLibraryVersion()
-        
+
 #Windows
 def TCVoltsToTemp(TCType, TCVolts, CJTempK):
     """Converts a thermo couple voltage reading to an appropriate temperature reading.
@@ -2453,32 +2453,32 @@ def TCVoltsToTemp(TCType, TCVolts, CJTempK):
 
     >>> TCVoltsToTemp(LJ_ttK, 0.003141592, 297.038889)
     373.13353222244825
-            
+
     @type  TCType: number
     @param TCType: The type of thermo couple used.
     @type  TCVolts: number
     @param TCVolts: The voltage reading from the thermo couple
     @type  CJTempK: number
     @param CJTempK: The cold junction temperature reading in Kelvin
-    
+
     @rtype: number
     @return: The thermo couples temperature reading
         - pTCTempK
-        
+
     @raise LabJackException:
     """
     if _os_name == 'nt':
         pTCTempK = ctypes.c_double()
-        ec = staticLib.TCVoltsToTemp(ctypes.c_long(TCType), ctypes.c_double(TCVolts), 
+        ec = staticLib.TCVoltsToTemp(ctypes.c_long(TCType), ctypes.c_double(TCVolts),
                                      ctypes.c_double(CJTempK), ctypes.byref(pTCTempK))
 
-        if ec != 0: raise LabJackException(ec)          
+        if ec != 0: raise LabJackException(ec)
         return pTCTempK.value
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 
-#Windows 
+#Windows
 def Close():
     """Resets the driver and closes all open handles.
 
@@ -2487,14 +2487,14 @@ def Close():
     Sample Usage:
 
     >>> Close()
-            
+
     @rtype: None
     @return: The function returns nothing.
-    """    
+    """
     if _os_name == 'nt':
         staticLib.Close()
     else:
-       raise LabJackException(0, "Function only supported for Windows")
+        raise LabJackException(0, "Function only supported for Windows")
 
 #Windows, Linux and Mac
 def DriverPresent():
@@ -2520,7 +2520,7 @@ def DriverPresent():
                 except:
                     return False
     return False
-        
+
 #Currently Windows only
 def U12DriverPresent():
     try:
@@ -2537,35 +2537,35 @@ def U12DriverPresent():
 
 #Windows only
 def LJHash(hashStr, size):
-    """An approximation of the md5 hashing algorithms.  
+    """An approximation of the md5 hashing algorithms.
 
     For Windows
-    
-    An approximation of the md5 hashing algorithm.  Used 
-    for authorizations on UE9 version 1.73 and higher and u3 
+
+    An approximation of the md5 hashing algorithm.  Used
+    for authorizations on UE9 version 1.73 and higher and u3
     version 1.35 and higher.
 
     @type  hashStr: String
     @param hashStr: String to be hashed.
     @type  size: number
     @param size: Amount of bytes to hash from the hashStr
-            
+
     @rtype: String
     @return: The hashed string.
-    """  
-    
+    """
+
     outBuff = (ctypes.c_char * 16)()
     retBuff = ''
-    
+
     ec = staticLib.LJHash(ctypes.cast(hashStr, ctypes.POINTER(ctypes.c_char)),
-                          size, 
-                          ctypes.cast(outBuff, ctypes.POINTER(ctypes.c_char)), 
+                          size,
+                          ctypes.cast(outBuff, ctypes.POINTER(ctypes.c_char)),
                           0)
     if ec != 0: raise LabJackException(ec)
 
     for i in range(16):
         retBuff += outBuff[i]
-        
+
     return retBuff
 
 def __listAllUE9Unix(connectionType):
@@ -2577,12 +2577,12 @@ def __listAllUE9Unix(connectionType):
 
     if connectionType == LJ_ctUSB:
         numDevices = staticLib.LJUSB_GetDevCount(LJ_dtUE9)
-    
+
         for i in range(numDevices):
             try:
                 device = openLabJack(LJ_dtUE9, 1, firstFound = False, devNumber = i+1)
                 device.close()
-            
+
                 deviceList[str(device.serialNumber)] = device.__dict__
             except LabJackException:
                 pass
@@ -2624,7 +2624,7 @@ def __listAllUE9Unix(connectionType):
                         ipAddress = ""
                         for j in range(13, 9, -1):
                             ipAddress += str(int(rcvDataBuff[j]))
-                            ipAddress += "." 
+                            ipAddress += "."
                         ipAddress = ipAddress[0:-1]
 
                         #Local ID
@@ -2651,11 +2651,11 @@ def __listAllU3Unix():
         try:
             device = openLabJack(LJ_dtU3, 1, firstFound = False, devNumber = i+1)
             device.close()
-            
+
             deviceList[str(device.serialNumber)] = device.__dict__
         except LabJackException:
             pass
-        
+
 
     return deviceList
 
@@ -2669,7 +2669,7 @@ def __listAllU6Unix():
         try:
             device = openLabJack(LJ_dtU6, 1, firstFound = False, devNumber = i+1)
             device.close()
-        
+
             deviceList[str(device.serialNumber)] = device.__dict__
         except LabJackException:
             pass
@@ -2709,81 +2709,81 @@ class LJSocketHandle(object):
             serverSocket = socket.socket()
             serverSocket.connect((ipAddress, port))
             serverSocket.settimeout(SOCKET_TIMEOUT)
-            
+
             f = serverSocket.makefile(bufsize = 0)
             f.write("scan\r\n")
-            
+
             l = f.readline().strip()
             try:
                 status, numLines = l.split(' ')
             except ValueError:
                 raise Exception("Got invalid line from server: %s" % l)
-                
+
             if status.lower().startswith('ok'):
                 lines = []
                 marked = None
                 for i in range(int(numLines)):
                     l = f.readline().strip()
                     dev = parseline(l)
-                    
+
                     if devType == dev['prodId']:
                         lines.append(dev)
-                        
+
                         if not firstFound and (dev['localId'] == pAddress or dev['serial'] == pAddress):
-                            marked = dev                 
-                
+                            marked = dev
+
                 f.close()
                 serverSocket.close()
-                
+
                 #print("Result of scan:")
                 #print(lines)
-                
+
                 if firstFound and len(lines) > 0:
                     marked = lines[0]
                 elif marked is not None:
                     pass
                 else:
                     raise Exception("LabJack not found.")
-                    
+
                 if marked['crPort'] != 'x':
                     self.crSocket = socket.socket()
                     self.crSocket.connect((ipAddress, marked['crPort']))
                     self.crSocket.settimeout(LJSOCKET_TIMEOUT)
                 else:
                     self.crSocket = None
-                    
+
                 if marked['modbusPort'] != 'x':
                     self.modbusSocket = socket.socket()
                     self.modbusSocket.connect((ipAddress, marked['modbusPort']))
                     self.modbusSocket.settimeout(LJSOCKET_TIMEOUT)
                 else:
                     self.modbusSocket = None
-                    
+
                 if marked['spontPort'] != 'x':
                     self.spontSocket = socket.socket()
                     self.spontSocket.connect((ipAddress, marked['spontPort']))
                     self.spontSocket.settimeout(LJSOCKET_TIMEOUT)
                 else:
                     self.spontSocket = None
-                
+
             else:
                 raise Exception("Got an error from LJSocket. It said '%s'" % l)
-            
+
         except Exception:
             e = sys.exc_info()[1]
             raise LabJackException(ec = LJE_LABJACK_NOT_FOUND, errorString = "Couldn't connect to a LabJack at %s:%s. The error was: %s" % (ipAddress, port, str(e)))
-    
+
     def close(self):
         if self.crSocket is not None:
             self.crSocket.close()
-            
+
         if self.modbusSocket is not None:
             self.modbusSocket.close()
-            
+
         if self.spontSocket is not None:
             self.spontSocket.close()
 
-        
+
 def parseline(line):
     prodId, crPort, modbusPort, spontPort, localId, serial = line.split(' ')
     if not crPort.startswith('x'):
@@ -2792,7 +2792,7 @@ def parseline(line):
         modbusPort = int(modbusPort)
     if not spontPort.startswith('x'):
         spontPort = int(spontPort)
-    
+
     return { 'prodId' : int(prodId), 'crPort' : crPort, 'modbusPort' : modbusPort, 'spontPort' : spontPort, 'localId' : int(localId), 'serial' : int(serial)  }
 
 
@@ -2810,11 +2810,11 @@ class UE9TCPHandle(object):
             self.data = socket.socket()
             self.data.settimeout(timeout)
             self.data.connect((ipAddress, 52360))
-            
+
             self.stream = socket.socket()
             self.stream.settimeout(timeout)
             self.stream.connect((ipAddress, 52361))
-            
+
             try:
                 self.modbus = socket.socket()
                 self.modbus.settimeout(timeout)
@@ -2924,10 +2924,10 @@ LJ_ioGET_AIN_RANGE = 2001 # UE9 + U6
 LJ_ioPUT_ANALOG_ENABLE_BIT = 2013 # U3
 LJ_ioGET_ANALOG_ENABLE_BIT = 2014 # U3
 
-# sets or reads the analog or digital mode of the FIO and EIO pins. Channel is starting 
+# sets or reads the analog or digital mode of the FIO and EIO pins. Channel is starting
 # bit #, x1 is number of bits to read. The pins are set by passing a bitmask as a double
-# for the value.  The first bit of the int that the double represents will be the setting 
-# for the pin number sent into the channel variable. 
+# for the value.  The first bit of the int that the double represents will be the setting
+# for the pin number sent into the channel variable.
 LJ_ioPUT_ANALOG_ENABLE_PORT = 2015 # U3
 LJ_ioGET_ANALOG_ENABLE_PORT = 2016 # U3
 
@@ -2939,7 +2939,7 @@ LJ_ioGET_DIGITAL_BIT = 30 # UE9 + U3 + U6.  Changes direction of bit to input as
 LJ_ioGET_DIGITAL_BIT_DIR = 31 # U3 + U6
 LJ_ioGET_DIGITAL_BIT_STATE = 32 # does not change direction of bit, allowing readback of output
 
-# channel is starting bit #, x1 is number of bits to read 
+# channel is starting bit #, x1 is number of bits to read
 LJ_ioGET_DIGITAL_PORT = 35 # UE9 + U3 + U6.  Changes direction of bits to input as well.
 LJ_ioGET_DIGITAL_PORT_DIR = 36 # U3 + U6
 LJ_ioGET_DIGITAL_PORT_STATE = 37 # does not change direction of bits, allowing readback of output
@@ -3001,8 +3001,8 @@ LJ_ioTDAC_COMMUNICATION = 506 # UE9 + U3 + U6
 # 9       DAC1Enable      0          DAC1 disabled.
 # 10      FIOAnalog       0          FIO all digital.
 # 11      EIOAnalog       0          EIO all digital.
-# 
-# 
+#
+#
 # TimerClockConfig
 # Byte #
 # 8          TimerClockConfig          130      Set clock to 24 MHz.
@@ -3021,7 +3021,7 @@ LJ_ioRAWMB_OUT = 104 # Used with LJ_ctETHERNET_MB to send raw modbus commands to
 LJ_ioRAWMB_IN = 105
 
 # sets the default power up settings based on the current settings of the device AS THIS DLL KNOWS.  This last part
-# basically means that you should set all parameters directly through this driver before calling this.  This writes 
+# basically means that you should set all parameters directly through this driver before calling this.  This writes
 # to flash which has a limited lifetime, so do not do this too often.  Rated endurance is 20,000 writes.
 LJ_ioSET_DEFAULTS = 103 # U3
 
@@ -3047,12 +3047,12 @@ LJ_ioADD_STREAM_DAC = 207
 # new points arrive within 100ms.  Since there is this timeout, you still need to use GetResult() to determine if the timeout
 # occured.  If AllOrNone, you again need to check GetResult.
 
-# You can also retreive the entire scan by passing LJ_chALL_CHANNELS.  In this case, the Value determines the number of SCANS 
+# You can also retreive the entire scan by passing LJ_chALL_CHANNELS.  In this case, the Value determines the number of SCANS
 # returned, and therefore, the array must be 8 * number of scans requested * number of channels in each scan.  Likewise
 # GetResult() will return the number of scans, not the number of data points returned.
 
-# Note: data is stored interleaved across all streaming channels.  In other words, if you are streaming two channels, 0 and 1, 
-# and you request LJ_chALL_CHANNELS, you will get, Channel0, Channel1, Channel0, Channel1, etc.     Once you have requested the 
+# Note: data is stored interleaved across all streaming channels.  In other words, if you are streaming two channels, 0 and 1,
+# and you request LJ_chALL_CHANNELS, you will get, Channel0, Channel1, Channel0, Channel1, etc.     Once you have requested the
 # data, any data returned is removed from the internal buffer, and the next request will give new data.
 
 # Note: if reading the data channel by channel and not using LJ_chALL_CHANNELS, the data is not removed from the internal buffer
@@ -3073,7 +3073,7 @@ LJ_ioGET_STREAM_DATA = 204
 # Channel = 0 buzz for a count, Channel = 1 buzz continuous
 # Value is the Period
 # X1 is the toggle count when channel = 0
-LJ_ioBUZZER = 300 # U3 
+LJ_ioBUZZER = 300 # U3
 
 # config iotypes:
 LJ_ioPUT_CONFIG = 1000 # UE9 + U3 + U6
@@ -3099,7 +3099,7 @@ LJ_chDHCP = 7 # UE9
 LJ_chPRODUCTID = 8 # UE9
 LJ_chMACADDRESS = 9 # UE9
 LJ_chCOMM_FIRMWARE_VERSION = 11 # UE9
-LJ_chCONTROL_POWER_LEVEL = 13 # UE9 
+LJ_chCONTROL_POWER_LEVEL = 13 # UE9
 LJ_chCONTROL_FIRMWARE_VERSION = 14 # UE9 (Read Only)
 LJ_chCONTROL_BOOTLOADER_VERSION = 15 # UE9 (Read Only)
 LJ_chCONTROL_RESET_SOURCE = 16 # UE9 (Read Only)
@@ -3290,7 +3290,7 @@ LJ_tmRISINGEDGES16 = 12 # 16-bit rising to rising edge measurement
 LJ_tmFALLINGEDGES16 = 13 # 16-bit falling to falling edge measurement
 
 # timer clocks:
-LJ_tc750KHZ = 0 # UE9: 750 khz 
+LJ_tc750KHZ = 0 # UE9: 750 khz
 LJ_tcSYS = 1    # UE9: system clock
 
 LJ_tc2MHZ = 10       # U3: Hardware Version 1.20 or lower
@@ -3315,7 +3315,7 @@ LJ_swALL_OR_NONE = 2 # no wait, but if all points requested aren't available, re
 LJ_swPUMP = 11 # wait and pump the message pump.  Prefered when called from primary thread (if you don't know
                # if you are in the primary thread of your app then you probably are.  Do not use in worker
                # secondary threads (i.e. ones without a message pump).
-LJ_swSLEEP = 12 # wait by sleeping (don't do this in the primary thread of your app, or it will temporarily 
+LJ_swSLEEP = 12 # wait by sleeping (don't do this in the primary thread of your app, or it will temporarily
                 # hang)    This is usually used in worker secondary threads.
 
 
@@ -3379,7 +3379,7 @@ LJE_REQUEST_NOT_PROCESSED = 17 # When a LJE_AD_PIN_CONFIGURATION_ERROR occurs, a
 # U3 Specific Errors
 LJE_SCRATCH_ERROR = 19
 LJE_DATA_BUFFER_OVERFLOW = 20
-LJE_ADC0_BUFFER_OVERFLOW = 21 
+LJE_ADC0_BUFFER_OVERFLOW = 21
 LJE_FUNCTION_INVALID = 22
 LJE_SWDT_TIME_INVALID = 23
 LJE_FLASH_ERROR = 24
@@ -3472,7 +3472,7 @@ LJE_UNABLE_TO_READ_CALDATA = -2 # defaults used instead
 LJ_ioANALOG_INPUT = 10
 LJ_ioANALOG_OUTPUT = 20 # UE9 + U3
 LJ_ioDIGITAL_BIT_IN = 30 # UE9 + U3
-LJ_ioDIGITAL_PORT_IN = 35 # UE9 + U3 
+LJ_ioDIGITAL_PORT_IN = 35 # UE9 + U3
 LJ_ioDIGITAL_BIT_OUT = 40 # UE9 + U3
 LJ_ioDIGITAL_PORT_OUT = 45 # UE9 + U3
 LJ_ioCOUNTER = 50 # UE9 + U3
@@ -3480,8 +3480,8 @@ LJ_ioTIMER = 60 # UE9 + U3
 LJ_ioPUT_COUNTER_MODE = 2010 # UE9
 LJ_ioGET_COUNTER_MODE = 2011 # UE9
 LJ_ioGET_TIMER_VALUE = 2007 # UE9
-LJ_ioCYCLE_PORT = 102  # UE9 
-LJ_chTIMER_CLOCK_CONFIG = 1001 # UE9 + U3 
+LJ_ioCYCLE_PORT = 102  # UE9
+LJ_chTIMER_CLOCK_CONFIG = 1001 # UE9 + U3
 LJ_ioPUT_CAL_CONSTANTS = 400
 LJ_ioGET_CAL_CONSTANTS = 401
 LJ_ioPUT_USER_MEM = 402

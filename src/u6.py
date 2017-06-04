@@ -78,11 +78,11 @@ def toBitList(inbyte):
     Name: toBitList(inbyte)
     Args: a byte
     Desc: Converts a byte into list for access to individual bits
-    
+
     >>> inbyte = 5
     >>> toBitList(inbyte)
     [1, 0, 1, 0, 0, 0, 0, 0]
-    
+
     """
     return [ getBit(inbyte, b) for b in range(8) ]
 
@@ -101,7 +101,7 @@ class CalibrationInfo(object):
     def __init__(self):
         # A flag to tell difference between nominal and actual values.
         self.nominal = True
-    
+
         # Positive Channel calibration
         self.ain10vSlope = 3.1580578 * (10 ** -4)
         self.ain10vOffset = -10.5869565220
@@ -124,25 +124,25 @@ class CalibrationInfo(object):
         self.ain100mvCenter = 33523.0
         self.ain10mvNegSlope = -3.15805800 * (10 ** -7)
         self.ain10mvCenter = 33523.0
-        
+
         self.ainNegSlope = [self.ain10vNegSlope, self.ain1vNegSlope, self.ain100mvNegSlope, self.ain10mvNegSlope]
         self.ainCenter = [self.ain10vCenter, self.ain1vCenter, self.ain100mvCenter, self.ain10mvCenter]
-        
+
         # Miscellaneous
         self.dac0Slope = 13200.0
         self.dac0Offset = 0
         self.dac1Slope = 13200.0
         self.dac1Offset = 0
-        
+
         self.dacSlope = [self.dac0Slope, self.dac1Slope]
         self.dacOffset = [self.dac0Offset, self.dac1Offset]
 
         self.currentOutput0 = 0.0000100000
         self.currentOutput1 = 0.0002000000
-        
+
         self.temperatureSlope = -92.379
         self.temperatureOffset = 465.129
-        
+
         # Hi-Res ADC stuff
         # Positive Channel calibration
         self.proAin10vSlope = 3.1580578 * (10 ** -4)
@@ -153,10 +153,10 @@ class CalibrationInfo(object):
         self.proAin100mvOffset = -0.105869565220
         self.proAin10mvSlope = 3.1580578 * (10 ** -7)
         self.proAin10mvOffset = -0.0105869565220
-        
+
         self.proAinSlope = [self.proAin10vSlope, self.proAin1vSlope, self.proAin100mvSlope, self.proAin10mvSlope]
         self.proAinOffset = [self.proAin10vOffset, self.proAin1vOffset, self.proAin100mvOffset, self.proAin10mvOffset]
-        
+
         # Negative Channel calibration
         self.proAin10vNegSlope = -3.15805800 * (10 ** -4)
         self.proAin10vCenter = 33523.0
@@ -166,7 +166,7 @@ class CalibrationInfo(object):
         self.proAin100mvCenter = 33523.0
         self.proAin10mvNegSlope = -3.15805800 * (10 ** -7)
         self.proAin10mvCenter = 33523.0
-        
+
         self.proAinNegSlope = [self.proAin10vNegSlope, self.proAin1vNegSlope, self.proAin100mvNegSlope, self.proAin10mvNegSlope]
         self.proAinCenter = [self.proAin10vCenter, self.proAin1vCenter, self.proAin100mvCenter, self.proAin10mvCenter]
 
@@ -178,7 +178,7 @@ class CalibrationInfo(object):
 class U6(Device):
     """
     U6 Class for all U6 specific low-level commands.
-    
+
     Example:
     >>> import u6
     >>> d = u6.U6()
@@ -226,7 +226,7 @@ class U6(Device):
               handleOnly, if True, LabJackPython will only open a handle
               LJSocket, set to "<ip>:<port>" to connect to LJSocket
         Desc: Opens a U6 for reading and writing.
-        
+
         >>> myU6 = u6.U6(autoOpen = False)
         >>> myU6.open()
         """
@@ -260,10 +260,10 @@ class U6(Device):
         if LocalID is not None:
             command[6] = (1 << 3)
             command[8] = LocalID
-            
+
         #command[7] = Reserved
 
-        #command[9-25] = Reserved 
+        #command[9-25] = Reserved
         try:
             result = self._writeRead(command, 38, [0xF8, 0x10, 0x08])
         except LabJackException:
@@ -275,7 +275,7 @@ class U6(Device):
                 raise e
 
         self.firmwareVersion = "%s.%02d" % (result[10], result[9])
-        self.bootloaderVersion = "%s.%02d" % (result[12], result[11]) 
+        self.bootloaderVersion = "%s.%02d" % (result[12], result[11])
         self.hardwareVersion = "%s.%02d" % (result[14], result[13])
         self.serialNumber = unpack("<I", pack(">BBBB", *result[15:19]))[0]
         self.productId = unpack("<H", pack(">BB", *result[19:21]))[0]
@@ -297,11 +297,11 @@ class U6(Device):
               EnableCounter1, Set to True to enable counter 1, F to disable
               EnableCounter0, Set to True to enable counter 0, F to disable
               TimerCounterPinOffset, where should the timers/counters start
-              
+
               if all args are None, command just reads.
-              
+
         Desc: Writes and reads the current IO configuration.
-        
+
         >>> myU6 = u6.U6()
         >>> myU6.configIO()
         {'Counter0Enabled': False,
@@ -310,40 +310,40 @@ class U6(Device):
          'TimerCounterPinOffset': 0}
         """
         command = [ 0 ] * 16
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x05
         command[3] = 0x0B
         #command[4]  = Checksum16 (LSB)
         #command[5]  = Checksum16 (MSB)
-        
+
         if NumberTimersEnabled is not None:
             command[6] = 1
             command[7] = NumberTimersEnabled
-        
+
         if EnableCounter0 is not None:
             command[6] = 1
-            
+
             if EnableCounter0:
                 command[8] = 1
-        
+
         if EnableCounter1 is not None:
             command[6] = 1
-            
+
             if EnableCounter1:
                 command[8] |= (1 << 1)
-        
+
         if TimerCounterPinOffset is not None:
             command[6] = 1
             command[9] = TimerCounterPinOffset
-            
+
         if EnableUART is not None:
             command[6] |= 1
             command[6] |= (1 << 5)
-        
+
         result = self._writeRead(command, 16, [0xf8, 0x05, 0x0B])
-        
+
         return { 'NumberTimersEnabled' : result[8], 'Counter0Enabled' : bool(result[9] & 1), 'Counter1Enabled' : bool( (result[9] >> 1) & 1), 'TimerCounterPinOffset' : result[10] }
 
     def configTimerClock(self, TimerClockBase = None, TimerClockDivisor = None):
@@ -352,18 +352,18 @@ class U6(Device):
                                   TimerClockDivisor = None)
         Args: TimerClockBase, which timer base to use
               TimerClockDivisor, set the divisor
-              
+
               if all args are None, command just reads.
               Also, you cannot set the divisor without setting the base.
-              
+
         Desc: Writes and read the timer clock configuration.
-        
+
         >>> myU6 = u6.U6()
         >>> myU6.configTimerClock()
         {'TimerClockDivisor': 256, 'TimerClockBase': 2}
         """
         command = [ 0 ] * 10
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x02
@@ -372,16 +372,16 @@ class U6(Device):
         #command[5]  = Checksum16 (MSB)
         #command[6]  = Reserved
         #command[7]  = Reserved
-        
+
         if TimerClockBase is not None:
             command[8] = (1 << 7)
             command[8] |= TimerClockBase & 7
-        
+
         if TimerClockDivisor is not None:
             command[9] = TimerClockDivisor
-            
+
         result = self._writeRead(command, 10, [0xF8, 0x2, 0x0A])
-        
+
         divisor = result[9]
         if divisor == 0:
             divisor = 256
@@ -395,7 +395,7 @@ class U6(Device):
             elif isinstance(cmd, list):
                 sendBuffer, readLen = self._buildBuffer(sendBuffer, readLen, cmd)
         return (sendBuffer, readLen)
-                
+
     def _buildFeedbackResults(self, rcvBuffer, commandlist, results, i):
         for cmd in commandlist:
             if isinstance(cmd, FeedbackCommand):
@@ -411,7 +411,7 @@ class U6(Device):
         Args: the FeedbackCommands to run
         Desc: Forms the commandlist into a packet, sends it to the U6, and reads
               the response.
-        
+
         >>> myU6 = U6()
         >>> ledCommand = u6.LED(False)
         >>> internalTempCommand = u6.AIN(30, 31, True)
@@ -419,7 +419,7 @@ class U6(Device):
         [None, 23200]
 
         OR if you like the list version better:
-        
+
         >>> myU6 = U6()
         >>> ledCommand = u6.LED(False)
         >>> internalTempCommand = u6.AIN(30, 31, True)
@@ -435,22 +435,22 @@ class U6(Device):
         if len(sendBuffer) % 2:
             sendBuffer += [0]
         sendBuffer[2] = len(sendBuffer) // 2 - 3
-        
+
         if readLen % 2:
             readLen += 1
-            
+
         if len(sendBuffer) > MAX_USB_PACKET_LENGTH:
             raise LabJackException("ERROR: The feedback command you are attempting to send is bigger than 64 bytes ( %s bytes ). Break your commands up into separate calls to getFeedback()." % len(sendBuffer))
-        
+
         if readLen > MAX_USB_PACKET_LENGTH:
             raise LabJackException("ERROR: The feedback command you are attempting to send would yield a response that is greater than 64 bytes ( %s bytes ). Break your commands up into separate calls to getFeedback()." % readLen)
-        
+
         rcvBuffer = self._writeRead(sendBuffer, readLen, [], checkBytes = False, stream = False, checksum = True)
-        
+
         # Check the response for errors
         try:
             self._checkCommandBytes(rcvBuffer, [0xF8])
-        
+
             if rcvBuffer[3] != 0x00:
                 raise LabJackException("Got incorrect command bytes")
         except LowlevelErrorException:
@@ -458,9 +458,9 @@ class U6(Device):
                 culprit = commandlist[0][ (rcvBuffer[7] - 1) ]
             else:
                 culprit = commandlist[ (rcvBuffer[7] -1) ]
-            
+
             raise LowlevelErrorException("\nThis Command\n    %s\nreturned an error:\n    %s" %  ( culprit, lowlevelErrorToString(rcvBuffer[6]) ) )
-        
+
         results = []
         i = 9
         return self._buildFeedbackResults(rcvBuffer, commandlist, results, i)
@@ -470,18 +470,18 @@ class U6(Device):
         Name: U6.readMem(BlockNum, ReadCal=False)
         Args: BlockNum, which block to read
               ReadCal, set to True to read the calibration data
-        Desc: Reads 1 block (32 bytes) from the non-volatile user or 
+        Desc: Reads 1 block (32 bytes) from the non-volatile user or
               calibration memory. Please read section 5.2.6 of the user's
               guide before you do something you may regret.
-        
+
         >>> myU6 = U6()
         >>> myU6.readMem(0)
         [ < userdata stored in block 0 > ]
-        
+
         NOTE: Do not call this function while streaming.
         """
         command = [ 0 ] * 8
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x01
@@ -492,34 +492,34 @@ class U6(Device):
         #command[5] = Checksum16 (MSB)
         command[6] = 0x00
         command[7] = BlockNum
-        
+
         result = self._writeRead(command, 40, [ 0xF8, 0x11, command[3] ])
-        
+
         return result[8:]
-    
+
     def readCal(self, BlockNum):
         return self.readMem(BlockNum, ReadCal = True)
-        
+
     def writeMem(self, BlockNum, Data, WriteCal=False):
         """
         Name: U6.writeMem(BlockNum, Data, WriteCal=False)
         Args: BlockNum, which block to write
               Data, a list of bytes to write
               WriteCal, set to True to write calibration.
-        Desc: Writes 1 block (32 bytes) from the non-volatile user or 
+        Desc: Writes 1 block (32 bytes) from the non-volatile user or
               calibration memory. Please read section 5.2.7 of the user's
               guide before you do something you may regret.
-        
+
         >>> myU6 = U6()
         >>> myU6.writeMem(0, [ < userdata to be stored in block 0 > ])
-        
+
         NOTE: Do not call this function while streaming.
         """
         if not isinstance(Data, list):
             raise LabJackException("Data must be a list of bytes")
-        
+
         command = [ 0 ] * 40
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x11
@@ -531,12 +531,12 @@ class U6(Device):
         command[6] = 0x00
         command[7] = BlockNum
         command[8:] = Data
-        
+
         self._writeRead(command, 8, [0xF8, 0x01, command[3]])
 
     def writeCal(self, BlockNum, Data):
         return self.writeMem(BlockNum, Data, WriteCal = True)
-        
+
     def eraseMem(self, EraseCal=False):
         """
         Name: U6.eraseMem(EraseCal=False)
@@ -552,10 +552,10 @@ class U6(Device):
         """
         if not isinstance(EraseCal, bool):
             raise LabJackException("EraseCal must be a Boolean value (True or False).")
-        
+
         if EraseCal:
             command = [ 0 ] * 8
-            
+
             #command[0] = Checksum8
             command[1] = 0xF8
             command[2] = 0x01
@@ -566,14 +566,14 @@ class U6(Device):
             command[7] = 0x6C
         else:
             command = [ 0 ] * 6
-            
+
             #command[0] = Checksum8
             command[1] = 0xF8
             command[2] = 0x00
             command[3] = 0x29
             #command[4] = Checksum16 (LSB)
             #command[5] = Checksum16 (MSB)
-        
+
         self._writeRead(command, 8, [0xF8, 0x01, command[3]])
 
     def eraseCal(self):
@@ -613,7 +613,7 @@ class U6(Device):
               See Section 5.2.12 of the User's Guide for more details.
 
               Deprecated:
-              
+
               SampleFrequency, the frequency in Hz to sample.  Use ScanFrequency
                                since SampleFrequency has always set the scan
                                frequency and the name is confusing.
@@ -748,7 +748,7 @@ class U6(Device):
         Desc: Controls a firmware based watchdog timer.
         """
         command = [ 0 ] * 16
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x05
@@ -761,43 +761,43 @@ class U6(Device):
             command[7] = (1 << 5)
         if SetDIOStateOnTimeout:
             command[7] |= (1 << 4)
-        
+
         t = pack("<H", TimeoutPeriod)
         command[8] = ord(t[0])
         command[9] = ord(t[1])
         command[10] = ((DIOState & 1 ) << 7)
         command[10] |= (DIONumber & 0xf)
-        
+
         result = self._writeRead(command, 16, [ 0xF8, 0x05, 0x09])
-        
+
         watchdogStatus = {}
-        
+
         if result[7] == 0:
             watchdogStatus['WatchDogEnabled'] = False
             watchdogStatus['ResetOnTimeout'] = False
             watchdogStatus['SetDIOStateOnTimeout'] = False
         else:
             watchdogStatus['WatchDogEnabled'] = True
-            
+
             if (result[7] >> 5) & 1:
                 watchdogStatus['ResetOnTimeout'] = True
             else:
                 watchdogStatus['ResetOnTimeout'] = False
-                
+
             if (result[7] >> 4) & 1:
                 watchdogStatus['SetDIOStateOnTimeout'] = True
             else:
                 watchdogStatus['SetDIOStateOnTimeout'] = False
-        
+
         watchdogStatus['TimeoutPeriod'] = unpack('<H', pack("BB", *result[8:10]))
-        
+
         if (result[10] >> 7) & 1:
             watchdogStatus['DIOState'] = 1
         else:
-            watchdogStatus['DIOState'] = 0 
-        
+            watchdogStatus['DIOState'] = 0
+
         watchdogStatus['DIONumber'] = ( result[10] & 15 )
-        
+
         return watchdogStatus
 
     def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 0, CLKPinNum = 1, MISOPinNum = 2, MOSIPinNum = 3, CSPINNum = None):
@@ -805,20 +805,20 @@ class U6(Device):
         Name: U6.spi(SPIBytes, AutoCS=True, DisableDirConfig = False,
                      SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 0,
                      CLKPinNum = 1, MISOPinNum = 2, MOSIPinNum = 3)
-        
+
         Args: SPIBytes, A list of bytes to send.
               AutoCS, If True, the CS line is automatically driven low
                       during the SPI communication and brought back high
                       when done.
               DisableDirConfig, If True, function does not set the direction
                                 of the line.
-              SPIMode, 'A', 'B', 'C',  or 'D'. 
+              SPIMode, 'A', 'B', 'C',  or 'D'.
               SPIClockFactor, Sets the frequency of the SPI clock.
               CSPinNum, which pin is CS
               CLKPinNum, which pin is CLK
               MISOPinNum, which pin is MISO
               MOSIPinNum, which pin is MOSI
-        
+
         Desc: Sends and receives serial data using SPI synchronous
               communication. See Section 5.2.17 of the user's guide.
 
@@ -831,36 +831,36 @@ class U6(Device):
         if CSPINNum is not None:
             warnings.warn("CSPINNum is deprecated, use CSPinNum instead", DeprecationWarning)
             CSPinNum = CSPINNum
-        
+
         numSPIBytes = len(SPIBytes)
-        
+
         oddPacket = False
         if numSPIBytes%2 != 0:
             SPIBytes.append(0)
             numSPIBytes = numSPIBytes + 1
             oddPacket = True
-        
+
         command = [ 0 ] * (13 + numSPIBytes)
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 4 + (numSPIBytes/2)
         command[3] = 0x3A
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
-        
+
         if AutoCS:
             command[6] |= (1 << 7)
         if DisableDirConfig:
             command[6] |= (1 << 6)
-        
+
         spiModes = ('A', 'B', 'C', 'D')
         try:
             modeIndex = spiModes.index(SPIMode)
         except ValueError:
             raise LabJackException("Invalid SPIMode %r, valid modes are: %r" % (SPIMode, spiModes))
         command[6] |= modeIndex
-        
+
         command[7] = SPIClockFactor
         #command[8] = Reserved
         command[9] = CSPinNum
@@ -870,11 +870,11 @@ class U6(Device):
         command[13] = numSPIBytes
         if oddPacket:
             command[13] = numSPIBytes - 1
-        
+
         command[14:] = SPIBytes
-        
+
         result = self._writeRead(command, 8+numSPIBytes, [ 0xF8, 1+(numSPIBytes/2), 0x3A ])
-        
+
         if result[6] != 0:
             raise LowlevelErrorException(result[6], "The spi command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
 
@@ -882,23 +882,23 @@ class U6(Device):
 
     def asynchConfig(self, Update = True, UARTEnable = True, DesiredBaud = None, BaudFactor = 63036):
         """
-        Name: U6.asynchConfig(Update = True, UARTEnable = True, 
+        Name: U6.asynchConfig(Update = True, UARTEnable = True,
                               DesiredBaud = None, BaudFactor = 63036)
         Args: Update, If True, new values are written.
               UARTEnable, If True, UART will be enabled.
-              DesiredBaud, If set, will apply the formualt to 
+              DesiredBaud, If set, will apply the formualt to
                            calculate BaudFactor.
               BaudFactor, = 2^16 - 48000000/(2 * Desired Baud). Ignored
                         if DesiredBaud is set.
         Desc: Configures the U6 UART for asynchronous communication. See
               section 5.2.18 of the User's Guide.
         """
-        
+
         if UARTEnable:
             self.configIO(EnableUART = True)
-        
+
         command = [ 0 ] * 10
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x02
@@ -910,19 +910,19 @@ class U6(Device):
             command[7] = (1 << 7)
         if UARTEnable:
             command[7] |= (1 << 6)
-        
+
         if DesiredBaud is not None:
-            BaudFactor = (2**16) - 48000000/(2 * DesiredBaud)   
-        
+            BaudFactor = (2**16) - 48000000/(2 * DesiredBaud)
+
         t = pack("<H", BaudFactor)
         command[8] = ord(t[0])
         command[9] = ord(t[1])
-        
+
         results = self._writeRead(command, 10, [0xF8, 0x02, 0x14])
-            
+
         if command[8] != results[8] and command[9] != results[9]:
             raise LabJackException("BaudFactor didn't stick.")
-        
+
     def asynchTX(self, AsynchBytes):
         """
         Name: U6.asynchTX(AsynchBytes)
@@ -930,15 +930,15 @@ class U6(Device):
         Desc: Sends bytes to the U6 UART which will be sent asynchronously
               on the transmit line. Section 5.2.19 of the User's Guide.
         """
-        
+
         numBytes = len(AsynchBytes)
-        
+
         oddPacket = False
         if numBytes%2 != 0:
             oddPacket = True
             AsynchBytes.append(0)
             numBytes = numBytes + 1
-        
+
         command = [ 0 ] * (8+numBytes)
         #command[0] = Checksum8
         command[1] = 0xF8
@@ -951,11 +951,11 @@ class U6(Device):
         if oddPacket:
             command[7] = numBytes-1
         command[8:] = AsynchBytes
-        
+
         result = self._writeRead(command, 10, [ 0xF8, 0x02, 0x15])
-        
+
         return { 'NumAsynchBytesSent' : result[7], 'NumAsynchBytesInRXBuffer' : result[8] }
-    
+
     def asynchRX(self, Flush = False):
         """
         Name: U6.asynchTX(AsynchBytes)
@@ -964,9 +964,9 @@ class U6(Device):
               on the transmit line. Section 5.2.20 of the User's Guide.
         """
         command = [ 0, 0xF8, 0x01, 0x16, 0, 0, 0, int(Flush)]
-        
+
         result = self._writeRead(command, 40, [ 0xF8, 0x11, 0x16 ])
-        
+
         return { 'NumAsynchBytesInRXBuffer' : result[7], 'AsynchBytes' : result[8:] }
 
     def i2c(self, Address, I2CBytes, EnableClockStretching = False, NoStopWhenRestarting = False, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 0, SCLPinNum = 1, NumI2CBytesToReceive = 0, AddressByte = None):
@@ -1058,7 +1058,7 @@ class U6(Device):
               Section 5.2.22 of the User's Guide.
         """
         command = [ 0 ] * 10
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x02
@@ -1069,18 +1069,18 @@ class U6(Device):
         command[7] = ClockPinNum
         #command[8] = Reserved
         command[9] = SHTOptions
-        
+
         result = self._writeRead(command, 16, [ 0xF8, 0x05, 0x39])
-        
+
         val = (result[11]*256) + result[10]
         temp = -39.60 + 0.01*val
-        
+
         val = (result[14]*256) + result[13]
         humid = -4 + 0.0405*val + -.0000028*(val*val)
         humid = (temp - 25)*(0.01 + 0.00008*val) + humid
-        
+
         return { 'StatusReg' : result[8], 'StatusCRC' : result[9], 'Temperature' : temp, 'TemperatureCRC' : result[12], 'Humidity' : humid, 'HumidityCRC' : result[15] }
-        
+
     # --------------------------- Old U6 code -------------------------------
 
     def _readCalDataBlock(self, n):
@@ -1171,7 +1171,7 @@ class U6(Device):
 
         self.calInfo.currentOutput0 = toDouble(rcvBuffer[:8])
         self.calInfo.currentOutput1 = toDouble(rcvBuffer[8:16])
-        
+
         self.calInfo.temperatureSlope = toDouble(rcvBuffer[16:24])
         self.calInfo.temperatureOffset = toDouble(rcvBuffer[24:])
 
@@ -1220,7 +1220,7 @@ class U6(Device):
 
     def binaryToCalibratedAnalogVoltage(self, gainIndex, bytesVoltage, is16Bits=False, resolutionIndex=0):
         """
-        Name: U6.binaryToCalibratedAnalogVoltage(gainIndex, bytesVoltage, 
+        Name: U6.binaryToCalibratedAnalogVoltage(gainIndex, bytesVoltage,
                                                  is16Bits = False, resolutionIndex = 0)
         Args: gainIndex, which gain index did you use?
               bytesVoltage, bytes returned from the U6
@@ -1274,7 +1274,7 @@ class U6(Device):
             bits = min(bits, 0xFFFF)
         else:
             bits = min(bits/256, 0xFF)
-        
+
         return int(max(bits, 0))
 
     def softReset(self):
@@ -1282,16 +1282,16 @@ class U6(Device):
         Name: U6.softReset()
         Args: none
         Desc: Send a soft reset.
-        
+
         >>> myU6 = U6()
         >>> myU6.softReset()
         """
         command = [ 0x00, 0x99, 0x01, 0x00 ]
         command = setChecksum8(command, 4)
-        
+
         self.write(command, False, False)
         results = self.read(4)
-        
+
         if results[3] != 0:
             raise LowlevelErrorException(results[3], "The softReset command returned an error:\n    %s" % lowlevelErrorToString(results[3]))
 
@@ -1300,19 +1300,19 @@ class U6(Device):
         Name: U6.hardReset()
         Args: none
         Desc: Send a hard reset.
-        
+
         >>> myU6 = U6()
         >>> myU6.hardReset()
         """
         command = [ 0x00, 0x99, 0x02, 0x00 ]
         command = setChecksum8(command, 4)
-        
+
         self.write(command, False, False)
         results = self.read(4)
-        
+
         if results[3] != 0:
             raise LowlevelErrorException(results[3], "The softHard command returned an error:\n    %s" % lowlevelErrorToString(results[3]))
-            
+
         self.close()
 
     def setLED(self, state):
@@ -1320,7 +1320,7 @@ class U6(Device):
         Name: U6.setLED(state)
         Args: state: 1 = On, 0 = Off
         Desc: Sets the state of the LED. (5.2.5.4 of user's guide)
-        
+
         >>> d = u6.U6()
         >>> d.setLED(0)
         ... (LED turns off) ...
@@ -1338,7 +1338,7 @@ class U6(Device):
               state, 1 = High, 0 = Low
         Desc: A convenience function to set the state of a digital I/O. Will
               also set the direction to output.
-        
+
         Example:
         >>> import u6
         >>> d = u6.U6()
@@ -1356,7 +1356,7 @@ class U6(Device):
                   20 - 22 = MIO0 - MIO2
         Desc: A convenience function to read the state of a digital I/O.  Will
               also set the direction to input.
-        
+
         Example:
         >>> import u6
         >>> d = u6.U6()
@@ -1375,7 +1375,7 @@ class U6(Device):
                   20 - 22 = MIO0 - MIO2
         Desc: A convenience function to read the state of a digital I/O.  Will
               not change the direction.
-        
+
         Example:
         >>> import u6
         >>> d = u6.U6()
@@ -1388,16 +1388,16 @@ class U6(Device):
         """
         Name: U6.getTemperature()
         Args: none
-        Desc: Reads the U6's internal temperature sensor in Kelvin. 
+        Desc: Reads the U6's internal temperature sensor in Kelvin.
               See Section 2.6.4 of the U6 User's Guide.
-        
+
         >>> myU6.getTemperature()
         299.87723471224308
         """
         if self.calInfo.nominal:
             # Read the actual calibration constants if we haven't already.
             self.getCalibrationData()
-        
+
         result = self.getFeedback(AIN24AR(14))
         return self.binaryToCalibratedAnalogTemperature(result[0]['AIN'])
 
@@ -1411,17 +1411,17 @@ class U6(Device):
               gainIndex, the gain index.  0=x1, 1=x10, 2=x100, 3=x1000,
                          15=autorange.
               settlingFactor, the settling factor.  0=Auto, 1=20us, 2=50us,
-                              3=100us, 4=200us, 5=500us, 6=1ms, 7=2ms, 8=5ms, 
+                              3=100us, 4=200us, 5=500us, 6=1ms, 7=2ms, 8=5ms,
                               9=10ms.
               differential, set to True for differential reading.  Negative
                             channel is positiveChannel+1.
         Desc: Reads an AIN and applies the calibration constants to it.
-        
+
         >>> myU6.getAIN(14)
         299.87723471224308
         """
         result = self.getFeedback(AIN24AR(positiveChannel, resolutionIndex, gainIndex, settlingFactor, differential))
-        
+
         return self.binaryToCalibratedAnalogVoltage(result[0]['GainIndex'], result[0]['AIN'], resolutionIndex = resolutionIndex)
 
     def readDefaultsConfig(self):
@@ -1432,53 +1432,53 @@ class U6(Device):
         """
         results = dict()
         defaults = self.readDefaults(0)
-        
+
         results['FIODirection'] = defaults[4]
         results['FIOState'] = defaults[5]
-        
+
         results['EIODirection'] = defaults[8]
         results['EIOState'] = defaults[9]
-        
+
         results['CIODirection'] = defaults[12]
         results['CIOState'] = defaults[13]
-        
+
         results['ConfigWriteMask'] = defaults[16]
         results['NumOfTimersEnable'] = defaults[17]
         results['CounterMask'] = defaults[18]
         results['PinOffset'] = defaults[19]
-        
+
         defaults = self.readDefaults(1)
         results['ClockSource'] = defaults[0]
         results['Divisor'] = defaults[1]
-        
+
         results['TMR0Mode'] = defaults[16]
         results['TMR0ValueL'] = defaults[17]
         results['TMR0ValueH'] = defaults[18]
-        
+
         results['TMR1Mode'] = defaults[20]
         results['TMR1ValueL'] = defaults[21]
         results['TMR1ValueH'] = defaults[22]
-        
+
         results['TMR2Mode'] = defaults[24]
         results['TMR2ValueL'] = defaults[25]
         results['TMR2ValueH'] = defaults[26]
-        
+
         results['TMR3Mode'] = defaults[28]
         results['TMR3ValueL'] = defaults[29]
         results['TMR3ValueH'] = defaults[30]
-        
+
         defaults = self.readDefaults(2)
-        
+
         results['DAC0'] = unpack( "<H", pack("BB", *defaults[16:18]) )[0]
-        
+
         results['DAC1'] = unpack( "<H", pack("BB", *defaults[20:22]) )[0]
-        
+
         defaults = self.readDefaults(3)
-        
+
         for i in range(14):
             results["AIN%sGainRes" % i] = defaults[i]
             results["AIN%sOptions" % i] = defaults[i+16]
-        
+
         return results
 
     def exportConfig(self):
@@ -1489,65 +1489,65 @@ class U6(Device):
         """
         # Make a new configuration file
         parser = ConfigParser.SafeConfigParser()
-        
+
         # Change optionxform so that options preserve their case.
         parser.optionxform = str
-        
+
         # Local Id and name
         section = "Identifiers"
         parser.add_section(section)
         parser.set(section, "Local ID", str(self.localId))
         parser.set(section, "Name", str(self.getName()))
         parser.set(section, "Device Type", str(self.devType))
-        
+
         # FIO Direction / State
         section = "FIOs"
         parser.add_section(section)
-        
+
         dirs, states = self.getFeedback( PortDirRead(), PortStateRead() )
-        
+
         for key, value in dirs.items():
             parser.set(section, "%s Directions" % key, str(value))
-            
+
         for key, value in states.items():
             parser.set(section, "%s States" % key, str(value))
-            
+
         # DACs
         section = "DACs"
         parser.add_section(section)
-        
+
         dac0 = self.readRegister(5000)
         dac0 = max(dac0, 0)
         dac0 = min(dac0, 5)
         parser.set(section, "DAC0", "%0.2f" % dac0)
-        
+
         dac1 = self.readRegister(5002)
         dac1 = max(dac1, 0)
         dac1 = min(dac1, 5)
         parser.set(section, "DAC1", "%0.2f" % dac1)
-        
+
         # Timer Clock Configuration
         section = "Timer Clock Speed Configuration"
         parser.add_section(section)
-        
+
         timerclockconfig = self.configTimerClock()
         for key, value in timerclockconfig.items():
             parser.set(section, key, str(value))
-        
+
         # Timers / Counters
         section = "Timers And Counters"
         parser.add_section(section)
-        
+
         ioconfig = self.configIO()
         for key, value in ioconfig.items():
             parser.set(section, key, str(value))
-            
-        
+
+
         for i in range(ioconfig['NumberTimersEnabled']):
             mode, value = self.readRegister(7100 + (2 * i), numReg = 2, format = ">HH")
             parser.set(section, "Timer%s Mode" % i, str(mode))
             parser.set(section, "Timer%s Value" % i, str(value))
-        
+
         return parser
 
     def loadConfig(self, configParserObj):
@@ -1557,62 +1557,62 @@ class U6(Device):
         Desc: Takes a configuration and updates the U6 to match it.
         """
         parser = configParserObj
-        
+
         # Set Identifiers:
         section = "Identifiers"
         if parser.has_section(section):
             if parser.has_option(section, "device type"):
                 if parser.getint(section, "device type") != self.devType:
                     raise Exception("Not a U6 Config file.")
-            
+
             if parser.has_option(section, "local id"):
                 self.configU6( LocalID = parser.getint(section, "local id"))
-                
+
             if parser.has_option(section, "name"):
                 self.setName( parser.get(section, "name") )
-            
+
         # Set FIOs:
         section = "FIOs"
         if parser.has_section(section):
             fiodirs = 0
             eiodirs = 0
             ciodirs = 0
-            
+
             fiostates = 0
             eiostates = 0
             ciostates = 0
-            
+
             if parser.has_option(section, "fios directions"):
                 fiodirs = parser.getint(section, "fios directions")
             if parser.has_option(section, "eios directions"):
                 eiodirs = parser.getint(section, "eios directions")
             if parser.has_option(section, "cios directions"):
                 ciodirs = parser.getint(section, "cios directions")
-            
+
             if parser.has_option(section, "fios states"):
                 fiostates = parser.getint(section, "fios states")
             if parser.has_option(section, "eios states"):
                 eiostates = parser.getint(section, "eios states")
             if parser.has_option(section, "cios states"):
                 ciostates = parser.getint(section, "cios states")
-            
+
             self.getFeedback( PortStateWrite([fiostates, eiostates, ciostates]), PortDirWrite([fiodirs, eiodirs, ciodirs]) )
-            
+
         # Set DACs:
         section = "DACs"
         if parser.has_section(section):
             if parser.has_option(section, "dac0"):
                 self.writeRegister(5000, parser.getfloat(section, "dac0"))
-            
+
             if parser.has_option(section, "dac1"):
                 self.writeRegister(5002, parser.getfloat(section, "dac1"))
-                
+
         # Set Timer Clock Configuration
         section = "Timer Clock Speed Configuration"
         if parser.has_section(section):
             if parser.has_option(section, "timerclockbase") and parser.has_option(section, "timerclockdivisor"):
                 self.configTimerClock(TimerClockBase = parser.getint(section, "timerclockbase"), TimerClockDivisor = parser.getint(section, "timerclockdivisor"))
-        
+
         # Set Timers / Counters
         section = "Timers And Counters"
         if parser.has_section(section):
@@ -1620,38 +1620,38 @@ class U6(Device):
             c0e = None
             c1e = None
             cpo = None
-            
+
             if parser.has_option(section, "NumberTimersEnabled"):
                 nte = parser.getint(section, "NumberTimersEnabled")
-            
+
             if parser.has_option(section, "TimerCounterPinOffset"):
                 cpo = parser.getint(section, "TimerCounterPinOffset")
-            
+
             if parser.has_option(section, "Counter0Enabled"):
                 c0e = parser.getboolean(section, "Counter0Enabled")
-            
+
             if parser.has_option(section, "Counter1Enabled"):
                 c1e = parser.getboolean(section, "Counter1Enabled")
-                
+
             self.configIO(NumberTimersEnabled = nte, EnableCounter1 = c1e, EnableCounter0 = c0e, TimerCounterPinOffset = cpo)
-            
-            
+
+
             mode = None
             value = None
-            
+
             for i in range(4):
                 if parser.has_option(section, "timer%i mode" % i):
                     mode = parser.getint(section, "timer%i mode" % i)
-                    
+
                     if parser.has_option(section, "timer%i value" % i):
                         value = parser.getint(section, "timer%i value" % i)
-                    
+
                     self.getFeedback( TimerConfig(i, mode, value) )
 
 class FeedbackCommand(object):
     '''
     The base FeedbackCommand class
-    
+
     Used to make Feedback easy. Make a list of these
     and call getFeedback.
     '''
@@ -1666,26 +1666,26 @@ class AIN(FeedbackCommand):
     Analog Input Feedback command
 
     AIN(PositiveChannel)
-    
-    PositiveChannel : the positive channel to use 
+
+    PositiveChannel : the positive channel to use
 
     NOTE: This function kept for compatibility. Please use
           the new AIN24 and AIN24AR.
-    
+
     returns 16-bit unsigned int sample
-    
+
     >>> d.getFeedback( u6.AIN( PositiveChannel ) )
     [ 19238 ]
     '''
     def __init__(self, PositiveChannel):
         if PositiveChannel not in _validChannels:
             raise LabJackException("Invalid Positive Channel specified")
-        
+
         self.positiveChannel = PositiveChannel
         self.cmdBytes = [ 0x01, PositiveChannel, 0 ]
 
     readLen =  2
-    
+
     def __repr__(self):
         return "<u6.AIN( PositiveChannel = %s )>" % self.positiveChannel
 
@@ -1699,12 +1699,12 @@ class AIN24(FeedbackCommand):
 
     ainCommand = AIN24(PositiveChannel, ResolutionIndex = 0, GainIndex = 0,
                        SettlingFactor = 0, Differential = False)
-    
+
     See section 5.2.5.2 of the user's guide.
-    
+
     NOTE: If you use a gain index of 15 (autorange), you should be using
-          the AIN24AR command instead. 
-    
+          the AIN24AR command instead.
+
     positiveChannel : The positive channel to use
     resolutionIndex : 0=default, 1-8 for high-speed ADC,
                       9-12 for high-res ADC on U6-Pro.
@@ -1713,9 +1713,9 @@ class AIN24(FeedbackCommand):
                      7=2ms, 8=5ms, 9=10ms.
     differential : If this bit is set, a differential reading is done where
                    the negative channel is positiveChannel+1
-    
+
     returns 24-bit unsigned int sample
-    
+
     >>> d.getFeedback( u6.AIN24(PositiveChannel, ResolutionIndex = 0,
                                 GainIndex = 0, SettlingFactor = 0,
                                 Differential = False ) )
@@ -1730,10 +1730,10 @@ class AIN24(FeedbackCommand):
         self.gainIndex = GainIndex
         self.settlingFactor = SettlingFactor
         self.differential = Differential
-        
+
         byte2 = ( ResolutionIndex & 0xf )
         byte2 = ( ( GainIndex & 0xf ) << 4 ) + byte2
-        
+
         byte3 = (int(Differential) << 7) + SettlingFactor
         self.cmdBytes = [ 0x02, PositiveChannel, byte2, byte3 ]
 
@@ -1751,28 +1751,28 @@ class AIN24AR(FeedbackCommand):
     '''
     Autorange Analog Input 24-bit Feedback command
 
-    ainARCommand = AIN24AR(0, ResolutionIndex = 0, GainIndex = 0, 
+    ainARCommand = AIN24AR(0, ResolutionIndex = 0, GainIndex = 0,
                            SettlingFactor = 0, Differential = False)
-    
+
     See section 5.2.5.3 of the user's guide
-    
+
     PositiveChannel : The positive channel to use
-    ResolutionIndex : 0=default, 1-8 for high-speed ADC, 
+    ResolutionIndex : 0=default, 1-8 for high-speed ADC,
                       9-13 for high-res ADC on U6-Pro.
     GainIndex : 0=x1, 1=x10, 2=x100, 3=x1000, 15=autorange
     SettlingFactor : 0=Auto, 1=20us, 2=50us, 3=100us, 4=200us, 5=500us, 6=1ms,
                      7=2ms, 8=5ms, 9=10ms.
     Differential : If this bit is set, a differential reading is done where
                    the negative channel is positiveChannel+1
-    
+
     returns a dictionary:
-        { 
-        'AIN' : < 24-bit binary reading >, 
+        {
+        'AIN' : < 24-bit binary reading >,
         'ResolutionIndex' : < actual resolution setting used for the reading >,
         'GainIndex' : < actual gain used for the reading >,
         'Status' : < reserved for future use >
         }
-    
+
     >>> d.getFeedback( u6.AIN24AR( PositiveChannel, ResolutionIndex = 0,
                                    GainIndex = 0, SettlingFactor = 0,
                                    Differential = False ) )
@@ -1790,7 +1790,7 @@ class AIN24AR(FeedbackCommand):
 
         byte2 = ( ResolutionIndex & 0xf )
         byte2 = ( ( GainIndex & 0xf ) << 4 ) + byte2
-        
+
         byte3 = (int(Differential) << 7) + SettlingFactor
         self.cmdBytes = [ 0x03, PositiveChannel, byte2, byte3 ]
 
@@ -1803,33 +1803,33 @@ class AIN24AR(FeedbackCommand):
         #Put it all into an integer.
         result = (input[2] << 16 ) + (input[1] << 8 ) + input[0]
         resolutionIndex = input[3] & 0xf
-        gainIndex = ( input[3] >> 4 ) & 0xf 
+        gainIndex = ( input[3] >> 4 ) & 0xf
         status = input[4]
-        
-        return { 'AIN' : result, 'ResolutionIndex' : resolutionIndex, 'GainIndex' : gainIndex, 'Status' : status }   
+
+        return { 'AIN' : result, 'ResolutionIndex' : resolutionIndex, 'GainIndex' : gainIndex, 'Status' : status }
 
 class WaitShort(FeedbackCommand):
     '''
     WaitShort Feedback command
 
     specify the number of 128us time increments to wait
-    
+
     >>> d.getFeedback( u6.WaitShort( Time ) )
     [ None ]
     '''
     def __init__(self, Time):
         self.time = Time % 256
         self.cmdBytes = [ 5, Time % 256 ]
-        
+
     def __repr__(self):
         return "<u6.WaitShort( Time = %s )>" % self.time
 
 class WaitLong(FeedbackCommand):
     '''
     WaitLong Feedback command
-    
+
     specify the number of 32ms time increments to wait
-    
+
     >>> d.getFeedback( u6.WaitLog( Time ) )
     [ None ]
     '''
@@ -1845,16 +1845,16 @@ class LED(FeedbackCommand):
     LED Toggle
 
     specify whether the LED should be on or off by truth value
-    
+
     1 or True = On, 0 or False = Off
-    
+
     >>> d.getFeedback( u6.LED( State ) )
     [ None ]
     '''
     def __init__(self, State):
         self.state = State
         self.cmdBytes = [ 9, int(bool(State)) ]
-        
+
     def __repr__(self):
         return "<u6.LED( State = %s )>" % self.state
 
@@ -1867,7 +1867,7 @@ class BitStateRead(FeedbackCommand):
 
     IONumber: 0-7=FIO, 8-15=EIO, 16-19=CIO
     return 0 or 1
-    
+
     >>> d.getFeedback( u6.BitStateRead( IONumber ) )
     [ 1 ]
     '''
@@ -1892,7 +1892,7 @@ class BitStateWrite(FeedbackCommand):
 
     IONumber: 0-7=FIO, 8-15=EIO, 16-19=CIO
     State: 0 or 1
-    
+
     >>> d.getFeedback( u6.BitStateWrite( IONumber, State ) )
     [ None ]
     '''
@@ -1900,7 +1900,7 @@ class BitStateWrite(FeedbackCommand):
         self.ioNumber = IONumber
         self.state = State
         self.cmdBytes = [ 11, (IONumber % 20) + (int(bool(State)) << 7) ]
-    
+
     def __repr__(self):
         return "<u6.BitStateWrite( IONumber = %s, State = %s )>" % self.ioNumber
 
@@ -1910,7 +1910,7 @@ class BitDirRead(FeedbackCommand):
 
     IONumber: 0-7=FIO, 8-15=EIO, 16-19=CIO
     returns 1 = Output, 0 = Input
-    
+
     >>> d.getFeedback( u6.BitDirRead( IONumber ) )
     [ 1 ]
     '''
@@ -1934,15 +1934,15 @@ class BitDirWrite(FeedbackCommand):
 
     IONumber: 0-7=FIO, 8-15=EIO, 16-19=CIO
     Direction: 1 = Output, 0 = Input
-    
+
     >>> d.getFeedback( u6.BitDirWrite( IONumber, Direction ) )
-    [ None ] 
+    [ None ]
     '''
     def __init__(self, IONumber, Direction):
         self.ioNumber = IONumber
         self.direction = Direction
         self.cmdBytes = [ 13, (IONumber % 20) + (int(bool(Direction)) << 7) ]
-        
+
     def __repr__(self):
         return "<u6.BitDirWrite( IONumber = %s, Direction = %s )>" % (self.ioNumber, self.direction)
 
@@ -1951,29 +1951,29 @@ class PortStateRead(FeedbackCommand):
     PortStateRead Feedback command
 
     Reads the state of all digital I/O.
-    
+
     >>> d.getFeedback( u6.PortStateRead() )
     [ { 'FIO' : 10, 'EIO' : 0, 'CIO' : 0 } ]
     """
     def __init__(self):
         self.cmdBytes = [ 26 ]
-        
+
     def __repr__(self):
         return "<u6.PortStateRead()>"
-        
+
     readLen = 3
-    
+
     def handle(self, input):
         return {'FIO' : input[0], 'EIO' : input[1], 'CIO' : input[2] }
 
 class PortStateWrite(FeedbackCommand):
     """
     PortStateWrite Feedback command
-    
+
     State: A list of 3 bytes representing FIO, EIO, CIO
     WriteMask: A list of 3 bytes, representing which to update.
                The Default is all ones.
-    
+
     >>> d.getFeedback( u6.PortStateWrite( State,
                                           WriteMask = [ 0xff, 0xff, 0xff] ) )
     [ None ]
@@ -1982,37 +1982,37 @@ class PortStateWrite(FeedbackCommand):
         self.state = State
         self.writeMask = WriteMask
         self.cmdBytes = [ 27 ] + WriteMask + State
-        
+
     def __repr__(self):
         return "<u6.PortStateWrite( State = %s, WriteMask = %s )>" % (self.state, self.writeMask)
-        
+
 class PortDirRead(FeedbackCommand):
     """
     PortDirRead Feedback command
     Reads the direction of all digital I/O.
-    
+
     >>> d.getFeedback( u6.PortDirRead() )
     [ { 'FIO' : 10, 'EIO' : 0, 'CIO' : 0 } ]
     """
     def __init__(self):
         self.cmdBytes = [ 28 ]
-    
+
     def __repr__(self):
         return "<u6.PortDirRead()>"
-    
+
     readLen = 3
-    
+
     def handle(self, input):
         return {'FIO' : input[0], 'EIO' : input[1], 'CIO' : input[2] }
 
 class PortDirWrite(FeedbackCommand):
     """
     PortDirWrite Feedback command
-    
+
     Direction: A list of 3 bytes representing FIO, EIO, CIO
     WriteMask: A list of 3 bytes, representing which to update. Default is all ones.
-    
-    >>> d.getFeedback( u6.PortDirWrite( Direction, 
+
+    >>> d.getFeedback( u6.PortDirWrite( Direction,
                                         WriteMask = [ 0xff, 0xff, 0xff] ) )
     [ None ]
     """
@@ -2020,19 +2020,19 @@ class PortDirWrite(FeedbackCommand):
         self.direction = Direction
         self.writeMask = WriteMask
         self.cmdBytes = [ 29 ] + WriteMask + Direction
-        
+
     def __repr__(self):
         return "<u6.PortDirWrite( Direction = %s, WriteMask = %s )>" % (self.direction, self.writeMask)
-    
+
 class DAC8(FeedbackCommand):
     '''
     8-bit DAC Feedback command
-    
+
     Controls a single analog output
 
     Dac: 0 or 1
     Value: 0-255
-    
+
     >>> d.getFeedback( u6.DAC8( Dac, Value ) )
     [ None ]
     '''
@@ -2040,18 +2040,18 @@ class DAC8(FeedbackCommand):
         self.dac = Dac
         self.value = Value % 256
         self.cmdBytes = [ 34 + (Dac % 2), Value % 256 ]
-    
+
     def __repr__(self):
         return "<u6.DAC8( Dac = %s, Value = %s )>" % (self.dac, self.value)
-        
+
 class DAC0_8(DAC8):
     """
     8-bit DAC Feedback command for DAC0
-    
+
     Controls DAC0 in 8-bit mode.
 
     Value: 0-255
-    
+
     >>> d.getFeedback( u6.DAC0_8( Value ) )
     [ None ]
     """
@@ -2064,17 +2064,17 @@ class DAC0_8(DAC8):
 class DAC1_8(DAC8):
     """
     8-bit DAC Feedback command for DAC1
-    
+
     Controls DAC1 in 8-bit mode.
 
     Value: 0-255
-    
+
     >>> d.getFeedback( u6.DAC1_8( Value ) )
     [ None ]
     """
     def __init__(self, Value):
         DAC8.__init__(self, 1, Value)
-    
+
     def __repr__(self):
         return "<u6.DAC1_8( Value = %s )>" % self.value
 
@@ -2086,7 +2086,7 @@ class DAC16(FeedbackCommand):
 
     Dac: 0 or 1
     Value: 0-65535
-    
+
     >>> d.getFeedback( u6.DAC16( Dac, Value ) )
     [ None ]
     '''
@@ -2094,55 +2094,55 @@ class DAC16(FeedbackCommand):
         self.dac = Dac
         self.value = Value
         self.cmdBytes = [ 38 + (Dac % 2), Value % 256, Value >> 8 ]
-    
+
     def __repr__(self):
         return "<u6.DAC8( Dac = %s, Value = %s )>" % (self.dac, self.value)
 
 class DAC0_16(DAC16):
     """
     16-bit DAC Feedback command for DAC0
-    
+
     Controls DAC0 in 16-bit mode.
 
     Value: 0-65535
-    
+
     >>> d.getFeedback( u6.DAC0_16( Value ) )
     [ None ]
     """
     def __init__(self, Value):
         DAC16.__init__(self, 0, Value)
-    
+
     def __repr__(self):
         return "<u6.DAC0_16( Value = %s )>" % self.value
 
 class DAC1_16(DAC16):
     """
     16-bit DAC Feedback command for DAC1
-    
+
     Controls DAC1 in 16-bit mode.
 
     Value: 0-65535
-    
+
     >>> d.getFeedback( u6.DAC1_16( Value ) )
     [ None ]
     """
     def __init__(self, Value):
         DAC16.__init__(self, 1, Value)
-        
+
     def __repr__(self):
         return "<u6.DAC1_16( Value = %s )>" % self.value
 
-        
+
 class Timer(FeedbackCommand):
     """
     For reading the value of the Timer. It provides the ability to update/reset
     a given timer, and read the timer value.
     ( Section 5.2.5.17 of the User's Guide)
-    
+
     timer: 0 to 3 for timer0 to timer3
-    
+
     UpdateReset: Set True if you want to update the value
-    
+
     Value: Only updated if the UpdateReset bit is 1.  The meaning of this
            parameter varies with the timer mode.
 
@@ -2151,7 +2151,7 @@ class Timer(FeedbackCommand):
 
     Returns an unsigned integer of the timer value, unless Mode has been
     specified and there are special return values. See Section 2.9.1 for
-    expected return values. 
+    expected return values.
 
     >>> d.getFeedback( u6.Timer( timer, UpdateReset = False, Value = 0 \
     ... , Mode = None ) )
@@ -2162,19 +2162,19 @@ class Timer(FeedbackCommand):
             raise LabJackException("Timer should be 0-3.")
         if UpdateReset and (Value is None):
             raise LabJackException("UpdateReset set but no value.")
-        
+
         self.timer = timer
         self.updateReset = UpdateReset
         self.value = Value
         self.mode = Mode
-        
+
         self.cmdBytes = [ (42 + (2*timer)), UpdateReset, Value % 256, Value >> 8 ]
-    
+
     readLen = 4
-    
+
     def __repr__(self):
         return "<u6.Timer( timer = %s, UpdateReset = %s, Value = %s, Mode = %s )>" % (self.timer, self.updateReset, self.value, self.mode)
-    
+
     def handle(self, input):
         inStr = pack('B' * len(input), *input)
         if self.mode == 8:
@@ -2191,9 +2191,9 @@ class Timer0(Timer):
     For reading the value of Timer0. It provides the ability to update/reset
     Timer0, and read the timer value.
     (Section 5.2.5.17 of the User's Guide)
-    
+
     UpdateReset: Set True if you want to update the value
-    
+
     Value: Only updated if the UpdateReset bit is 1.  The meaning of this
            parameter varies with the timer mode.
 
@@ -2206,7 +2206,7 @@ class Timer0(Timer):
     """
     def __init__(self, UpdateReset = False, Value = 0, Mode = None):
         Timer.__init__(self, 0, UpdateReset, Value, Mode)
-        
+
     def __repr__(self):
         return "<u6.Timer0( UpdateReset = %s, Value = %s, Mode = %s )>" % (self.updateReset, self.value, self.mode)
 
@@ -2216,9 +2216,9 @@ class Timer1(Timer):
     For reading the value of Timer1. It provides the ability to update/reset
     Timer1, and read the timer value.
     (Section 5.2.5.17 of the User's Guide)
-    
+
     UpdateReset: Set True if you want to update the value
-    
+
     Value: Only updated if the UpdateReset bit is 1.  The meaning of this
            parameter varies with the timer mode.
 
@@ -2231,7 +2231,7 @@ class Timer1(Timer):
     """
     def __init__(self, UpdateReset = False, Value = 0, Mode = None):
         Timer.__init__(self, 1, UpdateReset, Value, Mode)
-    
+
     def __repr__(self):
         return "<u6.Timer1( UpdateReset = %s, Value = %s, Mode = %s )>" % (self.updateReset, self.value, self.mode)
 
@@ -2241,9 +2241,9 @@ class Timer2(Timer):
     For reading the value of Timer2. It provides the ability to update/reset
     Timer2, and read the timer value.
     (Section 5.2.5.17 of the User's Guide)
-    
+
     UpdateReset: Set True if you want to update the value
-    
+
     Value: Only updated if the UpdateReset bit is 1.  The meaning of this
            parameter varies with the timer mode.
 
@@ -2256,7 +2256,7 @@ class Timer2(Timer):
     """
     def __init__(self, UpdateReset = False, Value = 0, Mode = None):
         Timer.__init__(self, 2, UpdateReset, Value, Mode)
-    
+
     def __repr__(self):
         return "<u6.Timer2( UpdateReset = %s, Value = %s, Mode = %s )>" % (self.updateReset, self.value, self.mode)
 
@@ -2266,9 +2266,9 @@ class Timer3(Timer):
     For reading the value of Timer3. It provides the ability to update/reset
     Timer3, and read the timer value.
     (Section 5.2.5.17 of the User's Guide)
-    
+
     UpdateReset: Set True if you want to update the value
-    
+
     Value: Only updated if the UpdateReset bit is 1.  The meaning of this
            parameter varies with the timer mode.
 
@@ -2281,7 +2281,7 @@ class Timer3(Timer):
     """
     def __init__(self, UpdateReset = False, Value = 0, Mode = None):
         Timer.__init__(self, 3, UpdateReset, Value, Mode)
-    
+
     def __repr__(self):
         return "<u6.Timer3( UpdateReset = %s, Value = %s, Mode = %s )>" % (self.updateReset, self.value, self.mode)
 
@@ -2290,15 +2290,15 @@ class QuadratureInputTimer(Timer):
     """
     For reading Quadrature input timers. They are special because their values
     are signed.
-    
+
     ( Section 2.9.1.8 of the User's Guide)
-    
+
     Args:
        UpdateReset: Set True if you want to reset the counter.
        Value: Set to 0, and UpdateReset to True to reset the counter.
-    
+
     Returns a signed integer.
-    
+
     >>> # Setup the two timers to be quadrature
     >>> d.getFeedback( u6.Timer0Config( 8 ), u6.Timer1Config( 8 ) )
     [None, None]
@@ -2308,7 +2308,7 @@ class QuadratureInputTimer(Timer):
     """
     def __init__(self, UpdateReset = False, Value = 0):
         Timer.__init__(self, 0, UpdateReset, Value, Mode = 8)
-        
+
     def __repr__(self):
         return "<u6.QuadratureInputTimer( UpdateReset = %s, Value = %s )>" % (self.updateReset, self.value)
 
@@ -2317,16 +2317,16 @@ class TimerStopInput1(Timer1):
     """
     For reading a stop input timer. They are special because the value returns
     the current edge count and the stop value.
-    
+
     ( Section 2.9.1.9 of the User's Guide)
-    
+
     Args:
         UpdateReset: Set True if you want to update the value.
         Value: The stop value. Only updated if the UpdateReset bit is 1.
-    
+
     Returns a tuple where the first value is current edge count, and the second
     value is the stop value.
-    
+
     >>> # Setup the timer to be Stop Input
     >>> d.getFeedback( u6.Timer0Config( 9, Value = 30 ) )
     [None]
@@ -2336,7 +2336,7 @@ class TimerStopInput1(Timer1):
     """
     def __init__(self, UpdateReset = False, Value = 0):
         Timer.__init__(self, 1, UpdateReset, Value, Mode = 9)
-    
+
     def __repr__(self):
         return "<u6.TimerStopInput1( UpdateReset = %s, Value = %s )>" % (self.updateReset, self.value)
 
@@ -2344,13 +2344,13 @@ class TimerStopInput1(Timer1):
 class TimerConfig(FeedbackCommand):
     """
     This IOType configures a particular timer.
-    
+
     timer: # of the timer to configure
-    
+
     TimerMode: See Section 2.9 for more information about the available modes.
-    
+
     Value: The meaning of this parameter varies with the timer mode.
-    
+
     >>> d.getFeedback( u6.TimerConfig( timer, TimerMode, Value = 0 ) )
     [ None ]
     """
@@ -2358,16 +2358,16 @@ class TimerConfig(FeedbackCommand):
         '''Creates command bytes for configuring a Timer'''
         if timer not in range(4):
             raise LabJackException("Timer should be 0-3.")
-        
+
         if TimerMode > 14 or TimerMode < 0:
             raise LabJackException("Invalid Timer Mode.")
-        
+
         self.timer = timer
         self.timerMode = TimerMode
         self.value = Value
-        
+
         self.cmdBytes = [43 + (timer * 2), TimerMode, Value % 256, Value >> 8]
-    
+
     def __repr__(self):
         return "<u6.TimerConfig( timer = %s, TimerMode = %s, Value = %s )>" % (self.timer, self.timerMode, self.value)
 
@@ -2375,17 +2375,17 @@ class TimerConfig(FeedbackCommand):
 class Timer0Config(TimerConfig):
     """
     This IOType configures Timer0.
-    
+
     TimerMode: See Section 2.9 for more information about the available modes.
-    
+
     Value: The meaning of this parameter varies with the timer mode.
-    
+
     >>> d.getFeedback( u6.Timer0Config( TimerMode, Value = 0 ) )
     [ None ]
     """
     def __init__(self, TimerMode, Value = 0):
         TimerConfig.__init__(self, 0, TimerMode, Value)
-    
+
     def __repr__(self):
         return "<u6.Timer0Config( TimerMode = %s, Value = %s )>" % (self.timerMode, self.value)
 
@@ -2393,17 +2393,17 @@ class Timer0Config(TimerConfig):
 class Timer1Config(TimerConfig):
     """
     This IOType configures Timer1.
-    
+
     TimerMode: See Section 2.9 for more information about the available modes.
-    
+
     Value: The meaning of this parameter varies with the timer mode.
-    
+
     >>> d.getFeedback( u6.Timer1Config( TimerMode, Value = 0 ) )
     [ None ]
     """
     def __init__(self, TimerMode, Value = 0):
         TimerConfig.__init__(self, 1, TimerMode, Value)
-    
+
     def __repr__(self):
         return "<u6.Timer1Config( TimerMode = %s, Value = %s )>" % (self.timerMode, self.value)
 
@@ -2411,17 +2411,17 @@ class Timer1Config(TimerConfig):
 class Timer2Config(TimerConfig):
     """
     This IOType configures Timer2.
-    
+
     TimerMode: See Section 2.9 for more information about the available modes.
-    
+
     Value: The meaning of this parameter varies with the timer mode.
-    
+
     >>> d.getFeedback( u6.Timer2Config( TimerMode, Value = 0 ) )
     [ None ]
     """
     def __init__(self, TimerMode, Value = 0):
         TimerConfig.__init__(self, 2, TimerMode, Value)
-    
+
     def __repr__(self):
         return "<u6.Timer2Config( TimerMode = %s, Value = %s )>" % (self.timerMode, self.value)
 
@@ -2429,17 +2429,17 @@ class Timer2Config(TimerConfig):
 class Timer3Config(TimerConfig):
     """
     This IOType configures Timer3.
-    
+
     TimerMode: See Section 2.9 for more information about the available modes.
-    
+
     Value: The meaning of this parameter varies with the timer mode.
-    
+
     >>> d.getFeedback( u6.Timer3Config( TimerMode, Value = 0 ) )
     [ None ]
     """
     def __init__(self, TimerMode, Value = 0):
         TimerConfig.__init__(self, 3, TimerMode, Value)
-    
+
     def __repr__(self):
         return "<u6.Timer3Config( TimerMode = %s, Value = %s )>" % (self.timerMode, self.value)
 
@@ -2455,7 +2455,7 @@ class Counter(FeedbackCommand):
 
     Returns the current count from the counter if enabled.  If reset,
     this is the value before the reset.
-    
+
     >>> d.getFeedback(u6.Counter(counter, Reset = False))
     [ 2183 ]
     '''
@@ -2484,7 +2484,7 @@ class Counter0(Counter):
 
     Returns the current count from the counter if enabled.  If reset,
     this is the value before the reset.
-    
+
     >>> d.getFeedback(u6.Counter0(Reset = False))
     [ 2183 ]
     '''

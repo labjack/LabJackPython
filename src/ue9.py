@@ -7,7 +7,7 @@ Desc: Defines the UE9 class, which makes working with a UE9 much easier. All of
 
 To learn about the low-level functions, please see Section 5.2 of the UE9 User's Guide:
 
-http://labjack.com/support/ue9/users-guide/5.2 
+http://labjack.com/support/ue9/users-guide/5.2
 """
 import collections
 import datetime
@@ -16,9 +16,9 @@ import socket
 import warnings
 
 try:
-  import ConfigParser
+    import ConfigParser
 except ImportError: # Python 3
-  import configparser as ConfigParser
+    import configparser as ConfigParser
 
 from struct import pack, unpack
 
@@ -40,21 +40,21 @@ from LabJackPython import (
 
 def openAllUE9():
     """
-    A helpful function which will open all the connected UE9s. Returns a 
+    A helpful function which will open all the connected UE9s. Returns a
     dictionary where the keys are the serialNumber, and the value is the device
     object.
     """
     returnDict = dict()
-    
+
     for i in range(deviceCount(9)):
         d = UE9(firstFound = False, devNumber = i+1)
         returnDict[str(d.serialNumber)] = d
-        
+
     return returnDict
 
 def parseIpAddress(bytes):
     return "%s.%s.%s.%s" % (bytes[3], bytes[2], bytes[1], bytes[0] )
-    
+
 def unpackInt(bytes):
     return unpack("<I", pack("BBBB", *bytes))[0]
 
@@ -78,11 +78,11 @@ class UE9(Device):
         Name: UE9.__init__(self)
         Args: debug, True for debug information
         Desc: Your basic constructor.
-        
+
         >>> myUe9 = ue9.UE9()
         """
         Device.__init__(self, None, devType = 9)
-        
+
         self.debug = debug
         self.calData = None
         self.controlFWVersion = self.commFWVersion = None
@@ -90,7 +90,7 @@ class UE9(Device):
 
         if autoOpen:
             self.open(**kargs)
-    
+
     def open(self, firstFound = True, serial = None, ipAddress = None, localId = None, devNumber = None, ethernet=False, handleOnly = False, LJSocket = None):
         """
         Name: UE9.open(firstFound = True, ipAddress = None, localId = None, devNumber = None, ethernet=False)
@@ -103,19 +103,19 @@ class UE9(Device):
               handleOnly, if True, LabJackPython will only open a handle
               LJSocket, set to "<ip>:<port>" to connect to LJSocket
         Desc: Opens the UE9.
-        
+
         >>> myUe9 = ue9.UE9(autoOpen = False)
         >>> myUe9.open()
         """
         self.ethernet = ethernet
         Device.open(self, 9, Ethernet = ethernet, firstFound = firstFound, serial = serial, localId = localId, devNumber = devNumber, ipAddress = ipAddress, handleOnly = handleOnly, LJSocket = LJSocket)
-        
+
     def commConfig(self, LocalID = None, IPAddress = None, Gateway = None, Subnet = None, PortA = None, PortB = None, DHCPEnabled = None):
         """
         Name: UE9.commConfig(LocalID = None, IPAddress = None, Gateway = None,
                 Subnet = None, PortA = None, PortB = None, DHCPEnabled = None)
         Args: LocalID, Set the LocalID
-              IPAddress, Set the IPAddress 
+              IPAddress, Set the IPAddress
               Gateway, Set the Gateway
               Subnet, Set the Subnet
               PortA, Set Port A
@@ -123,7 +123,7 @@ class UE9(Device):
               DHCPEnabled, True = Enabled, False = Disabled
         Desc: Writes and reads various configuration settings associated
               with the Comm processor. Section 5.2.1 of the User's Guide.
-        
+
         >>> myUe9 = ue9.UE9()
         >>> myUe9.commConfig()
         {'CommFWVersion': '1.47',
@@ -141,7 +141,7 @@ class UE9(Device):
          'Subnet': '255.255.255.0'}
         """
         command = [ 0 ] * 38
-        
+
         #command[0] = Checksum8
         command[1] = 0x78
         command[2] = 0x10
@@ -153,34 +153,34 @@ class UE9(Device):
         if LocalID is not None:
             command[6] |= 1
             command[8] = LocalID
-        
+
         if IPAddress is not None:
             command[6] |= (1 << 2)
             ipbytes = IPAddress.split('.')
             ipbytes = [ int(x) for x in ipbytes ]
             ipbytes.reverse()
             command[10:14] = ipbytes
-        
+
         if Gateway is not None:
             command[6] |= (1 << 3)
             gwbytes = Gateway.split('.')
             gwbytes = [ int(x) for x in gwbytes ]
             gwbytes.reverse()
             command[14:18] = gwbytes
-        
+
         if Subnet is not None:
             command[6] |= (1 << 4)
             snbytes = Subnet.split('.')
             snbytes = [ int(x) for x in snbytes ]
             snbytes.reverse()
             command[18:21] = snbytes
-            
+
         if PortA is not None:
             command[6] |= (1 << 5)
             t = pack("<H", PortA)
             command[22] = ord(t[0])
             command[23] = ord(t[1])
-        
+
         if PortB is not None:
             command[6] |= (1 << 5)
             t = pack("<H", PortB)
@@ -191,7 +191,7 @@ class UE9(Device):
             command[6] |= (1 << 6)
             if DHCPEnabled:
                 command[26] = 1
-        
+
         result = self._writeRead(command, 38, [], checkBytes = False)
 
         if len(result) == 0:
@@ -214,9 +214,9 @@ class UE9(Device):
         self.productId = result[27]
 
         self.macAddress = "%02X:%02X:%02X:%02X:%02X:%02X" % (result[33], result[32], result[31], result[30], result[29], result[28])
-        
+
         self.serialNumber = unpack("<I", pack("BBBB", result[28], result[29], result[30], 0x10))[0]
-        
+
         self.hwVersion = "%s.%02d" % (result[35], result[34])
         self.commFWVersion = "%s.%02d" % (result[37], result[36])
         self.firmwareVersion = [self.controlFWVersion, self.commFWVersion]
@@ -242,7 +242,7 @@ class UE9(Device):
         Desc: Sends a UDP Broadcast packet and returns a dictionary of the
               result. The dictionary contains all the things that are in the
               commConfig dictionary.
-        
+
         >>> myUe9 = ue9.UE9()
         >>> myUe9.discoveryUDP()
         {'192.168.1.114': {'CommFWVersion': '1.47', ... },
@@ -252,7 +252,7 @@ class UE9(Device):
         host = '255.255.255.255'
         port = 52362
         addr = (host,port)
-        
+
         sndBuffer = [0] * 6
         sndBuffer[0] = 0x22
         sndBuffer[1] = 0x78
@@ -260,18 +260,18 @@ class UE9(Device):
         sndBuffer[3] = 0xA9
         sndBuffer[4] = 0x00
         sndBuffer[5] = 0x00
-    
+
         packFormat = "B" * len(sndBuffer)
         tempString = pack(packFormat, *sndBuffer)
-        
+
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    
+
         s.sendto(tempString, addr)
-        
+
         inputs = [s]
 
         ue9s = {}
-        
+
         listen = True
         while listen:
             #We will wait 2 seconds for a response from a Ue9
@@ -283,12 +283,12 @@ class UE9(Device):
                     ue9s[addr[0]] = data
                     listen = True
         s.close()
-        
+
         for ip, data in ue9s.items():
             data = list(unpack("B"*38, data))
             ue9 = { 'LocalID' : data[8], 'PowerLevel' : data[9] , 'IPAddress' : parseIpAddress(data[10:14]), 'Gateway' : parseIpAddress(data[14:18]), 'Subnet' : parseIpAddress(data[18:23]), 'PortA' : unpack("<H", pack("BB", *data[22:24]))[0], 'PortB' : unpack("<H", pack("BB", *data[24:26]))[0], 'DHCPEnabled' : bool(data[26]), 'ProductID' : data[27], 'MACAddress' : "%02X:%02X:%02X:%02X:%02X:%02X" % (data[33], data[32], data[31], data[30], data[29], data[28]), 'SerialNumber' : unpack("<I", pack("BBBB", data[28], data[29], data[30], 0x10))[0], 'HWVersion' : "%s.%02d" % (data[35], data[34]), 'CommFWVersion' : "%s.%02d" % (data[37], data[36])}
             ue9s[ip] = ue9
-        
+
         return ue9s
 
     def ipAddressFilter(self, Write = 0, IP0 = None, IP1 = None, IP2 = None, IP3 = None, IP4 = None):
@@ -321,7 +321,7 @@ class UE9(Device):
 
         if Write != 0:
             command[6] = 1
-        
+
         ips = [IP0, IP1, IP2, IP3, IP4]
         startbyte = 8
         for ip in ips:
@@ -372,7 +372,7 @@ class UE9(Device):
               DAC1Enable, True = DAC1 Enabled, False = DAC1 Disabled
               DAC1, The default value for DAC1
         Desc: Configures various parameters associated with the Control
-              processor. Affects only the power-up values, not current 
+              processor. Affects only the power-up values, not current
               state. See section 5.3.2 of the User's Guide.
 
         >>> myUe9 = ue9.UE9()
@@ -502,7 +502,7 @@ class UE9(Device):
          'TimerC': 0}
         """
         command = [ 0 ] * 34
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x0E
@@ -521,23 +521,23 @@ class UE9(Device):
         command[14] = MIOMask
         command[15] = (MIODirection & 7) << 4
         command[15] |= (MIOState & 7 )
-        
+
         if DAC0Update:
             if DAC0Enabled:
                 command[17] = 1 << 7
             command[17] |= 1 << 6
-            
+
             command[16] = DAC0 & 0xff
             command[17] |= (DAC0 >> 8) & 0xf
-        
+
         if DAC1Update:
             if DAC1Enabled:
                 command[19] = 1 << 7
             command[19] |= 1 << 6
-            
+
             command[18] = DAC1 & 0xff
             command[19] |= (DAC1 >> 8) & 0xf
-        
+
         command[20] = AINMask & 0xff
         command[21] = (AINMask >> 8) & 0xff
         command[22] = AIN14ChannelNumber
@@ -552,15 +552,15 @@ class UE9(Device):
         command[31] = AIN11_10_BipGain
         command[32] = AIN13_12_BipGain
         command[33] = AIN15_14_BipGain
-        
+
         result = self._writeRead(command, 64, [ 0xF8, 0x1D, 0x00], checkBytes = False)
-        
+
         returnDict = { 'FIODir' : result[6], 'FIOState' : result[7], 'EIODir' : result[8], 'EIOState' : result[9], 'CIODir' : (result[10] >> 4) & 0xf, 'CIOState' : result[10] & 0xf, 'MIODir' : (result[11] >> 4) & 7, 'MIOState' : result[11] & 7, 'Counter0' : unpackInt(result[44:48]), 'Counter1' : unpackInt(result[48:52]), 'TimerA' : unpackInt(result[52:56]), 'TimerB' : unpackInt(result[56:60]), 'TimerC' : unpackInt(result[60:]) }
-        
+
         """
-'AIN0' : b2c(unpackShort(result[12:14])), 'AIN1' : unpackShort(result[14:16]), 'AIN2' : unpackShort(result[16:18]), 'AIN3' : unpackShort(result[18:20]), 'AIN4' : unpackShort(result[20:22]), 'AIN5' : unpackShort(result[22:24]), 'AIN6' : unpackShort(result[24:26]), 'AIN7' : unpackShort(result[26:28]), 'AIN8' : unpackShort(result[28:30]), 'AIN9' : unpackShort(result[30:32]), 'AIN10' : unpackShort(result[32:34]), 'AIN11' : unpackShort(result[34:36]), 'AIN12' : unpackShort(result[36:38]), 'AIN13' : unpackShort(result[38:40]), 'AIN14' : unpackShort(result[40:42]), 'AIN15' : unpackShort(result[42:44]), 
+'AIN0' : b2c(unpackShort(result[12:14])), 'AIN1' : unpackShort(result[14:16]), 'AIN2' : unpackShort(result[16:18]), 'AIN3' : unpackShort(result[18:20]), 'AIN4' : unpackShort(result[20:22]), 'AIN5' : unpackShort(result[22:24]), 'AIN6' : unpackShort(result[24:26]), 'AIN7' : unpackShort(result[26:28]), 'AIN8' : unpackShort(result[28:30]), 'AIN9' : unpackShort(result[30:32]), 'AIN10' : unpackShort(result[32:34]), 'AIN11' : unpackShort(result[34:36]), 'AIN12' : unpackShort(result[36:38]), 'AIN13' : unpackShort(result[38:40]), 'AIN14' : unpackShort(result[40:42]), 'AIN15' : unpackShort(result[42:44]),
         """
-        
+
         b2c = self.binaryToCalibratedAnalogVoltage
         g = 0
         for i in range(16):
@@ -571,7 +571,7 @@ class UE9(Device):
                 gain = (command[26 + g] >> 4) & 0xf
                 g += 1
             returnDict["AIN%s" % i] = b2c(bits, gain)
-        
+
         return returnDict
 
     digitalPorts = [ 'FIO', 'EIO', 'CIO', 'MIO' ]
@@ -582,18 +582,18 @@ class UE9(Device):
         Desc: An alternative to Feedback, is this function which writes or
               reads a single output or input. See section 5.3.4 of the User's
               Guide.
-              
+
         >>> myUe9 = ue9.UE9()
         >>> myUe9.singleIO(1, 0, Dir = 1, State = 0)
         {'FIO0 Direction': 1, 'FIO0 State': 0}
         """
         command = [ 0 ] * 8
-        
+
         #command[0] = Checksum8
         command[1] = 0xA3
         command[2] = IOType
         command[3] = Channel
-        
+
         if IOType == 0:
             #Digital Bit Read
             pass
@@ -625,9 +625,9 @@ class UE9(Device):
                 raise LabJackException("Need to specify a DAC Value")
             command[4] = DAC & 0xff
             command[5] = (DAC >> 8) & 0xf
-        
+
         result = self._writeRead(command, 8, [ 0xA3 ], checkBytes = False)
-        
+
         if result[2] == 0:
             #Digital Bit Read
             return { "FIO%s State" % result[3] : result[5], "FIO%s Direction" % result[3] : result[4] }
@@ -648,7 +648,7 @@ class UE9(Device):
             #Analog Out
             dac = (result[6] << 16) + (result[5] << 8) + result[4]
             return { "DAC%s" % result[3] : dac }
-    
+
     def timerCounter(self, TimerClockDivisor=0, UpdateConfig=False, NumTimersEnabled=0, Counter0Enabled=False, Counter1Enabled=False, TimerClockBase=LJ_tcSYS, ResetTimer0=False, ResetTimer1=False, ResetTimer2=False, ResetTimer3=False, ResetTimer4=False, ResetTimer5=False, ResetCounter0=False, ResetCounter1=False, Timer0Mode=None, Timer0Value=None, Timer1Mode=None, Timer1Value=None, Timer2Mode=None, Timer2Value=None, Timer3Mode=None, Timer3Value=None, Timer4Mode=None, Timer4Value=None, Timer5Mode=None, Timer5Value=None):
         """
         Name: UE9.timerCounter(TimerClockDivisor=0, UpdateConfig=False,
@@ -664,7 +664,7 @@ class UE9(Device):
                                Timer3Mode=None, Timer3Value=None,
                                Timer4Mode=None, Timer4Value=None,
                                Timer5Mode=None, Timer5Value=None)
-        
+
         Args: TimerClockDivisor, The timer clock is divided by this value, or
                                  divided by 256 if this value is 0. The
                                  UpdateConfig bit must be set to change this
@@ -687,7 +687,7 @@ class UE9(Device):
               Timer#Value, Only updates if UpdateReset is True. The meaning of
                            this parameter varies with the timer mode. See
                            Section 2.10 for further information.
-        
+
         Desc: Enables, configures, and reads the counters and timers. See
               section 5.3.5 of the User's Guide for more information.
         >>> dev = UE9()
@@ -787,18 +787,18 @@ class UE9(Device):
         """
         Name: UE9.readMem(BlockNum)
         Args: BlockNum, which block to read
-        Desc: Reads 1 block (128 bytes) from the non-volatile user or 
+        Desc: Reads 1 block (128 bytes) from the non-volatile user or
               calibration memory. Please read section 5.3.10 of the user's
               guide before you do something you may regret.
-        
+
         >>> myUE9 = UE9()
         >>> myUE9.readMem(0)
         [ < userdata stored in block 0 > ]
-        
+
         NOTE: Do not call this function while streaming.
         """
         command = [ 0 ] * 8
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x01
@@ -807,9 +807,9 @@ class UE9(Device):
         #command[5] = Checksum16 (MSB)
         command[6] = 0x00
         command[7] = BlockNum
-        
+
         result = self._writeRead(command, 136, [ 0xF8, 0x41, 0x2A ])
-        
+
         return result[8:]
 
     def writeMem(self, BlockNum, Data):
@@ -817,20 +817,20 @@ class UE9(Device):
         Name: UE9.writeMem(BlockNum, Data)
         Args: BlockNum, which block to write
               Data, a list of bytes to write
-        Desc: Writes 1 block (128 bytes) from the non-volatile user or 
+        Desc: Writes 1 block (128 bytes) from the non-volatile user or
               calibration memory. Please read section 5.3.11 of the user's
               guide before you do something you may regret.
-        
+
         >>> myUE9 = UE9()
         >>> myUE9.writeMem(0, [ < userdata to be stored in block 0 > ])
-        
+
         NOTE: Do not call this function while streaming.
         """
         if not isinstance(Data, list):
             raise LabJackException("Data must be a list of bytes")
-        
+
         command = [ 0 ] * 136
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x41
@@ -850,17 +850,17 @@ class UE9(Device):
         Desc: The UE9 uses flash memory that must be erased before writing.
               Please read section 5.2.12 of the user's guide before you do
               something you may regret.
-        
+
         >>> myUE9 = UE9()
         >>> myUE9.eraseMem()
-        
+
         NOTE: Do not call this function while streaming.
         """
         if not isinstance(EraseCal, bool):
             raise LabJackException("EraseCal must be a Boolean value (True or False).")
-        
+
         command = [ 0 ] * 8
-            
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x01
@@ -874,7 +874,7 @@ class UE9(Device):
         else:
             command[6] = 0x00
             command[7] = 0x00
-        
+
         self._writeRead(command, 8, [0xF8, 0x01, command[3]])
 
     def streamClearData(self):
@@ -913,7 +913,7 @@ class UE9(Device):
                                SampleFrequency = None, ScanFrequency = None)
         Args: NumChannels, the number of channels to stream
               Resolution, the resolution of the samples (12 - 16)
-              SettlingTime, the settling time to be used 
+              SettlingTime, the settling time to be used
                             (SettlingTime * 5 microseconds)
               ChannelNumbers, a list of channel numbers to stream
               ChannelOptions, a list of channel options bytes.
@@ -921,11 +921,11 @@ class UE9(Device):
                                   0 = Unipolar Gain 1, 1 = Unipolar Gain 2,
                                   2 = Unipolar Gain 4, 3 = Unipolar Gain 8,
                                   8 = Bipolar Gain 1
-              EnableExternalScanTrigger, enable external scan trigger.  The UE9 
+              EnableExternalScanTrigger, enable external scan trigger.  The UE9
                                          scans the table each time it detects a
                                          falling edge on Counter 1 (slave mode).
               EnableScanPulseOutput, enable scan pulse output.  Counter 1 will
-                                     pulse low just before every scan (master 
+                                     pulse low just before every scan (master
                                      mode).
 
               Set:
@@ -1196,7 +1196,7 @@ class UE9(Device):
               numBytes, the number of bytes per packet
         Desc: Breaks stream data into individual channels and applies
               calibrations.
-              
+
         >>> reading = d.streamData(convert = False)
         >>> print(processStreamData(reading['result']))
         defaultDict(list, {'AIN0': [3.123, 3.231, 3.232, ...]})
@@ -1243,42 +1243,42 @@ class UE9(Device):
         Desc: Writes the configuration of the watchdog.
         """
         command = [ 0 ] * 16
-        
+
         command[1] = 0xF8
         command[2] = 0x05
         command[3] = 0x09
-        
+
         if ResetCommonTimeout:
             command[7] |= (1 << 6)
-        
+
         if ResetControlonTimeout:
             command[7] |= (1 << 5)
-        
+
         if UpdateDigitalIOB:
             command[7] |= (1 << 4)
-        
+
         if UpdateDigitalIOA:
             command[7] |= (1 << 3)
-        
+
         if UpdateDAC1onTimeout:
             command[7] |= (1 << 1)
-        
+
         if UpdateDAC0onTimeout:
             command[7] |= (1 << 0)
-        
+
         t = pack("<H", TimeoutPeriod)
         command[8] = ord(t[0])
         command[9] = ord(t[1])
-        
+
         command[10] = DIOConfigA
         command[11] = DIOConfigB
-        
+
         command[12] = DAC0 & 0xff
         command[13] = (int(DAC0Enabled) << 7) + ((DAC0 >> 8) & 0xf)
-        
+
         command[14] = DAC1 & 0xff
         command[15] = (int(DAC1Enabled) << 7) + ((DAC1 >> 8) & 0xf)
-        
+
         result = self._writeRead(command, 8, [0xF8, 0x01, 0x09])
 
         return { 'UpdateDAC0onTimeout' : bool(result[7]& 1), 'UpdateDAC1onTimeout' : bool((result[7] >> 1) & 1), 'UpdateDigitalIOAonTimeout' : bool((result[7] >> 3) & 1), 'UpdateDigitalIOBonTimeout' : bool((result[7] >> 4) & 1), 'ResetControlOnTimeout' : bool((result[7] >> 5) & 1), 'ResetCommOnTimeout' : bool((result[7] >> 6) & 1) }
@@ -1293,7 +1293,7 @@ class UE9(Device):
         command[1] = 0xF8
         command[2] = 0x00
         command[3] = 0x09
-        
+
         command = setChecksum8(command, 6)
 
         result = self._writeRead(command, 16, [0xF8, 0x05, 0x09], checksum = False)
@@ -1304,13 +1304,13 @@ class UE9(Device):
         Name: UE9.spi(SPIBytes, AutoCS=True, DisableDirConfig = False,
                      SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 1,
                      CLKPinNum = 0, MISOPinNum = 3, MOSIPinNum = 2)
-        
+
         Args: SPIBytes, a list of bytes to be transferred.
               See Section 5.3.16 of the user's guide.
-        
+
         Desc: Sends and receives serial data using SPI synchronous
               communication.
-        
+
         NOTE: The return has been changed to a dictionary with
               NumSPIBytesTransferred and SPIBytes.  The keyword
               argument CSPinNum was named CSPINNum in old versions.
@@ -1321,35 +1321,35 @@ class UE9(Device):
         if CSPINNum is not None:
             warnings.warn("CSPINNum is deprecated, use CSPinNum instead", DeprecationWarning)
             CSPinNum = CSPINNum
-        
+
         numSPIBytes = len(SPIBytes)
-        
+
         oddPacket = False
         if numSPIBytes%2 != 0:
             SPIBytes.append(0)
             numSPIBytes = numSPIBytes + 1
             oddPacket = True
-        
+
         command = [ 0 ] * (13 + numSPIBytes)
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 4 + (numSPIBytes/2)
         command[3] = 0x3A
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
-        
+
         if AutoCS:
             command[6] |= (1 << 7)
         if DisableDirConfig:
             command[6] |= (1 << 6)
-        
+
         spiModes = ('A', 'B', 'C', 'D')
         try:
             command[6] |= ( spiModes.index(SPIMode) & 3 )
         except ValueError:
             raise LabJackException("Invalid SPIMode %r, valid modes are: %r" % (SPIMode, spiModes))
-        
+
         command[7] = SPIClockFactor
         #command[8] = Reserved
         command[9] = CSPinNum
@@ -1359,11 +1359,11 @@ class UE9(Device):
         command[13] = numSPIBytes
         if oddPacket:
             command[13] = numSPIBytes - 1
-        
+
         command[14:] = SPIBytes
-        
+
         result = self._writeRead(command, 8+numSPIBytes, [ 0xF8, 1+(numSPIBytes/2), 0x3A ])
-        
+
         if result[6] != 0:
             raise LowlevelErrorException(result[6], "The spi command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
 
@@ -1371,12 +1371,12 @@ class UE9(Device):
 
     def asynchConfig(self, Update = True, UARTEnable = True, DesiredBaud  = 9600):
         """
-        Name: UE9.asynchConfig(Update = True, UARTEnable = True, 
+        Name: UE9.asynchConfig(Update = True, UARTEnable = True,
                               DesiredBaud = 9600)
         Args: See section 5.3.17 of the User's Guide.
 
-        Desc: Configures the U3 UART for asynchronous communication. 
-        
+        Desc: Configures the U3 UART for asynchronous communication.
+
         returns a dictionary:
         {
             'Update' : True means new parameters were written
@@ -1384,9 +1384,9 @@ class UE9(Device):
             'BaudFactor' : The baud factor being used
         }
         """
-        
+
         command = [ 0 ] * 10
-            
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x02
@@ -1394,21 +1394,21 @@ class UE9(Device):
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
         #command[6] = 0x00
-        
+
         if Update:
             command[7] |= ( 1 << 7 )
         if UARTEnable:
             command[7] |= ( 1 << 6 )
-        
+
         BaudFactor = (2**16) - 48000000/(2 * DesiredBaud)
         t = pack("<H", BaudFactor)
         command[8] = ord(t[0])
         command[9] = ord(t[1])
-        
+
         result = self._writeRead(command, 10, [0xF8, 0x02, 0x14])
-        
+
         returnDict = {}
-        
+
         if (result[7] >> 7) & 1:
             returnDict['Update'] = True
         else:
@@ -1417,7 +1417,7 @@ class UE9(Device):
             returnDict['UARTEnable'] = True
         else:
             returnDict['UARTEnable'] = False
-            
+
         returnDict['BaudFactor'] = unpack("<H", pack("BB", *result[8:]))[0]
 
         return returnDict
@@ -1428,7 +1428,7 @@ class UE9(Device):
         Args: AsynchBytes, must be a list of bytes to transfer.
         Desc: Sends bytes to the U3 UART which will be sent asynchronously on
               the transmit line. See section 5.3.18 of the user's guide.
-        
+
         returns a dictionary:
         {
             'NumAsynchBytesSent' : Number of Asynch Bytes Sent
@@ -1438,17 +1438,17 @@ class UE9(Device):
         """
         if not isinstance(AsynchBytes, list):
             raise LabJackException("AsynchBytes must be a list")
-        
+
         numBytes = len(AsynchBytes)
-        
+
         oddPacket = False
         if numBytes%2 != 0:
             AsynchBytes.append(0)
             numBytes = numBytes+1
             oddPacket = True
-        
+
         command = [ 0 ] * ( 8 + numBytes)
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 1 + ( numBytes/2 )
@@ -1459,11 +1459,11 @@ class UE9(Device):
         command[7] = numBytes
         if oddPacket:
             command[7] = numBytes - 1
-        
+
         command[8:] = AsynchBytes
-        
+
         result = self._writeRead(command, 10, [0xF8, 0x02, 0x15])
-        
+
         return { 'NumAsynchBytesSent' : result[7], 'NumAsynchBytesInRXBuffer' : result[8] }
 
     def asynchRX(self, Flush = False):
@@ -1482,7 +1482,7 @@ class UE9(Device):
         }
         """
         command = [ 0 ] * 8
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x01
@@ -1492,10 +1492,10 @@ class UE9(Device):
         #command[6] = 0x00
         if Flush:
             command[7] = 1
-        
-        
+
+
         result = self._writeRead(command, 40, [0xF8, 0x11, 0x16])
-        
+
         return { 'AsynchBytes' : result[8:], 'NumAsynchBytesInRXBuffer' : result[7] }
 
     def i2c(self, Address, I2CBytes, EnableClockStretching = False, NoStopWhenRestarting = False, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 1, SCLPinNum = 0, NumI2CBytesToReceive = 0, AddressByte = None):
@@ -1578,7 +1578,7 @@ class UE9(Device):
               Section 5.3.21 of the User's Guide.
         """
         command = [ 0 ] * 10
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x02
@@ -1589,16 +1589,16 @@ class UE9(Device):
         command[7] = ClockPinNum
         #command[8] = Reserved
         command[9] = SHTOptions
-        
+
         result = self._writeRead(command, 16, [ 0xF8, 0x05, 0x39])
-        
+
         val = (result[11]*256) + result[10]
         temp = -39.60 + 0.01*val
-        
+
         val = (result[14]*256) + result[13]
         humid = -4 + 0.0405*val + -.0000028*(val*val)
         humid = (temp - 25)*(0.01 + 0.00008*val) + humid
-         
+
         return { 'StatusReg' : result[8], 'StatusCRC' : result[9], 'Temperature' : temp, 'TemperatureCRC' : result[12], 'Humidity' : humid, 'HumidityCRC' : result[15] }
 
     def getAIN(self, channel, BipGain = 0x00, Resolution = 12, SettlingTime = 0):
@@ -1629,7 +1629,7 @@ class UE9(Device):
                           devices to ensure proper conversion.
         Desc: Converts the binary value returned from Feedback and SingleIO
               to a calibrated, analog voltage.
-        
+
         >>> print(d.singleIO(4, 1, BipGain = 0x01, Resolution = 12))
         {'AIN1': 65520.0}
         >>> print(d.binaryToCalibratedAnalogVoltage(65520.0, 0x01, 12))
@@ -1669,9 +1669,9 @@ class UE9(Device):
         else:
             slope = DEFAULT_CAL_CONSTANTS['DACSlopes'][str(dacNumber)]
             offset = DEFAULT_CAL_CONSTANTS['DACOffsets'][str(dacNumber)]
-        
+
         bits = (volts * slope) + offset
-        
+
         return int(max(min(bits, 0xFFF), 0))
 
     def getCalibrationData(self):
@@ -1680,7 +1680,7 @@ class UE9(Device):
         Args: None
         Desc: Reads the calibration constants off the UE9, and stores them
               for use with binaryToCalibratedAnalogVoltage.
-        
+
         Note: Please note that this function calls controlConfig to check
               if the device is a UE9 or not. It also makes calls to
               readMem, so please don't call this while streaming.
@@ -1736,13 +1736,13 @@ class UE9(Device):
 
     def readDefaultsConfig(self):
         """
-        Name: UE9.readDefaultsConfig( ) 
+        Name: UE9.readDefaultsConfig( )
         Args: None
         Desc: Reads the power-up defaults stored in flash.
         """
         results = dict()
         defaults = self.readDefaults(0)
-        
+
         results['FIODirection'] = defaults[4]
         results['FIOState'] = defaults[5]
         results['EIODirection'] = defaults[6]
@@ -1751,98 +1751,98 @@ class UE9(Device):
         results['CIOState'] = defaults[9]
         results['MIODirection'] = defaults[10]
         results['MIOState'] = defaults[11]
-        
+
         results['ConfigWriteMask'] = defaults[16]
         results['NumOfTimersEnable'] = defaults[17]
         results['CounterMask'] = defaults[18]
         results['PinOffset'] = defaults[19]
-        
+
         defaults = self.readDefaults(1)
         results['ClockSource'] = defaults[0]
         results['Divisor'] = defaults[1]
-        
+
         results['TMR0Mode'] = defaults[16]
         results['TMR0ValueL'] = defaults[17]
         results['TMR0ValueH'] = defaults[18]
-        
+
         results['TMR1Mode'] = defaults[20]
         results['TMR1ValueL'] = defaults[21]
         results['TMR1ValueH'] = defaults[22]
-        
+
         results['TMR2Mode'] = defaults[24]
         results['TMR2ValueL'] = defaults[25]
         results['TMR2ValueH'] = defaults[26]
-        
+
         results['TMR3Mode'] = defaults[28]
         results['TMR3ValueL'] = defaults[29]
         results['TMR3ValueH'] = defaults[30]
-        
+
         defaults = self.readDefaults(2)
-        
+
         results['TMR4Mode'] = defaults[0]
         results['TMR4ValueL'] = defaults[1]
         results['TMR4ValueH'] = defaults[2]
-        
+
         results['TMR5Mode'] = defaults[4]
         results['TMR5ValueL'] = defaults[5]
         results['TMR5ValueH'] = defaults[6]
-        
+
         results['DAC0'] = unpack( "<H", pack("BB", *defaults[16:18]) )[0]
-        
+
         results['DAC1'] = unpack( "<H", pack("BB", *defaults[20:22]) )[0]
-        
+
         defaults = self.readDefaults(3)
-        
+
         for i in range(14):
             results["AIN%sRes" % i] = defaults[i]
             results["AIN%sBPGain" % i] = defaults[i+16]
-        
+
         defaults = self.readDefaults(4)
         for i in range(14):
             results["AIN%sSettling" % i] = defaults[i]
-        
+
         return results
 
     def exportConfig(self):
         """
-        Name: UE9.exportConfig( ) 
+        Name: UE9.exportConfig( )
         Args: None
         Desc: Takes the current configuration and puts it into a ConfigParser
               object. Useful for saving the setup of your UE9.
         """
         # Make a new configuration file
         parser = ConfigParser.SafeConfigParser()
-        
+
         # Change optionxform so that options preserve their case.
         parser.optionxform = str
-        
+
         # Local Id and name
         self.commConfig()
         self.controlConfig()
-        
+
         section = "Identifiers"
         parser.add_section(section)
         parser.set(section, "Local ID", str(self.localId))
         parser.set(section, "Name", str(self.getName()))
         parser.set(section, "Device Type", str(self.devType))
         parser.set(section, "MAC Address", str(self.macAddress))
-        
+
         # Comm Config settings
         section = "Communication"
         parser.add_section(section)
-        
+
         parser.set(section, "DHCPEnabled", str(self.DHCPEnabled))
         parser.set(section, "IP Address", str(self.ipAddress))
         parser.set(section, "Subnet", str(self.subnet))
         parser.set(section, "Gateway", str(self.gateway))
         parser.set(section, "PortA", str(self.portA))
         parser.set(section, "PortB", str(self.portB))
-        
-        
+
+
         # FIO Direction / State
         section = "FIOs"
         parser.add_section(section)
-        
+
         parser.set(section, "FIO Directions", str( self.readRegister(6750) ))
         parser.set(section, "FIO States", str( self.readRegister(6700) ))
         parser.set(section, "EIO Directions", str( self.readRegister(6751) ))
@@ -1851,71 +1851,71 @@ class UE9(Device):
         parser.set(section, "CIO States", str( self.readRegister(6702) ))
         #parser.set(section, "MIOs Directions", str( self.readRegister(50591) ))
         #parser.set(section, "MIOs States", str( self.readRegister(50591) ))
-            
+
         # DACs
         section = "DACs"
         parser.add_section(section)
-        
+
         dac0 = self.readRegister(5000)
         dac0 = max(dac0, 0)
         dac0 = min(dac0, 5)
         parser.set(section, "DAC0", "%0.2f" % dac0)
-        
+
         dac1 = self.readRegister(5002)
         dac1 = max(dac1, 0)
         dac1 = min(dac1, 5)
         parser.set(section, "DAC1", "%0.2f" % dac1)
-        
+
         # Timer Clock Configuration
         section = "Timer Clock Speed Configuration"
         parser.add_section(section)
-        
+
         parser.set(section, "TimerClockBase", str(self.readRegister(7000)))
         parser.set(section, "TimerClockDivisor", str(self.readRegister(7002)))
-        
+
         # Timers / Counters
         section = "Timers And Counters"
         parser.add_section(section)
-        
+
         nte = self.readRegister(50501)
         cm = self.readRegister(50502)
         ec0 = bool( cm & 1 )
         ec1 = bool( (cm >> 1) & 1 )
-        
+
         parser.set(section, "NumberTimersEnabled", str(nte) )
         parser.set(section, "Counter0Enabled", str(ec0) )
         parser.set(section, "Counter1Enabled", str(ec1) )
-        
+
         for i in range(nte):
             mode, value = self.readRegister(7100 + (i*2), numReg = 2, format = ">HH")
             parser.set(section, "Timer%s Mode" % i, str(mode))
             parser.set(section, "Timer%s Value" % i, str(value))
-            
-        
-        
+
+
+
         return parser
 
     def loadConfig(self, configParserObj):
         """
-        Name: UE9.loadConfig( configParserObj ) 
+        Name: UE9.loadConfig( configParserObj )
         Args: configParserObj, A Config Parser object to load in
         Desc: Takes a configuration and updates the UE9 to match it.
         """
         parser = configParserObj
-        
+
         # Set Identifiers:
         section = "Identifiers"
         if parser.has_section(section):
             if parser.has_option(section, "device type"):
                 if parser.getint(section, "device type") != self.devType:
                     raise Exception("Not a UE9 Config file.")
-            
+
             if parser.has_option(section, "local id"):
                 self.commConfig( LocalID = parser.getint(section, "local id"))
-                
+
             if parser.has_option(section, "name"):
                 self.setName( parser.get(section, "name") )
-        
+
         # Comm Config settings
         section = "Communication"
         if parser.has_section(section):
@@ -1925,115 +1925,115 @@ class UE9(Device):
             gateway = None
             portA = None
             portB = None
-            
+
             if parser.has_option(section, "DHCPEnabled"):
                 DHCPEnabled = parser.getboolean(section, "DHCPEnabled")
-                
+
             if parser.has_option(section, "ipAddress"):
                 ipAddress = parser.get(section, "ipAddress")
-                
+
             if parser.has_option(section, "subnet"):
                 subnet = parser.get(section, "subnet")
-            
+
             if parser.has_option(section, "gateway"):
                 gateway = parser.get(section, "gateway")
-            
+
             if parser.has_option(section, "portA"):
                 portA = parser.getint(section, "portA")
-                
+
             if parser.has_option(section, "portB"):
                 portB = parser.getint(section, "portB")
-                
+
             self.commConfig( DHCPEnabled = DHCPEnabled, IPAddress = ipAddress, Subnet = subnet, Gateway = gateway, PortA = portA, PortB = portB )
-        
-        
+
+
         # Set FIOs:
         section = "FIOs"
         if parser.has_section(section):
             fiodirs = 0
             eiodirs = 0
             ciodirs = 0
-            
+
             fiostates = 0
             eiostates = 0
             ciostates = 0
-            
+
             if parser.has_option(section, "fios directions"):
                 fiodirs = parser.getint(section, "fios directions")
             if parser.has_option(section, "eios directions"):
                 eiodirs = parser.getint(section, "eios directions")
             if parser.has_option(section, "cios directions"):
                 ciodirs = parser.getint(section, "cios directions")
-            
+
             if parser.has_option(section, "fios states"):
                 fiostates = parser.getint(section, "fios states")
             if parser.has_option(section, "eios states"):
                 eiostates = parser.getint(section, "eios states")
             if parser.has_option(section, "cios states"):
                 ciostates = parser.getint(section, "cios states")
-            
+
             bitmask = 0xff00
-            
+
             # FIO State/Dir
             self.writeRegister(6700, bitmask + fiostates )
             self.writeRegister(6750, bitmask + fiodirs )
-            
+
             # EIO State/Dir
             self.writeRegister(6701, bitmask + eiostates )
             self.writeRegister(6751, bitmask + eiodirs )
-            
+
             # CIO State/Dir
             self.writeRegister(6702, bitmask + ciostates )
             self.writeRegister(6752, bitmask + ciodirs )
-            
-                
+
+
         # Set DACs:
         section = "DACs"
         if parser.has_section(section):
             if parser.has_option(section, "dac0"):
                 self.writeRegister(5000, parser.getfloat(section, "dac0"))
-            
+
             if parser.has_option(section, "dac1"):
                 self.writeRegister(5002, parser.getfloat(section, "dac1"))
-                
+
         # Set Timer Clock Configuration
         section = "Timer Clock Speed Configuration"
         if parser.has_section(section):
             if parser.has_option(section, "timerclockbase"):
                 self.writeRegister(7000, parser.getint(section, "timerclockbase"))
-            
+
             if parser.has_option(section, "timerclockdivisor"):
                 self.writeRegister(7002, parser.getint(section, "timerclockbase"))
-        
+
         # Set Timers / Counters
         section = "Timers And Counters"
         if parser.has_section(section):
             nte = 0
-            
+
             if parser.has_option(section, "NumberTimersEnabled"):
                 nte = parser.getint(section, "NumberTimersEnabled")
                 self.writeRegister(50501, nte)
-            
+
             if parser.has_option(section, "Counter0Enabled"):
                 cm = (self.readRegister(50502) & 2) # 0b10
                 c0e = parser.getboolean(section, "Counter0Enabled")
                 self.writeRegister(50502, cm + int(c0e))
-            
+
             if parser.has_option(section, "Counter1Enabled"):
                 cm = (self.readRegister(50502) & 1) # 0b01
                 c1e = parser.getboolean(section, "Counter1Enabled")
                 self.writeRegister(50502, (int(c1e) << 1) + 1)
-            
-            
-            
+
+
+
             mode = None
             value = None
-            
+
             for i in range(nte):
                 if parser.has_option(section, "timer%s mode"):
                     mode = parser.getint(section, "timer%s mode")
-                    
+
                     if parser.has_option(section, "timer%s value"):
                         value = parser.getint(section, "timer%s mode")
-                    
+
                     self.writeRegister(7100 + (i*2), [mode, value])

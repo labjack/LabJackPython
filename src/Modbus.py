@@ -46,17 +46,17 @@ def _buildHeaderBytes(length = 6, unitId = None):
             basicHeader = (BASE_TRANS_ID, 0, length, 0x00)
         else:
             basicHeader = (BASE_TRANS_ID, 0, length, unitId)
-        
+
         CURRENT_TRANS_IDS.add(BASE_TRANS_ID)
-        
+
         BASE_TRANS_ID = ( BASE_TRANS_ID + 1 ) % MAX_TRANS_ID
-        
+
         return pack('>HHHB', *basicHeader)
-    
+
 def _checkTransId(transId):
     with GLOBAL_TRANSACTION_ID_LOCK:
         global CURRENT_TRANS_IDS
-        
+
         if transId in CURRENT_TRANS_IDS:
             CURRENT_TRANS_IDS.remove(transId)
         else:
@@ -83,7 +83,7 @@ def readHoldingRegistersResponse(packet, payloadFormat=None):
     # Check that protocol ID is 0
     if header[1] != 0:
         raise ModbusException("Got an unexpected protocol ID: %s (expected 0). Please make sure that you have the latest firmware. UE9s need a Comm Firmware of 1.50 or greater.\n\nThe packet you received: %s" % (header[1], repr(packet)))
-    
+
     # Check for valid Trans ID
     _checkTransId(header[0])
 
@@ -107,8 +107,8 @@ def readHoldingRegistersResponse(packet, payloadFormat=None):
 
     # When we write '>s', we mean a variable-length string.
     # We just didn't know the length when we wrote it.
-    if payloadFormat == '>s': 
-       payloadFormat = '>' + 's' *  payloadLength
+    if payloadFormat == '>s':
+        payloadFormat = '>' + 's' *  payloadLength
 
     payload = unpack(payloadFormat, packet[HEADER_LENGTH:])
 
@@ -155,8 +155,8 @@ def readInputRegistersResponse(packet, payloadFormat=None):
 
     # When we write '>s', we mean a variable-length string.
     # We just didn't know the length when we wrote it.
-    if payloadFormat == '>s': 
-       payloadFormat = '>' + 's' *  payloadLength
+    if payloadFormat == '>s':
+        payloadFormat = '>' + 's' *  payloadLength
 
     payload = unpack(payloadFormat, packet[HEADER_LENGTH:])
 
@@ -169,19 +169,19 @@ def writeRegisterRequest(addr, value, unitId = None):
     packet = _buildHeaderBytes(unitId = unitId) + pack('>BHH', 0x06, addr, value)
 
     return packet
-    
+
 def writeRegistersRequest(startAddr, values, unitId = None):
     numReg = len(values)
-    
+
     for v in values:
         if not isinstance(v, int):
             raise TypeError("Value written must be an integer.")
-    
+
     if unitId is None:
         unitId = 0xff
-    
+
     header = _buildHeaderBytes(length = 7+(numReg*2), unitId = unitId)
-    
+
     header += pack('>BHHB', *(16, startAddr, numReg, numReg*2) )
 
     format = '>' + 'H' * numReg
@@ -194,7 +194,7 @@ def writeRegisterRequestValue(data):
     return packet[0]
 
 class ModbusException(Exception):
-    
+
     def __init__(self, exceptCode):
         self.exceptCode = exceptCode
 
@@ -268,32 +268,32 @@ def calcNumberOfRegistersAndFormat(addr, numReg = None):
 def getStartingAddress(packet):
     """Get the address of a modbus request"""
     return ((ord(packet[8]) << 8) + ord(packet[9]))
-    
+
 def getRequestType(packet):
     """Get the request type of a modbus request."""
     return ord(packet[7])
-    
+
 def getTransactionId(packet):
     """Pulls out the transaction id of the packet"""
     if isinstance(packet, list):
         return unpack(">H", pack("BB", *packet[:2]) )[0]
     else:
         return unpack(">H", packet[:2])[0]
-        
+
 def getProtocolId(packet):
     """Pulls out the transaction id of the packet"""
     if isinstance(packet, list):
         return unpack(">H", pack("BB", *packet[2:4]) )[0]
     else:
         return unpack(">H", packet[2:4])[0]
-        
+
 def parseIntoPackets(packet):
     while True:
         if isinstance(packet, list):
             firstLength = packet[5]+6
         else:
             firstLength = ord(packet[5])+6
-        
+
         if len(packet) == firstLength:
             yield packet
             raise StopIteration
@@ -309,7 +309,7 @@ def parseSpontaneousDataPacket(packet):
         localId = ord(packet[6])
     transId = unpack(">H", packet[0:2])[0]
     report = unpack(">HBBfHH"+"f"*8, packet[9:53])
-    
+
     results = dict()
     results['unitId'] = localId
     results['transId'] = transId
@@ -320,5 +320,5 @@ def parseSpontaneousDataPacket(packet):
     results['Light'] = report[7]
     results['Bump'] = report[4]
     results['Sound'] = report[11]
-    
+
     return results
