@@ -52,6 +52,7 @@ class LabJackException(Exception):
     If errorString is not specified then errorString is set by errorCode.
     """
     def __init__(self, ec=0, errorString=''):
+        Exception.__init__(self)
         self.errorCode = ec
         self.errorString = errorString
 
@@ -75,6 +76,7 @@ class LowlevelErrorException(LabJackException):
 class NullHandleException(LabJackException):
     """Raised when the return value of OpenDevice is null."""
     def __init__(self):
+        LabJackException.__init__(self)
         self.errorString = "Couldn't open device. Please check that the device you are trying to open is connected."
 
 
@@ -137,7 +139,6 @@ def _loadLibrary():
             wlib = ctypes.CDLL("labjackud")
         if wlib is not None:
             try:
-                wlib.eGetPtr
                 #eGetPtr is available in the UD driver version installed.
                 _use_ptr = True
             except:
@@ -2677,7 +2678,7 @@ def __listAllU6Unix():
     return deviceList
 
 def setChecksum16(buffer):
-    total = 0;
+    total = 0
 
     for i in range(6, len(buffer)):
         total += (buffer[i] & 0xff)
@@ -2722,7 +2723,7 @@ class LJSocketHandle(object):
             if status.lower().startswith('ok'):
                 lines = []
                 marked = None
-                for i in range(int(numLines)):
+                for _ in range(int(numLines)):
                     l = f.readline().strip()
                     dev = parseline(l)
 
@@ -2835,7 +2836,6 @@ class UE9TCPHandle(object):
         except Exception:
             e = sys.exc_info()[1]
             print("UE9 Handle close exception: %s" % e)
-            pass
 
 def toDouble(bytes):
     """

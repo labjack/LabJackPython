@@ -1176,7 +1176,7 @@ class U12(object):
         self.write(command)
 
         resultsList = []
-        for i in range(NumScans):
+        for _ in range(NumScans):
             resultsList.append(self.read())
 
 

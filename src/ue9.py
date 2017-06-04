@@ -275,7 +275,7 @@ class UE9(Device):
         listen = True
         while listen:
             #We will wait 2 seconds for a response from a Ue9
-            rs,ws,es = select.select(inputs, [], [], 1)
+            rs, _, _ = select.select(inputs, [], [], 1)
             listen = False
             for r in rs:
                 if r is s:
@@ -559,7 +559,7 @@ class UE9(Device):
 
         """
 'AIN0' : b2c(unpackShort(result[12:14])), 'AIN1' : unpackShort(result[14:16]), 'AIN2' : unpackShort(result[16:18]), 'AIN3' : unpackShort(result[18:20]), 'AIN4' : unpackShort(result[20:22]), 'AIN5' : unpackShort(result[22:24]), 'AIN6' : unpackShort(result[24:26]), 'AIN7' : unpackShort(result[26:28]), 'AIN8' : unpackShort(result[28:30]), 'AIN9' : unpackShort(result[30:32]), 'AIN10' : unpackShort(result[32:34]), 'AIN11' : unpackShort(result[34:36]), 'AIN12' : unpackShort(result[36:38]), 'AIN13' : unpackShort(result[38:40]), 'AIN14' : unpackShort(result[40:42]), 'AIN15' : unpackShort(result[42:44]),
-        """
+        """ # pylint:disable=pointless-string-statement
 
         b2c = self.binaryToCalibratedAnalogVoltage
         g = 0
@@ -886,7 +886,7 @@ class UE9(Device):
         Note: Use before and/or after streaming.  Timeout delay can occur occur.
         """
         try:
-            for i in range(10):
+            for _ in range(10):
                 res = self.read(192, stream = True)
                 if len(res) == 192:
                     if all([streamByteToInt(b) == 0 for b in res]):

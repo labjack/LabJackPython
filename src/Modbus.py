@@ -194,12 +194,7 @@ def writeRegisterRequestValue(data):
     return packet[0]
 
 class ModbusException(Exception):
-
-    def __init__(self, exceptCode):
-        self.exceptCode = exceptCode
-
-    def __str__(self):
-        return repr(self.exceptCode)
+    pass
 
 def calcNumberOfRegisters(addr, numReg = None):
     return calcNumberOfRegistersAndFormat(addr, numReg)[0]

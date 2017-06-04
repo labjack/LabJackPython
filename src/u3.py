@@ -2636,7 +2636,7 @@ class TimerStopInput1(Timer1):
     [(0, 0)]
     """
     def __init__(self, UpdateReset = False, Value = 0):
-        Timer.__init__(self, 1, UpdateReset, Value, Mode = 9)
+        Timer1.__init__(self, UpdateReset, Value, Mode = 9)
 
     def __repr__(self):
         return "<u3.TimerStopInput1( UpdateReset = %s, Value = %s )>" % (self.updateReset, self.value)
