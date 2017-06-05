@@ -1935,7 +1935,8 @@ class U12(object):
 
             ecode = staticLib.EAnalogIn(ctypes.byref(ljid), demo, channel, gain, ctypes.byref(ad0), ctypes.byref(ad1))
 
-            if ecode != 0: raise U12Exception(ecode)
+            if ecode != 0:
+                raise U12Exception(ecode)
 
             return {"idnum": ljid.value, "overVoltage": ad0.value, "voltage": ad1.value}
         else:
@@ -1966,7 +1967,8 @@ class U12(object):
             ljid = ctypes.c_long(idNum)
             ecode = staticLib.EAnalogOut(ctypes.byref(ljid), demo, ctypes.c_float(analogOut0), ctypes.c_float(analogOut1))
 
-            if ecode != 0: raise U12Exception(ecode)
+            if ecode != 0:
+                raise U12Exception(ecode)
 
             return {"idnum": ljid.value}
         else:
@@ -2006,7 +2008,8 @@ class U12(object):
 
             ecode = staticLib.ECount(ctypes.byref(ljid), demo, resetCounter, ctypes.byref(count), ctypes.byref(ms))
 
-            if ecode != 0: raise U12Exception(ecode)
+            if ecode != 0:
+                raise U12Exception(ecode)
 
             return {"idnum": ljid.value, "count": count.value, "ms": ms.value}
         else:
@@ -2039,7 +2042,8 @@ class U12(object):
 
             ecode = staticLib.EDigitalIn(ctypes.byref(ljid), demo, channel, readD, ctypes.byref(state))
 
-            if ecode != 0: raise U12Exception(ecode)
+            if ecode != 0:
+                raise U12Exception(ecode)
 
             return {"idnum": ljid.value, "state": state.value}
         else:
@@ -2090,7 +2094,8 @@ class U12(object):
 
             ecode = staticLib.EDigitalOut(ctypes.byref(ljid), demo, channel, writeD, state)
 
-            if ecode != 0: raise U12Exception(ecode)
+            if ecode != 0:
+                raise U12Exception(ecode)
 
             return {"idnum": ljid.value}
         else:
@@ -2141,10 +2146,14 @@ class U12(object):
         idNum = ctypes.c_long(idNum)
 
         # Check to make sure that everything is checked
-        if not isIterable(channels): raise TypeError("channels must be iterable")
-        if not isIterable(gains): raise TypeError("gains must be iterable")
-        if len(channels) < numChannels: raise ValueError("channels must have atleast numChannels elements")
-        if len(gains) < numChannels: raise ValueError("gains must have atleast numChannels elements")
+        if not isIterable(channels):
+            raise TypeError("channels must be iterable")
+        if not isIterable(gains):
+            raise TypeError("gains must be iterable")
+        if len(channels) < numChannels:
+            raise ValueError("channels must have atleast numChannels elements")
+        if len(gains) < numChannels:
+            raise ValueError("gains must have atleast numChannels elements")
 
         # Convert lists to arrays and create other ctypes
         channelsArray = listToCArray(channels, ctypes.c_long)
@@ -2156,7 +2165,8 @@ class U12(object):
 
         ecode = staticLib.AISample(ctypes.byref(idNum), demo, ctypes.byref(stateIOin), updateIO, ledOn, numChannels, ctypes.byref(channelsArray), ctypes.byref(gainsArray), disableCal, ctypes.byref(overVoltage), ctypes.byref(voltages))
 
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"idnum": idNum.value, "stateIO": stateIOin.value, "overVoltage": overVoltage.value, "voltages": voltages[0:numChannels]}
 
@@ -2177,8 +2187,10 @@ class U12(object):
         idNum = ctypes.c_long(idNum)
 
         # check list sizes
-        if len(channels) < numChannels: raise ValueError("channels must have atleast numChannels elements")
-        if len(gains) < numChannels: raise ValueError("gains must have atleast numChannels elements")
+        if len(channels) < numChannels:
+            raise ValueError("channels must have atleast numChannels elements")
+        if len(gains) < numChannels:
+            raise ValueError("gains must have atleast numChannels elements")
 
         # Convert lists to arrays and create other ctypes
         channelsArray = listToCArray(channels, ctypes.c_long)
@@ -2192,7 +2204,8 @@ class U12(object):
 
         ecode = staticLib.AIBurst(ctypes.byref(idNum), demo, stateIOin, updateIO, ledOn, numChannels, ctypes.byref(channelsArray), ctypes.byref(gainsArray), ctypes.byref(scanRate), disableCal, triggerIO, triggerState, numScans, timeout, ctypes.byref(voltages), ctypes.byref(stateIOout), ctypes.byref(overVoltage), transferMode)
 
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"idnum": idNum.value, "scanRate": scanRate.value, "voltages": voltages, "stateIOout": stateIOout, "overVoltage": overVoltage.value}
 
@@ -2211,8 +2224,10 @@ class U12(object):
         staticLib.AIStreamStart.restype = ctypes.c_long
 
         # check list sizes
-        if len(channels) < numChannels: raise ValueError("channels must have atleast numChannels elements")
-        if len(gains) < numChannels: raise ValueError("gains must have atleast numChannels elements")
+        if len(channels) < numChannels:
+            raise ValueError("channels must have atleast numChannels elements")
+        if len(gains) < numChannels:
+            raise ValueError("gains must have atleast numChannels elements")
         # if len(stateIOin) < 4: raise ValueError("stateIOin must have atleast 4 elements")
 
         # Check id number
@@ -2227,7 +2242,8 @@ class U12(object):
 
         ecode = staticLib.AIStreamStart(ctypes.byref(idNum), demo, stateIOin, updateIO, ledOn, numChannels, ctypes.byref(channelsArray), ctypes.byref(gainsArray), ctypes.byref(scanRate), disableCal, 0, readCount)
 
-        if ecode != 0: raise U12Exception(ecode)  # TODO: Switch this out for exception
+        if ecode != 0:
+            raise U12Exception(ecode)  # TODO: Switch this out for exception
 
         # The ID number must be saved for AIStream
         self.id = idNum.value
@@ -2267,7 +2283,8 @@ class U12(object):
 
         ecode = staticLib.AIStreamRead(localID, numScans, timeout, ctypes.byref(voltages), ctypes.byref(stateIOout), ctypes.byref(reserved), ctypes.byref(ljScanBacklog), ctypes.byref(overVoltage))
 
-        if ecode != 0: raise U12Exception(ecode)  # TODO: Switch this out for exception
+        if ecode != 0:
+            raise U12Exception(ecode)  # TODO: Switch this out for exception
 
         return {"voltages": voltages, "stateIOout": stateIOout, "reserved": reserved.value, "ljScanBacklog": ljScanBacklog.value, "overVoltage": overVoltage.value}
 
@@ -2293,7 +2310,8 @@ class U12(object):
 
         ecode = staticLib.AIStreamClear(localID)
 
-        if ecode != 0: raise U12Exception(ecode)  # TODO: Switch this out for exception
+        if ecode != 0:
+            raise U12Exception(ecode)  # TODO: Switch this out for exception
 
     def aoUpdate(self, idNum=None, demo=0, trisD=None, trisIO=None, stateD=None, stateIO=None, updateDigital=0, resetCounter=0, analogOut0=0, analogOut1=0):
         """
@@ -2313,22 +2331,31 @@ class U12(object):
 
         #  Check tris and state arguments
         if updateDigital > 0:
-            if trisD is None: raise ValueError("keyword argument trisD must be set")
-            if trisIO is None: raise ValueError("keyword argument trisIO must be set")
-            if stateD is None: raise ValueError("keyword argument stateD must be set")
-            if stateIO is None: raise ValueError("keyword argument stateIO must be set")
+            if trisD is None:
+                raise ValueError("keyword argument trisD must be set")
+            if trisIO is None:
+                raise ValueError("keyword argument trisIO must be set")
+            if stateD is None:
+                raise ValueError("keyword argument stateD must be set")
+            if stateIO is None:
+                raise ValueError("keyword argument stateIO must be set")
 
         # Create ctypes
-        if stateD is None: stateD = ctypes.c_long(0)
-        else: stateD = ctypes.c_long(stateD)
-        if stateIO is None: stateIO = ctypes.c_long(0)
-        else: stateIO = ctypes.c_long(stateIO)
+        if stateD is None:
+            stateD = ctypes.c_long(0)
+        else:
+            stateD = ctypes.c_long(stateD)
+        if stateIO is None:
+            stateIO = ctypes.c_long(0)
+        else:
+            stateIO = ctypes.c_long(stateIO)
         count = ctypes.c_ushort(999)
 
         # Create arrays and other ctypes
         ecode = staticLib.AOUpdate(ctypes.byref(idNum), demo, trisD, trisIO, ctypes.byref(stateD), ctypes.byref(stateIO), updateDigital, resetCounter, ctypes.byref(count), ctypes.c_float(analogOut0), ctypes.c_float(analogOut1))
 
-        if ecode != 0: raise U12Exception(ecode)  # TODO: Switch this out for exception
+        if ecode != 0:
+            raise U12Exception(ecode)  # TODO: Switch this out for exception
 
         return {"idnum": idNum.value, "stateD": stateD.value, "stateIO": stateIO.value, "count": count.value}
 
@@ -2350,7 +2377,8 @@ class U12(object):
 
         ecode = staticLib.AsynchConfig(ctypes.byref(idNum), demo, timeoutMult, configA, configB, configTE, fullA, fullB, fullC, halfA, halfB, halfC)
 
-        if ecode != 0: raise U12Exception(ecode)  # TODO: Switch this out for exception
+        if ecode != 0:
+            raise U12Exception(ecode)  # TODO: Switch this out for exception
 
         return {"idNum": idNum.value}
 
@@ -2372,7 +2400,8 @@ class U12(object):
         idNum = ctypes.c_long(idNum)
 
         # Check size of data
-        if len(data) > 18: raise ValueError("data can not be larger than 18 elements")
+        if len(data) > 18:
+            raise ValueError("data can not be larger than 18 elements")
 
         # Make data 18 elements large
         dataArray = [0] * 18
@@ -2382,7 +2411,8 @@ class U12(object):
 
         ecode = staticLib.Asynch(ctypes.byref(idNum), demo, portB, enableTE, enableTO, enableDel, baudrate, numWrite, numRead, ctypes.byref(dataArray))
 
-        if ecode != 0: raise U12Exception(ecode)  # TODO: Switch this out for exception
+        if ecode != 0:
+            raise U12Exception(ecode)  # TODO: Switch this out for exception
 
         return {"idnum": long, "data": dataArray}
 
@@ -2426,7 +2456,8 @@ class U12(object):
             bits = ctypes.c_long(999)
             ecode = staticLib.VoltsToBits(chnum, chgain, ctypes.c_float(volts), ctypes.byref(bits))
 
-            if ecode != 0: raise U12Exception(ecode)
+            if ecode != 0:
+                raise U12Exception(ecode)
 
             return bits.value
         else:
@@ -2456,7 +2487,8 @@ class U12(object):
 
         ecode = staticLib.Counter(ctypes.byref(idNum), demo, ctypes.byref(stateD), ctypes.byref(stateIO), resetCounter, enableSTB, ctypes.byref(count))
 
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"idnum": idNum.value, "stateD": stateD.value, "stateIO": stateIO.value, "count": count.value}
 
@@ -2478,25 +2510,37 @@ class U12(object):
 
         # Check tris and state parameters
         if updateDigital > 0:
-            if trisD is None: raise ValueError("keyword argument trisD must be set")
-            if trisIO is None: raise ValueError("keyword argument trisIO must be set")
-            if stateD is None: raise ValueError("keyword argument stateD must be set")
-            if stateIO is None: raise ValueError("keyword argument stateIO must be set")
+            if trisD is None:
+                raise ValueError("keyword argument trisD must be set")
+            if trisIO is None:
+                raise ValueError("keyword argument trisIO must be set")
+            if stateD is None:
+                raise ValueError("keyword argument stateD must be set")
+            if stateIO is None:
+                raise ValueError("keyword argument stateIO must be set")
 
         # Create ctypes
-        if trisD is None: trisD = ctypes.c_long(999)
-        else: trisD = ctypes.c_long(trisD)
-        if stateD is None: stateD = ctypes.c_long(999)
-        else: stateD = ctypes.c_long(stateD)
-        if stateIO is None: stateIO = ctypes.c_long(0)
-        else: stateIO = ctypes.c_long(stateIO)
+        if trisD is None:
+            trisD = ctypes.c_long(999)
+        else:
+            trisD = ctypes.c_long(trisD)
+        if stateD is None:
+            stateD = ctypes.c_long(999)
+        else:
+            stateD = ctypes.c_long(stateD)
+        if stateIO is None:
+            stateIO = ctypes.c_long(0)
+        else:
+            stateIO = ctypes.c_long(stateIO)
         outputD = ctypes.c_long(999)
 
         # Check trisIO
-        if trisIO is None: trisIO = 0
+        if trisIO is None:
+            trisIO = 0
 
         ecode = staticLib.DigitalIO(ctypes.byref(idNum), demo, ctypes.byref(trisD), trisIO, ctypes.byref(stateD), ctypes.byref(stateIO), updateDigital, ctypes.byref(outputD))
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"idnum": idNum.value, "trisD": trisD.value, "stateD": stateD.value, "stateIO": stateIO.value, "outputD": outputD.value}
 
@@ -2525,13 +2569,15 @@ class U12(object):
         """
 
         # Check ID number
-        if idNum is None: idNum = self.id
+        if idNum is None:
+            idNum = self.id
         idNum = ctypes.c_long(idNum)
 
         staticLib.GetFirmwareVersion.restype = ctypes.c_float
         firmware = staticLib.GetFirmwareVersion(ctypes.byref(idNum))
 
-        if firmware > 512: raise U12Exception(firmware - 512)
+        if firmware > 512:
+            raise U12Exception(firmware - 512)
 
         return {"idnum": idNum.value, "firmware": firmware}
 
@@ -2556,7 +2602,8 @@ class U12(object):
 
         ecode = staticLib.GetWinVersion(ctypes.byref(majorVersion), ctypes.byref(minorVersion), ctypes.byref(buildNumber), ctypes.byref(platformID), ctypes.byref(servicePackMajor), ctypes.byref(servicePackMinor))
 
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"majorVersion": majorVersion.value, "minorVersion": minorVersion.value, "buildNumber": buildNumber.value, "platformID": platformID.value, "servicePackMajor": servicePackMajor.value, "servicePackMinor": servicePackMinor.value}
 
@@ -2583,7 +2630,8 @@ class U12(object):
         numberFound = ctypes.c_long()
 
         ecode = staticLib.ListAll(ctypes.byref(productIDList), ctypes.byref(serialnumList), ctypes.byref(localIDList), ctypes.byref(powerList), ctypes.byref(calMatrix), ctypes.byref(numberFound), ctypes.byref(reserved), ctypes.byref(reserved))
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"serialnumList": serialnumList, "localIDList": localIDList, "numberFound": numberFound.value}
 
@@ -2603,7 +2651,8 @@ class U12(object):
         idNum = ctypes.c_long(idNum)
 
         ecode = staticLib.LocalID(ctypes.byref(idNum), localID)
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"idnum": idNum.value}
 
@@ -2623,7 +2672,8 @@ class U12(object):
         idNum = ctypes.c_long(idNum)
 
         ecode = staticLib.NoThread(ctypes.byref(idNum), noThread)
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"idnum": idNum.value}
 
@@ -2644,7 +2694,8 @@ class U12(object):
         idNum = ctypes.c_long(idNum)
 
         ecode = staticLib.PulseOut(ctypes.byref(idNum), demo, lowFirst, bitSelect, numPulses, timeB1, timeC1, timeB2, timeC2)
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"idnum": idNum.value}
 
@@ -2665,7 +2716,8 @@ class U12(object):
         idNum = ctypes.c_long(idNum)
 
         ecode = staticLib.PulseOutStart(ctypes.byref(idNum), demo, lowFirst, bitSelect, numPulses, timeB1, timeC1, timeB2, timeC2)
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"idnum": idNum.value}
 
@@ -2686,7 +2738,8 @@ class U12(object):
         idNum = ctypes.c_long(idNum)
 
         ecode = staticLib.PulseOutFinish(ctypes.byref(idNum), demo, timeoutMS)
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"idnum": idNum.value}
 
@@ -2707,7 +2760,8 @@ class U12(object):
         timeC = ctypes.c_long(0)
 
         ecode = staticLib.PulseOutCalc(ctypes.byref(frequency), ctypes.byref(timeB), ctypes.byref(timeC))
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"frequency": frequency.value, "timeB": timeB.value, "timeC": timeC.value}
 
@@ -2728,7 +2782,8 @@ class U12(object):
         idNum = ctypes.c_long(idNum)
 
         ecode = staticLib.ReEnum(ctypes.byref(idNum))
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"idnum": idNum.value}
 
@@ -2749,7 +2804,8 @@ class U12(object):
         idNum = ctypes.c_long(idNum)
 
         ecode = staticLib.Reset(ctypes.byref(idNum))
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"idnum": idNum.value}
 
@@ -2786,7 +2842,8 @@ class U12(object):
         rh = ctypes.c_float(0)
 
         ecode = staticLib.SHT1X(ctypes.byref(idNum), demo, softComm, mode, statusReg, ctypes.byref(tempC), ctypes.byref(tempF), ctypes.byref(rh))
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"idnum": idNum.value, "tempC": tempC.value, "tempF": tempF.value, "rh": rh.value}
 
@@ -2803,14 +2860,16 @@ class U12(object):
         idNum = ctypes.c_long(idNum)
 
         # Check size of datatx
-        if len(datatx) != 4: raise ValueError("datatx must have exactly 4 elements")
+        if len(datatx) != 4:
+            raise ValueError("datatx must have exactly 4 elements")
 
         # Create ctypes
         datatx = listToCArray(datatx, ctypes.c_ubyte)
         datarx = (ctypes.c_ubyte * 4)((0) * 4)
 
         ecode = staticLib.SHTComm(ctypes.byref(idNum), softComm, waitMeas, serialReset, dataRate, numWrite, numRead, ctypes.byref(datatx), ctypes.byref(datarx))
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"idnum": idNum.value, "datarx": datarx}
 
@@ -2837,7 +2896,8 @@ class U12(object):
             idNum = self.id
         idNum = ctypes.c_long(idNum)
 
-        if controlCS > 0 and csLine is None: raise ValueError("csLine must be specified")
+        if controlCS > 0 and csLine is None:
+            raise ValueError("csLine must be specified")
 
         # Make sure data is 18 elements
         cData = [0] * 18
@@ -2846,7 +2906,8 @@ class U12(object):
         cData = listToCArray(cData, ctypes.c_long)
 
         ecode = staticLib.Synch(ctypes.byref(idNum), demo, mode, msDelay, husDelay, controlCS, csLine, csState, configD, numWriteRead, ctypes.byref(cData))
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"idnum": idNum.value, "data": cData}
 
@@ -2866,11 +2927,14 @@ class U12(object):
             idNum = self.id
         idNum = ctypes.c_long(idNum)
 
-        if len(activeDn) is not 3: raise ValueError("activeDn must have 3 elements")
-        if len(stateDn) is not 3: raise ValueError("stateDn must have 3 elements")
+        if len(activeDn) is not 3:
+            raise ValueError("activeDn must have 3 elements")
+        if len(stateDn) is not 3:
+            raise ValueError("stateDn must have 3 elements")
 
         ecode = staticLib.Watchdog(ctypes.byref(idNum), demo, active, timeout, reset, activeDn[0], activeDn[1], activeDn[2], stateDn[0], stateDn[1], stateDn[2])
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"idnum": idNum.value}
 
@@ -2898,7 +2962,8 @@ class U12(object):
         ad3 = ctypes.c_ulong()
 
         ec = staticLib.ReadMem(ctypes.byref(ljid), ctypes.c_long(address), ctypes.byref(ad3), ctypes.byref(ad2), ctypes.byref(ad1), ctypes.byref(ad0))
-        if ec != 0: raise U12Exception(ec)
+        if ec != 0:
+            raise U12Exception(ec)
 
         addr = [0] * 4
         addr[0] = int(ad3.value & 0xff)
@@ -2928,7 +2993,8 @@ class U12(object):
 
         ljid = ctypes.c_ulong(idnum)
         ec = staticLib.WriteMem(ctypes.byref(ljid), int(unlocked), address, data[3] & 0xff, data[2] & 0xff, data[1] & 0xff, data[0] & 0xff)
-        if ec != 0: raise U12Exception(ec)
+        if ec != 0:
+            raise U12Exception(ec)
 
         return ljid.value
 
@@ -2940,7 +3006,8 @@ class U12(object):
                               size,
                               ctypes.cast(outBuff, ctypes.POINTER(ctypes.c_char)),
                               0)
-        if ec != 0: raise U12Exception(ec)
+        if ec != 0:
+            raise U12Exception(ec)
 
         for i in range(16):
             retBuff += outBuff[i]

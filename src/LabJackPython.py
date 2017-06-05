@@ -674,7 +674,8 @@ class Device(object):
         if _os_name == 'nt':
             ec = staticLib.ResetLabJack(self.handle)
 
-            if ec != 0: raise LabJackException(ec)
+            if ec != 0:
+                raise LabJackException(ec)
         elif _os_name == 'posix':
             sndDataBuff = [0] * 4
 
@@ -1534,7 +1535,8 @@ def AddRequest(Handle, IOType, Channel, Value, x1, UserData):
         ud = ctypes.c_double(UserData)
 
         ec = staticLib.AddRequest(Handle, IOType, Channel, v, x1, ud)
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
@@ -1578,7 +1580,8 @@ def AddRequestS(Handle, pIOType, Channel, Value, x1, UserData):
 
         ec = staticLib.AddRequestS(Handle, pIOType, Channel, v, x1, ud)
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
@@ -1622,7 +1625,8 @@ def AddRequestSS(Handle, pIOType, pChannel, Value, x1, UserData):
 
         ec = staticLib.AddRequestSS(Handle, pIOType, pChannel, v, x1, ud)
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
@@ -1651,7 +1655,8 @@ def Go():
     if _os_name == 'nt':
         ec = staticLib.Go()
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
     else:
         raise LabJackException("Function only supported for Windows")
 
@@ -1682,7 +1687,8 @@ def GoOne(Handle):
     if _os_name == 'nt':
         ec = staticLib.GoOne(Handle)
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
@@ -1724,7 +1730,8 @@ def eGet(Handle, IOType, Channel, pValue, x1):
         # staticLib.eGet.argtypes = [ctypes.c_long, ctypes.c_long, ctypes.c_long, ctypes.c_double, ctypes.c_long]
         # ec = staticLib.eGet(Handle, IOType, Channel, pValue, x1)
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
         # print("EGet:" + str(ppv))
         # print("Other:" + str(ppv.contents))
         return pv.value
@@ -1820,7 +1827,8 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
                     if x1Type == "int":
                         x1[i] = x1[i] & 0xff
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
         return pv.value, x1
     else:
         raise LabJackException(0, "Function only supported for Windows")
@@ -1860,7 +1868,8 @@ def eGetS(Handle, pIOType, Channel, pValue, x1):
         pv = ctypes.c_double(pValue)
         ec = staticLib.eGetS(Handle, pIOType, Channel, ctypes.byref(pv), x1)
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
         return pv.value
     else:
         raise LabJackException(0, "Function only supported for Windows")
@@ -1900,7 +1909,8 @@ def eGetSS(Handle, pIOType, pChannel, pValue, x1):
         pv = ctypes.c_double(pValue)
         ec = staticLib.eGetSS(Handle, pIOType, pChannel, ctypes.byref(pv), x1)
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
         return pv.value
     else:
         raise LabJackException(0, "Function only supported for Windows")
@@ -1953,7 +1963,8 @@ def ePut(Handle, IOType, Channel, Value, x1):
         pv = ctypes.c_double(Value)
         ec = staticLib.ePut(Handle, IOType, Channel, pv, x1)
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
@@ -1995,7 +2006,8 @@ def ePutS(Handle, pIOType, Channel, Value, x1):
         pv = ctypes.c_double(Value)
         ec = staticLib.ePutS(Handle, pIOType, Channel, pv, x1)
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
@@ -2037,7 +2049,8 @@ def ePutSS(Handle, pIOType, pChannel, Value, x1):
         pv = ctypes.c_double(Value)
         ec = staticLib.ePutSS(Handle, pIOType, pChannel, pv, x1)
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
@@ -2076,7 +2089,8 @@ def GetResult(Handle, IOType, Channel):
         pv = ctypes.c_double()
         ec = staticLib.GetResult(Handle, IOType, Channel, ctypes.byref(pv))
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
         return pv.value
     else:
         raise LabJackException(0, "Function only supported for Windows")
@@ -2116,7 +2130,8 @@ def GetResultS(Handle, pIOType, Channel):
         pv = ctypes.c_double()
         ec = staticLib.GetResultS(Handle, pIOType, Channel, ctypes.byref(pv))
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
         return pv.value
     else:
         raise LabJackException(0, "Function only supported for Windows")
@@ -2156,7 +2171,8 @@ def GetResultSS(Handle, pIOType, pChannel):
         pv = ctypes.c_double()
         ec = staticLib.GetResultSS(Handle, pIOType, pChannel, ctypes.byref(pv))
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
         return pv.value
     else:
         raise LabJackException(0, "Function only supported for Windows")
@@ -2204,7 +2220,8 @@ def GetFirstResult(Handle):
                                       ctypes.byref(pchan), ctypes.byref(pv),
                                       ctypes.byref(px), ctypes.byref(pud))
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
         return pio.value, pchan.value, pv.value, px.value, pud.value
     else:
         raise LabJackException(0, "Function only supported for Windows")
@@ -2252,7 +2269,8 @@ def GetNextResult(Handle):
                                      ctypes.byref(pchan), ctypes.byref(pv),
                                      ctypes.byref(px), ctypes.byref(pud))
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
         return pio.value, pchan.value, pv.value, px.value, pud.value
     else:
         raise LabJackException(0, "Function only supported for Windows")
@@ -2504,7 +2522,8 @@ def TCVoltsToTemp(TCType, TCVolts, CJTempK):
         ec = staticLib.TCVoltsToTemp(ctypes.c_long(TCType), ctypes.c_double(TCVolts),
                                      ctypes.c_double(CJTempK), ctypes.byref(pTCTempK))
 
-        if ec != 0: raise LabJackException(ec)
+        if ec != 0:
+            raise LabJackException(ec)
         return pTCTempK.value
     else:
         raise LabJackException(0, "Function only supported for Windows")
@@ -2595,7 +2614,8 @@ def LJHash(hashStr, size):
                           size,
                           ctypes.cast(outBuff, ctypes.POINTER(ctypes.c_char)),
                           0)
-    if ec != 0: raise LabJackException(ec)
+    if ec != 0:
+        raise LabJackException(ec)
 
     for i in range(16):
         retBuff += outBuff[i]

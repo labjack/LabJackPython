@@ -711,62 +711,86 @@ class UE9(Device):
         # Create EnableMask
         if UpdateConfig:
             command[7] = 128 | NumTimersEnabled
-            if Counter0Enabled: command[7] = command[7] | 8
-            if Counter1Enabled: command[7] = command[7] | 16
-        else: UpdateConfig = 0
+            if Counter0Enabled:
+                command[7] = command[7] | 8
+            if Counter1Enabled:
+                command[7] = command[7] | 16
+        else:
+            UpdateConfig = 0
 
         # Configure clock base
         command[8] = TimerClockBase
 
         # Configure UpdateReset
-        if ResetTimer0: command[9] = 1
-        if ResetTimer1: command[9] = command[9] | 2
-        if ResetTimer2: command[9] = command[9] | 4
-        if ResetTimer3: command[9] = command[9] | 8
-        if ResetTimer4: command[9] = command[9] | 16
-        if ResetTimer5: command[9] = command[9] | 32
-        if ResetCounter0: command[9] = command[9] | 64
-        if ResetCounter1: command[9] = command[9] | 128
+        if ResetTimer0:
+            command[9] = 1
+        if ResetTimer1:
+            command[9] = command[9] | 2
+        if ResetTimer2:
+            command[9] = command[9] | 4
+        if ResetTimer3:
+            command[9] = command[9] | 8
+        if ResetTimer4:
+            command[9] = command[9] | 16
+        if ResetTimer5:
+            command[9] = command[9] | 32
+        if ResetCounter0:
+            command[9] = command[9] | 64
+        if ResetCounter1:
+            command[9] = command[9] | 128
 
         # Configure timers and counters if we are updating the configuration
         if UpdateConfig:
             if NumTimersEnabled >= 1:
-                if Timer0Mode is None: raise LabJackException("Need to specify a mode for Timer0")
-                if Timer0Value is None: raise LabJackException("Need to specify a value for Timer0")
+                if Timer0Mode is None:
+                    raise LabJackException("Need to specify a mode for Timer0")
+                if Timer0Value is None:
+                    raise LabJackException("Need to specify a value for Timer0")
                 command[10] = Timer0Mode
                 command[11] = Timer0Value & 0xff
                 command[12] = (Timer0Value >> 8) & 0xff
             if NumTimersEnabled >= 2:
-                if Timer1Mode is None: raise LabJackException("Need to specify a mode for Timer1")
-                if Timer1Value is None: raise LabJackException("Need to specify a value for Timer1")
+                if Timer1Mode is None:
+                    raise LabJackException("Need to specify a mode for Timer1")
+                if Timer1Value is None:
+                    raise LabJackException("Need to specify a value for Timer1")
                 command[13] = Timer1Mode
                 command[14] = Timer1Value & 0xff
                 command[15] = (Timer1Value >> 8) & 0xff
             if NumTimersEnabled >= 3:
-                if Timer2Mode is None: raise LabJackException("Need to specify a mode for Timer2")
-                if Timer2Value is None: raise LabJackException("Need to specify a value for Timer2")
+                if Timer2Mode is None:
+                    raise LabJackException("Need to specify a mode for Timer2")
+                if Timer2Value is None:
+                    raise LabJackException("Need to specify a value for Timer2")
                 command[16] = Timer2Mode
                 command[17] = Timer2Value & 0xff
                 command[18] = (Timer2Value >> 8) & 0xff
             if NumTimersEnabled >= 4:
-                if Timer3Mode is None: raise LabJackException("Need to specify a mode for Timer3")
-                if Timer3Value is None: raise LabJackException("Need to specify a value for Timer3")
+                if Timer3Mode is None:
+                    raise LabJackException("Need to specify a mode for Timer3")
+                if Timer3Value is None:
+                    raise LabJackException("Need to specify a value for Timer3")
                 command[19] = Timer3Mode
                 command[20] = Timer3Value & 0xff
                 command[21] = (Timer3Value >> 8) & 0xff
             if NumTimersEnabled >= 5:
-                if Timer4Mode is None: raise LabJackException("Need to specify a mode for Timer4")
-                if Timer4Value is None: raise LabJackException("Need to specify a value for Timer4")
+                if Timer4Mode is None:
+                    raise LabJackException("Need to specify a mode for Timer4")
+                if Timer4Value is None:
+                    raise LabJackException("Need to specify a value for Timer4")
                 command[22] = Timer4Mode
                 command[23] = Timer4Value & 0xff
                 command[24] = (Timer4Value >> 8) & 0xff
             if NumTimersEnabled == 6:
-                if Timer5Mode is None: raise LabJackException("Need to specify a mode for Timer5")
-                if Timer5Value is None: raise LabJackException("Need to specify a value for Timer5")
+                if Timer5Mode is None:
+                    raise LabJackException("Need to specify a mode for Timer5")
+                if Timer5Value is None:
+                    raise LabJackException("Need to specify a value for Timer5")
                 command[25] = Timer5Mode
                 command[26] = Timer5Value & 0xff
                 command[27] = (Timer5Value >> 8) & 0xff
-            if NumTimersEnabled > 7: raise LabJackException("Only a maximum of 5 timers can be enabled")
+            if NumTimersEnabled > 7:
+                raise LabJackException("Only a maximum of 5 timers can be enabled")
             command[28] = 0  # command[28] = Counter0Mode
             command[29] = 0  # command[29] = Counter1Mode
 
