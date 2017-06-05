@@ -27,16 +27,11 @@ except ImportError:  # Python 3
 
 from struct import pack, unpack
 
-from LabJackPython import (
-    Device,
-    deviceCount,
-    LabJackException,
-    LowlevelErrorException,
-    lowlevelErrorToString,
-    MAX_USB_PACKET_LENGTH,
-    setChecksum8,
-    toDouble,
-    )
+from LabJackPython import (Device, deviceCount, LabJackException,
+                           LowlevelErrorException,
+                           lowlevelErrorToString,
+                           MAX_USB_PACKET_LENGTH, setChecksum8,
+                           toDouble)
 
 
 FIO0, FIO1, FIO2, FIO3, FIO4, FIO5, FIO6, FIO7, \
@@ -389,7 +384,6 @@ class U3(Device):
         self.counter0Enabled = bool((self.timerCounterConfig >> 2) & 1)
         self.counter1Enabled = bool((self.timerCounterConfig >> 3) & 1)
         self.timerCounterPinOffset = (self.timerCounterConfig >> 4)
-
 
         self.dac1Enable = result[9]
         self.fioAnalog = result[10]
@@ -753,7 +747,6 @@ class U3(Device):
         if readLen % 2:
             readLen += 1
 
-
         if len(sendBuffer) > MAX_USB_PACKET_LENGTH:
             raise LabJackException("ERROR: The feedback command you are attempting to send is bigger than 64 bytes ( %s bytes ). Break your commands up into separate calls to getFeedback()." % len(sendBuffer))
 
@@ -775,7 +768,6 @@ class U3(Device):
                 culprit = commandlist[(rcvBuffer[7] - 1)]
 
             raise LowlevelErrorException("\nThis Command\n    %s\nreturned an error:\n    %s" % (culprit, lowlevelErrorToString(rcvBuffer[6])))
-
 
         results = []
         i = 9
@@ -858,7 +850,6 @@ class U3(Device):
         command[6] = 0x00
         command[7] = blockNum
         command[8:] = data
-
 
         self._writeRead(command, 8, [0xF8, 0x01, command[3]])
     writeMem.section = 2
@@ -1176,7 +1167,6 @@ class U3(Device):
         command[9] = ord(t[1])
 
         command[10] = ((DIOState & 1) << 7) + (DIONumber & 15)
-
 
         result = self._writeRead(command, 16, [0xF8, 0x05, 0x09])
 
@@ -1978,6 +1968,7 @@ class FeedbackCommand(object):
     The FeedbackCommand class is the base for all the Feedback commands.
     """
     readLen = 0
+
     def handle(self, input):
         return None
 

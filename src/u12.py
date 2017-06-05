@@ -1231,7 +1231,6 @@ class U12(object):
 
         return returnDict
 
-
     def rawAIContinuous(self, channel0PGAMUX=8, channel1PGAMUX=9, channel2PGAMUX=10, channel3PGAMUX=11, FeatureReports=False, CounterRead=False, UpdateIO=False, LEDState=True, IO3ToIO0States=0, SampleInterval=15000):
         """
         Currently in development.
@@ -2017,7 +2016,6 @@ class U12(object):
 
             return {"idnum": self.id, "count": results['Counter'], "ms": (time.time() * 1000)}
 
-
     def eDigitalIn(self, channel, idNum=None, demo=0, readD=0):
         """
         Name: U12.eDigitalIn(channel, idNum = None, demo = 0, readD=0)
@@ -2417,6 +2415,7 @@ class U12(object):
         return {"idnum": long, "data": dataArray}
 
     GainMapping = [1.0, 2.0, 4.0, 5.0, 8.0, 10.0, 16.0, 20.0]
+
     def bitsToVolts(self, chnum, chgain, bits):
         """
         Name: U12.bitsToVolts(chnum, chgain, bits)

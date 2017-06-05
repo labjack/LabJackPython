@@ -21,16 +21,11 @@ except ImportError:  # Python 3
 
 from struct import pack, unpack
 
-from LabJackPython import (
-    Device,
-    deviceCount,
-    LabJackException,
-    LowlevelErrorException,
-    lowlevelErrorToString,
-    MAX_USB_PACKET_LENGTH,
-    setChecksum8,
-    toDouble,
-    )
+from LabJackPython import (Device, deviceCount, LabJackException,
+                           LowlevelErrorException,
+                           lowlevelErrorToString,
+                           MAX_USB_PACKET_LENGTH, setChecksum8,
+                           toDouble)
 
 
 def openAllU6():
@@ -1658,6 +1653,7 @@ class FeedbackCommand(object):
     and call getFeedback.
     '''
     readLen = 0
+
     def handle(self, input):
         return None
 

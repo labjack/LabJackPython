@@ -35,8 +35,9 @@ NUMBER_OF_UNIQUE_LABJACK_PRODUCT_IDS = 4
 
 _os_name = ""  # Set to "nt" or "posix" in _loadLibrary.
 
-_use_ptr = True  # Set to True or False in _loadLibrary. Indicates whether to use
-                 # the Ptr version of certain UD calls or not. Windows only.
+_use_ptr = True  # Set to True or False in _loadLibrary. Indicates
+                 # whether to use the Ptr version of certain UD calls
+                 # or not. Windows only.
 
 _use_py2 = sys.version_info < (3, 0)  # Indicates to use Python 2.x or
                                       # Python 3+ when needed.
@@ -552,7 +553,6 @@ class Device(object):
 
             return result
 
-
     def ping(self):
         try:
             if self.devType == LJ_dtUE9:
@@ -577,7 +577,6 @@ class Device(object):
             e = sys.exc_info()[1]
             print(e)
             return False
-
 
     def open(self, devType, Ethernet=False, firstFound=True, serial=None, localId=None, devNumber=None, ipAddress=None, handleOnly=False, LJSocket=None):
         """
@@ -619,7 +618,6 @@ class Device(object):
             self._loadChangedIntoSelf(d)
 
         self._registerAtExitClose()
-
 
     def _loadChangedIntoSelf(self, d):
         for key, value in d.changed.items():
@@ -929,6 +927,7 @@ class Device(object):
         return self.setDefaults(SetToFactoryDefaults=True)
 
     validDefaultBlocks = range(8)
+
     def readDefaults(self, BlockNum, ReadCurrent=False):
         """
         Name: Device.readDefaults(BlockNum)
@@ -1014,7 +1013,6 @@ def setChecksum(command):
     except Exception:
         e = sys.exc_info()[1]
         raise LabJackException("SetChecksum Exception:" + str(e))
-
 
 
 def verifyChecksum(buffer):
@@ -1968,7 +1966,7 @@ def ePut(Handle, IOType, Channel, Value, x1):
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
-    
+
 # Windows
 def ePutS(Handle, pIOType, Channel, Value, x1):
     """Put one value to the LabJack device
@@ -2011,7 +2009,7 @@ def ePutS(Handle, pIOType, Channel, Value, x1):
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
-    
+
 # Windows
 def ePutSS(Handle, pIOType, pChannel, Value, x1):
     """Put one value to the LabJack device
@@ -2685,7 +2683,7 @@ def __listAllUE9Unix(connectionType):
                         # Local ID
                         localId = rcvDataBuff[8] & 0xff
 
-                        deviceList[serial] = dict(devType=LJ_dtUE9, localId=localId, \
+                        deviceList[serial] = dict(devType=LJ_dtUE9, localId=localId,
                                                   serialNumber=serial, ipAddress=ipAddress)
                 except Exception:
                     pass
@@ -2693,7 +2691,6 @@ def __listAllUE9Unix(connectionType):
             pass
 
     return deviceList
-
 
 
 def __listAllU3Unix():
@@ -2710,7 +2707,6 @@ def __listAllU3Unix():
             deviceList[str(device.serialNumber)] = device.__dict__
         except LabJackException:
             pass
-
 
     return deviceList
 
@@ -2973,8 +2969,9 @@ LJ_ctLJSOCKET = 200  # Connection type for USB LabJack connected to LJSocket ser
 
 # io types:
 LJ_ioGET_AIN = 10  # UE9 + U3 + U6.  This is single ended version.
-LJ_ioGET_AIN_DIFF = 15  # U3 + U6.  Put second channel in x1.  For U3, if 32 is
-                        # passed as x1, Vref will be added to the result.
+LJ_ioGET_AIN_DIFF = 15  # U3 + U6.  Put second channel in x1.  For U3,
+                        # if 32 is passed as x1, Vref will be added to
+                        # the result.
 
 LJ_ioPUT_AIN_RANGE = 2000  # UE9 + U6
 LJ_ioGET_AIN_RANGE = 2001  # UE9 + U6
@@ -3170,8 +3167,8 @@ LJ_chLED_STATE = 17  # U3  value = LED state
 
 LJ_chSDA_SCL = 18  # U3  enable / disable SDA/SCL as digital I/O
 
-LJ_chU3HV = 22  # U3 (Read Only) Value will be 1 for a U3-HV and 0 for a U3-LV
-                # or a U3 with hardware version < 1.30
+LJ_chU3HV = 22  # U3 (Read Only) Value will be 1 for a U3-HV and 0 for
+                # a U3-LV or a U3 with hardware version < 1.30
 
 # U6 only:
 LJ_chU6_PRO = 23
@@ -3305,32 +3302,32 @@ LJ_ttT = 6008
 
 # other constants:
 # ranges (not all are supported by all devices):
-LJ_rgBIP20V = 1   # -20V to +20V
-LJ_rgBIP10V = 2   # -10V to +10V
-LJ_rgBIP5V = 3    # -5V to +5V
-LJ_rgBIP4V = 4    # -4V to +4V
-LJ_rgBIP2P5V = 5  # -2.5V to +2.5V
-LJ_rgBIP2V = 6    # -2V to +2V
-LJ_rgBIP1P25V = 7 # -1.25V to +1.25V
-LJ_rgBIP1V = 8    # -1V to +1V
-LJ_rgBIPP625V = 9 # -0.625V to +0.625V
-LJ_rgBIPP1V = 10  # -0.1V to +0.1V
-LJ_rgBIPP01V = 11 # -0.01V to +0.01V
+LJ_rgBIP20V = 1    # -20V to +20V
+LJ_rgBIP10V = 2    # -10V to +10V
+LJ_rgBIP5V = 3     # -5V to +5V
+LJ_rgBIP4V = 4     # -4V to +4V
+LJ_rgBIP2P5V = 5   # -2.5V to +2.5V
+LJ_rgBIP2V = 6     # -2V to +2V
+LJ_rgBIP1P25V = 7  # -1.25V to +1.25V
+LJ_rgBIP1V = 8     # -1V to +1V
+LJ_rgBIPP625V = 9  # -0.625V to +0.625V
+LJ_rgBIPP1V = 10   # -0.1V to +0.1V
+LJ_rgBIPP01V = 11  # -0.01V to +0.01V
 
-LJ_rgUNI20V = 101    # 0V to +20V
-LJ_rgUNI10V = 102    # 0V to +10V
-LJ_rgUNI5V = 103     # 0V to +5V
-LJ_rgUNI4V = 104     # 0V to +4V
-LJ_rgUNI2P5V = 105   # 0V to +2.5V
-LJ_rgUNI2V = 106     # 0V to +2V
-LJ_rgUNI1P25V = 107  # 0V to +1.25V
-LJ_rgUNI1V = 108     # 0V to +1V
-LJ_rgUNIP625V = 109  # 0V to +0.625V
-LJ_rgUNIP25V = 112   # 0V to +0.25V
-LJ_rgUNIP500V = 110  # 0V to +0.500V
-LJ_rgUNIP3125V = 111 # 0V to +0.3125V
-LJ_rgUNIP025V = 113  # 0V to +0.025V
-LJ_rgUNIP0025V = 114 # 0V to +0.0025V
+LJ_rgUNI20V = 101     # 0V to +20V
+LJ_rgUNI10V = 102     # 0V to +10V
+LJ_rgUNI5V = 103      # 0V to +5V
+LJ_rgUNI4V = 104      # 0V to +4V
+LJ_rgUNI2P5V = 105    # 0V to +2.5V
+LJ_rgUNI2V = 106      # 0V to +2V
+LJ_rgUNI1P25V = 107   # 0V to +1.25V
+LJ_rgUNI1V = 108      # 0V to +1V
+LJ_rgUNIP625V = 109   # 0V to +0.625V
+LJ_rgUNIP25V = 112    # 0V to +0.25V
+LJ_rgUNIP500V = 110   # 0V to +0.500V
+LJ_rgUNIP3125V = 111  # 0V to +0.3125V
+LJ_rgUNIP025V = 113   # 0V to +0.025V
+LJ_rgUNIP0025V = 114  # 0V to +0.0025V
 
 # timer modes:
 LJ_tmPWM16 = 0  # 16 bit PWM
@@ -3371,11 +3368,14 @@ LJ_tc48MHZ_DIV = 26   # U3: Hardware Version 1.21 or higher
 # stream wait modes
 LJ_swNONE = 1  # no wait, return whatever is available
 LJ_swALL_OR_NONE = 2  # no wait, but if all points requested aren't available, return none.
-LJ_swPUMP = 11  # wait and pump the message pump.  Prefered when called from primary thread (if you don't know
-               # if you are in the primary thread of your app then you probably are.  Do not use in worker
-               # secondary threads (i.e. ones without a message pump).
-LJ_swSLEEP = 12  # wait by sleeping (don't do this in the primary thread of your app, or it will temporarily
-                # hang)    This is usually used in worker secondary threads.
+LJ_swPUMP = 11  # wait and pump the message pump.  Prefered when
+                # called from primary thread (if you don't know if you
+                # are in the primary thread of your app then you
+                # probably are.  Do not use in worker secondary
+                # threads (i.e. ones without a message pump).
+LJ_swSLEEP = 12  # wait by sleeping (don't do this in the primary
+                 # thread of your app, or it will temporarily hang)
+                 # This is usually used in worker secondary threads.
 
 
 # BETA CONSTANTS

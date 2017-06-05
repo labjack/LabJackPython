@@ -22,20 +22,11 @@ except ImportError:  # Python 3
 
 from struct import pack, unpack
 
-from LabJackPython import (
-    Device,
-    deviceCount,
-    LabJackException,
-    LJ_tcSYS,
-    LowlevelErrorException,
-    lowlevelErrorToString,
-    setChecksum8,
-    streamByteToInt,
-    toDouble,
-    UE9TCPHandle,
-    verifyChecksum,
-    _use_py2,
-    )
+from LabJackPython import (Device, deviceCount, LabJackException,
+                           LJ_tcSYS, LowlevelErrorException,
+                           lowlevelErrorToString, setChecksum8,
+                           streamByteToInt, toDouble, UE9TCPHandle,
+                           verifyChecksum, _use_py2)
 
 
 def openAllUE9():
@@ -579,6 +570,7 @@ class UE9(Device):
         return returnDict
 
     digitalPorts = ['FIO', 'EIO', 'CIO', 'MIO']
+
     def singleIO(self, IOType, Channel, Dir=None, BipGain=None, State=None, Resolution=None, DAC=0, SettlingTime=0):
         """
         Name: UE9.singleIO(IOType, Channel, Dir = None, BipGain = None, State = None, Resolution = None, DAC = 0, SettlingTime = 0)
@@ -1521,7 +1513,6 @@ class UE9(Device):
         if Flush:
             command[7] = 1
 
-
         result = self._writeRead(command, 40, [0xF8, 0x11, 0x16])
 
         return {'AsynchBytes': result[8:], 'NumAsynchBytesInRXBuffer': result[7]}
@@ -1866,7 +1857,6 @@ class UE9(Device):
         parser.set(section, "PortA", str(self.portA))
         parser.set(section, "PortB", str(self.portB))
 
-
         # FIO Direction / State
         section = "FIOs"
         parser.add_section(section)
@@ -1918,8 +1908,6 @@ class UE9(Device):
             mode, value = self.readRegister(7100 + (i * 2), numReg=2, format=">HH")
             parser.set(section, "Timer%s Mode" % i, str(mode))
             parser.set(section, "Timer%s Value" % i, str(value))
-
-
 
         return parser
 
@@ -1974,7 +1962,6 @@ class UE9(Device):
 
             self.commConfig(DHCPEnabled=DHCPEnabled, IPAddress=ipAddress, Subnet=subnet, Gateway=gateway, PortA=portA, PortB=portB)
 
-
         # Set FIOs:
         section = "FIOs"
         if parser.has_section(section):
@@ -2014,7 +2001,6 @@ class UE9(Device):
             self.writeRegister(6702, bitmask + ciostates)
             self.writeRegister(6752, bitmask + ciodirs)
 
-
         # Set DACs:
         section = "DACs"
         if parser.has_section(section):
@@ -2051,8 +2037,6 @@ class UE9(Device):
                 cm = (self.readRegister(50502) & 1)  # 0b01
                 c1e = parser.getboolean(section, "Counter1Enabled")
                 self.writeRegister(50502, (int(c1e) << 1) + 1)
-
-
 
             mode = None
             value = None
