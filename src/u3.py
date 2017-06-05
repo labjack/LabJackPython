@@ -1438,7 +1438,6 @@ class U3(Device):
         if Flush:
             command[7] = 1
 
-
         result = self._writeRead(command, 40, [0xF8, 0x11, 0x16])
 
         return {'AsynchBytes': result[8:], 'NumAsynchBytesInRXBuffer': result[7]}
@@ -1855,7 +1854,6 @@ class U3(Device):
             parser.set(section, "Timer%i Mode" % i, str(mode))
             parser.set(section, "Timer%i Value" % i, str(value))
 
-
         return parser
     exportConfig.section = 3
 
@@ -1954,7 +1952,6 @@ class U3(Device):
 
             self.configIO(NumberOfTimersEnabled=nte, EnableCounter1=c1e, EnableCounter0=c0e, TimerCounterPinOffset=cpo)
 
-
             mode = None
             value = None
 
@@ -1975,6 +1972,7 @@ class U3(Device):
                 self.getFeedback(Timer1Config(mode, value))
     loadConfig.section = 3
 
+
 class FeedbackCommand(object):
     """
     The FeedbackCommand class is the base for all the Feedback commands.
@@ -1982,6 +1980,7 @@ class FeedbackCommand(object):
     readLen = 0
     def handle(self, input):
         return None
+
 
 class AIN(FeedbackCommand):
     '''
@@ -2027,6 +2026,7 @@ class AIN(FeedbackCommand):
         result = (input[1] << 8) + input[0]
         return result
 
+
 class WaitShort(FeedbackCommand):
     '''
     WaitShort Feedback command
@@ -2048,6 +2048,7 @@ class WaitShort(FeedbackCommand):
     def __repr__(self):
         return "<u3.WaitShort( Time = %s )>" % self.time
 
+
 class WaitLong(FeedbackCommand):
     '''
     WaitLong Feedback command
@@ -2068,6 +2069,7 @@ class WaitLong(FeedbackCommand):
 
     def __repr__(self):
         return "<u3.WaitLong( Time = %s )>" % self.time
+
 
 class LED(FeedbackCommand):
     '''
@@ -2095,6 +2097,7 @@ class LED(FeedbackCommand):
 
     def __repr__(self):
         return "<u3.LED( State = %s )>" % self.state
+
 
 class BitStateRead(FeedbackCommand):
     '''
@@ -2126,6 +2129,7 @@ class BitStateRead(FeedbackCommand):
     def handle(self, input):
         return int(bool(input[0]))
 
+
 class BitStateWrite(FeedbackCommand):
     '''
     BitStateWrite Feedback command
@@ -2151,6 +2155,7 @@ class BitStateWrite(FeedbackCommand):
 
     def __repr__(self):
         return "<u3.BitStateWrite( IONumber = %s, State = %s )>" % (self.ioNumber, self.state)
+
 
 class BitDirRead(FeedbackCommand):
     '''
@@ -2179,6 +2184,7 @@ class BitDirRead(FeedbackCommand):
     def handle(self, input):
         return int(bool(input[0]))
 
+
 class BitDirWrite(FeedbackCommand):
     '''
     BitDirWrite Feedback command
@@ -2204,6 +2210,7 @@ class BitDirWrite(FeedbackCommand):
     def __repr__(self):
         return "<u3.BitDirWrite( IONumber = %s, Direction = %s )>" % (self.ioNumber, self.direction)
 
+
 class PortStateRead(FeedbackCommand):
     """
     PortStateRead Feedback command
@@ -2227,6 +2234,7 @@ class PortStateRead(FeedbackCommand):
 
     def __repr__(self):
         return "<u3.PortStateRead()>"
+
 
 class PortStateWrite(FeedbackCommand):
     """
@@ -2252,6 +2260,7 @@ class PortStateWrite(FeedbackCommand):
     def __repr__(self):
         return "<u3.PortStateWrite( State = %s, WriteMask = %s )>" % (self.state, self.writeMask)
 
+
 class PortDirRead(FeedbackCommand):
     """
     PortDirRead Feedback command
@@ -2276,6 +2285,7 @@ class PortDirRead(FeedbackCommand):
     def handle(self, input):
         return {'FIO': input[0], 'EIO': input[1], 'CIO': input[2]}
 
+
 class PortDirWrite(FeedbackCommand):
     """
     PortDirWrite Feedback command
@@ -2299,6 +2309,7 @@ class PortDirWrite(FeedbackCommand):
 
     def __repr__(self):
         return "<u3.PortDirWrite( Direction = %s, WriteMask = %s )>" % (self.direction, self.writeMask)
+
 
 class DAC8(FeedbackCommand):
     '''
@@ -2325,6 +2336,7 @@ class DAC8(FeedbackCommand):
     def __repr__(self):
         return "<u3.DAC8( Dac = %s, Value = %s )>" % (self.dac, self.value)
 
+
 class DAC0_8(DAC8):
     """
     8-bit DAC Feedback command for DAC0
@@ -2347,6 +2359,7 @@ class DAC0_8(DAC8):
     def __repr__(self):
         return "<u3.DAC0_8( Value = %s )>" % self.value
 
+
 class DAC1_8(DAC8):
     """
     8-bit DAC Feedback command for DAC1
@@ -2368,6 +2381,7 @@ class DAC1_8(DAC8):
 
     def __repr__(self):
         return "<u3.DAC1_8( Value = %s )>" % self.value
+
 
 class DAC16(FeedbackCommand):
     '''
@@ -2394,6 +2408,7 @@ class DAC16(FeedbackCommand):
     def __repr__(self):
         return "<u3.DAC16( Dac = %s, Value = %s )>" % (self.dac, self.value)
 
+
 class DAC0_16(DAC16):
     """
     16-bit DAC Feedback command for DAC0
@@ -2416,6 +2431,7 @@ class DAC0_16(DAC16):
     def __repr__(self):
         return "<u3.DAC0_16( Value = %s )>" % self.value
 
+
 class DAC1_16(DAC16):
     """
     16-bit DAC Feedback command for DAC1
@@ -2437,6 +2453,7 @@ class DAC1_16(DAC16):
 
     def __repr__(self):
         return "<u3.DAC1_16( Value = %s )>" % self.value
+
 
 class Timer(FeedbackCommand):
     """
@@ -2480,7 +2497,6 @@ class Timer(FeedbackCommand):
         if UpdateReset and (Value is None):
             raise LabJackException("UpdateReset set but no value.")
 
-
         self.cmdBytes = [(42 + (2 * timer)), UpdateReset, Value % 256, Value >> 8]
 
     readLen = 4
@@ -2497,6 +2513,7 @@ class Timer(FeedbackCommand):
             return current, maxCount
         else:
             return unpack('<I', inStr)[0]
+
 
 class Timer0(Timer):
     """
@@ -2530,6 +2547,7 @@ class Timer0(Timer):
     def __repr__(self):
         return "<u3.Timer0( UpdateReset = %s, Value = %s, Mode = %s )>" % (self.updateReset, self.value, self.mode)
 
+
 class Timer1(Timer):
     """
     For reading the value of the Timer1. It provides the ability to
@@ -2561,6 +2579,7 @@ class Timer1(Timer):
 
     def __repr__(self):
         return "<u3.Timer1( UpdateReset = %s, Value = %s, Mode = %s )>" % (self.updateReset, self.value, self.mode)
+
 
 class QuadratureInputTimer(Timer):
     """
@@ -2604,6 +2623,7 @@ class QuadratureInputTimer(Timer):
     def __repr__(self):
         return "<u3.QuadratureInputTimer( UpdateReset = %s, Value = %s )>" % (self.updateReset, self.value)
 
+
 class TimerStopInput1(Timer1):
     """
     For reading a stop input timer. They are special because the value returns
@@ -2640,6 +2660,7 @@ class TimerStopInput1(Timer1):
 
     def __repr__(self):
         return "<u3.TimerStopInput1( UpdateReset = %s, Value = %s )>" % (self.updateReset, self.value)
+
 
 class TimerConfig(FeedbackCommand):
     """
@@ -2685,6 +2706,7 @@ class TimerConfig(FeedbackCommand):
     def __repr__(self):
         return "<u3.TimerConfig( timer = %s, TimerMode = %s, Value = %s )>" % (self.timer, self.timerMode, self.value)
 
+
 class Timer0Config(TimerConfig):
     """
     This IOType configures Timer0.
@@ -2714,6 +2736,7 @@ class Timer0Config(TimerConfig):
 
     def __repr__(self):
         return "<u3.Timer0Config( TimerMode = %s, Value = %s )>" % (self.timerMode, self.value)
+
 
 class Timer1Config(TimerConfig):
     """

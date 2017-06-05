@@ -52,16 +52,20 @@ def openAllUE9():
 
     return returnDict
 
+
 def parseIpAddress(bytes):
     return "%s.%s.%s.%s" % (bytes[3], bytes[2], bytes[1], bytes[0])
 
+
 def unpackInt(bytes):
     return unpack("<I", pack("BBBB", *bytes))[0]
+
 
 def unpackShort(bytes):
     return unpack("<H", pack("BB", *bytes))[0]
 
 DEFAULT_CAL_CONSTANTS = {"AINSlopes": {'0': 0.000077503, '1': 0.000038736, '2': 0.000019353, '3': 0.0000096764, '8': 0.00015629}, "AINOffsets": {'0': -0.012000, '1': -0.012000, '2': -0.012000, '3': -0.012000, '8': -5.1760}, "TempSlope": 0.012968, "DACSlopes": {'0': 842.59, '1': 842.59}, "DACOffsets": {'0': 0.0, '1': 0.0}}
+
 
 class UE9(Device):
     """

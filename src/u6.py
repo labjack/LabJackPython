@@ -47,6 +47,7 @@ def openAllU6():
 
     return returnDict
 
+
 def dumpPacket(buffer):
     """
     Name: dumpPacket(buffer)
@@ -54,6 +55,7 @@ def dumpPacket(buffer):
     Desc: Returns hex value of all bytes in the buffer
     """
     return repr([hex(x) for x in buffer])
+
 
 def getBit(n, bit):
     """
@@ -73,6 +75,7 @@ def getBit(n, bit):
     """
     return int(bool((int(n) & (1 << bit)) >> bit))
 
+
 def toBitList(inbyte):
     """
     Name: toBitList(inbyte)
@@ -85,6 +88,7 @@ def toBitList(inbyte):
 
     """
     return [getBit(inbyte, b) for b in range(8)]
+
 
 def dictAsString(d):
     """Helper function that returns a string representation of a dictionary"""
@@ -169,7 +173,6 @@ class CalibrationInfo(object):
 
         self.proAinNegSlope = [self.proAin10vNegSlope, self.proAin1vNegSlope, self.proAin100mvNegSlope, self.proAin10mvNegSlope]
         self.proAinCenter = [self.proAin10vCenter, self.proAin1vCenter, self.proAin100mvCenter, self.proAin10mvCenter]
-
 
     def __str__(self):
         return str(self.__dict__)
@@ -1542,7 +1545,6 @@ class U6(Device):
         for key, value in ioconfig.items():
             parser.set(section, key, str(value))
 
-
         for i in range(ioconfig['NumberTimersEnabled']):
             mode, value = self.readRegister(7100 + (2 * i), numReg=2, format=">HH")
             parser.set(section, "Timer%s Mode" % i, str(mode))
@@ -1635,7 +1637,6 @@ class U6(Device):
 
             self.configIO(NumberTimersEnabled=nte, EnableCounter1=c1e, EnableCounter0=c0e, TimerCounterPinOffset=cpo)
 
-
             mode = None
             value = None
 
@@ -1647,6 +1648,7 @@ class U6(Device):
                         value = parser.getint(section, "timer%i value" % i)
 
                     self.getFeedback(TimerConfig(i, mode, value))
+
 
 class FeedbackCommand(object):
     '''
@@ -1660,6 +1662,7 @@ class FeedbackCommand(object):
         return None
 
 _validChannels = frozenset(range(144))
+
 
 class AIN(FeedbackCommand):
     '''
@@ -1692,6 +1695,7 @@ class AIN(FeedbackCommand):
     def handle(self, input):
         result = (input[1] << 8) + input[0]
         return result
+
 
 class AIN24(FeedbackCommand):
     '''
@@ -1746,6 +1750,7 @@ class AIN24(FeedbackCommand):
         # Put it all into an integer.
         result = (input[2] << 16) + (input[1] << 8) + input[0]
         return result
+
 
 class AIN24AR(FeedbackCommand):
     '''
@@ -1808,6 +1813,7 @@ class AIN24AR(FeedbackCommand):
 
         return {'AIN': result, 'ResolutionIndex': resolutionIndex, 'GainIndex': gainIndex, 'Status': status}
 
+
 class WaitShort(FeedbackCommand):
     '''
     WaitShort Feedback command
@@ -1824,6 +1830,7 @@ class WaitShort(FeedbackCommand):
     def __repr__(self):
         return "<u6.WaitShort( Time = %s )>" % self.time
 
+
 class WaitLong(FeedbackCommand):
     '''
     WaitLong Feedback command
@@ -1839,6 +1846,7 @@ class WaitLong(FeedbackCommand):
 
     def __repr__(self):
         return "<u6.WaitLog( Time = %s )>" % self.time
+
 
 class LED(FeedbackCommand):
     '''
@@ -1857,6 +1865,7 @@ class LED(FeedbackCommand):
 
     def __repr__(self):
         return "<u6.LED( State = %s )>" % self.state
+
 
 class BitStateRead(FeedbackCommand):
     '''
@@ -1883,6 +1892,7 @@ class BitStateRead(FeedbackCommand):
     def handle(self, input):
         return int(bool(input[0]))
 
+
 class BitStateWrite(FeedbackCommand):
     '''
     BitStateWrite Feedback command
@@ -1903,6 +1913,7 @@ class BitStateWrite(FeedbackCommand):
 
     def __repr__(self):
         return "<u6.BitStateWrite( IONumber = %s, State = %s )>" % self.ioNumber
+
 
 class BitDirRead(FeedbackCommand):
     '''
@@ -1926,6 +1937,7 @@ class BitDirRead(FeedbackCommand):
     def handle(self, input):
         return int(bool(input[0]))
 
+
 class BitDirWrite(FeedbackCommand):
     '''
     BitDirWrite Feedback command
@@ -1945,6 +1957,7 @@ class BitDirWrite(FeedbackCommand):
 
     def __repr__(self):
         return "<u6.BitDirWrite( IONumber = %s, Direction = %s )>" % (self.ioNumber, self.direction)
+
 
 class PortStateRead(FeedbackCommand):
     """
@@ -1966,6 +1979,7 @@ class PortStateRead(FeedbackCommand):
     def handle(self, input):
         return {'FIO': input[0], 'EIO': input[1], 'CIO': input[2]}
 
+
 class PortStateWrite(FeedbackCommand):
     """
     PortStateWrite Feedback command
@@ -1986,6 +2000,7 @@ class PortStateWrite(FeedbackCommand):
     def __repr__(self):
         return "<u6.PortStateWrite( State = %s, WriteMask = %s )>" % (self.state, self.writeMask)
 
+
 class PortDirRead(FeedbackCommand):
     """
     PortDirRead Feedback command
@@ -2005,6 +2020,7 @@ class PortDirRead(FeedbackCommand):
     def handle(self, input):
         return {'FIO': input[0], 'EIO': input[1], 'CIO': input[2]}
 
+
 class PortDirWrite(FeedbackCommand):
     """
     PortDirWrite Feedback command
@@ -2023,6 +2039,7 @@ class PortDirWrite(FeedbackCommand):
 
     def __repr__(self):
         return "<u6.PortDirWrite( Direction = %s, WriteMask = %s )>" % (self.direction, self.writeMask)
+
 
 class DAC8(FeedbackCommand):
     '''
@@ -2044,6 +2061,7 @@ class DAC8(FeedbackCommand):
     def __repr__(self):
         return "<u6.DAC8( Dac = %s, Value = %s )>" % (self.dac, self.value)
 
+
 class DAC0_8(DAC8):
     """
     8-bit DAC Feedback command for DAC0
@@ -2061,6 +2079,7 @@ class DAC0_8(DAC8):
     def __repr__(self):
         return "<u6.DAC0_8( Value = %s )>" % self.value
 
+
 class DAC1_8(DAC8):
     """
     8-bit DAC Feedback command for DAC1
@@ -2077,6 +2096,7 @@ class DAC1_8(DAC8):
 
     def __repr__(self):
         return "<u6.DAC1_8( Value = %s )>" % self.value
+
 
 class DAC16(FeedbackCommand):
     '''
@@ -2098,6 +2118,7 @@ class DAC16(FeedbackCommand):
     def __repr__(self):
         return "<u6.DAC8( Dac = %s, Value = %s )>" % (self.dac, self.value)
 
+
 class DAC0_16(DAC16):
     """
     16-bit DAC Feedback command for DAC0
@@ -2114,6 +2135,7 @@ class DAC0_16(DAC16):
 
     def __repr__(self):
         return "<u6.DAC0_16( Value = %s )>" % self.value
+
 
 class DAC1_16(DAC16):
     """

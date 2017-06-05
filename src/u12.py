@@ -56,6 +56,7 @@ class U12Exception(Exception):
     """
     pass
 
+
 class BitField(object):
     """
     Provides a method for working with bit fields.
@@ -336,6 +337,7 @@ class BitField(object):
         """
         return other + self.asByte()
 
+
 def errcheck(ret, func, args):
     if ret == -1:
         try:
@@ -346,6 +348,7 @@ def errcheck(ret, func, args):
     else:
         return ret
 
+
 def _loadLinuxSo():
     try:
         l = ctypes.CDLL("liblabjackusb.so", use_errno=True)
@@ -355,6 +358,7 @@ def _loadLinuxSo():
     l.LJUSB_Read.errcheck = errcheck
     return l
 
+
 def _loadMacDylib():
     try:
         l = ctypes.CDLL("liblabjackusb.dylib", use_errno=True)
@@ -363,6 +367,7 @@ def _loadMacDylib():
     l.LJUSB_Stream.errcheck = errcheck
     l.LJUSB_Read.errcheck = errcheck
     return l
+
 
 def _loadLibrary():
     """_loadLibrary()
@@ -518,7 +523,6 @@ class U12(object):
             else:
                 raise Exception("Invalid combination of parameters.")
 
-
             if not self._autoCloseSetup:
                 # Only need to register auto-close once per device.
                 atexit.register(self.close)
@@ -603,7 +607,6 @@ class U12(object):
         """
         results = self.rawReadRAM(0x08)
         return results['DataByte0']
-
 
     # Begin Section 5 Functions
 
@@ -1179,7 +1182,6 @@ class U12(object):
         for _ in range(NumScans):
             resultsList.append(self.read())
 
-
         returnDict = {}
 
         returnDict['BufferOverflowOrChecksumErrors'] = list()
@@ -1230,7 +1232,6 @@ class U12(object):
         return returnDict
 
 
-
     def rawAIContinuous(self, channel0PGAMUX=8, channel1PGAMUX=9, channel2PGAMUX=10, channel3PGAMUX=11, FeatureReports=False, CounterRead=False, UpdateIO=False, LEDState=True, IO3ToIO0States=0, SampleInterval=15000):
         """
         Currently in development.
@@ -1277,7 +1278,6 @@ class U12(object):
             returnDict['Byte0'] = byte0bf
             returnDict['IterationCounter'] = (results[1] >> 5)
             returnDict['Backlog'] = results[1] & 0xf
-
 
             yield returnDict
 
@@ -2947,12 +2947,14 @@ class U12(object):
 
         return retBuff
 
+
 def isIterable(var):
     try:
         iter(var)
         return True
     except:
         return False
+
 
 def listToCArray(list, dataType):
     arrayType = dataType * len(list)
@@ -2962,12 +2964,14 @@ def listToCArray(list, dataType):
 
     return array
 
+
 def cArrayToList(array):
     list = []
     for item in array:
         list.append(item)
 
     return list
+
 
 def getErrorString(errorcode):
     """
@@ -2982,6 +2986,7 @@ def getErrorString(errorcode):
     errorString = ctypes.c_char_p(" " * 50)
     staticLib.GetErrorString(errorcode, errorString)
     return errorString.value
+
 
 def hexWithoutQuotes(l):
     """ Return a string listing hex without all the single quotes.

@@ -97,6 +97,7 @@ def errcheck(ret, func, args):
     else:
         return ret
 
+
 def _loadLinuxSo():
     """
     Attempts to load the liblabjackusb.so for Linux.
@@ -109,6 +110,7 @@ def _loadLinuxSo():
     l.LJUSB_Read.errcheck = errcheck
     return l
 
+
 def _loadMacDylib():
     """
     Attempts to load the liblabjackusb.dylib for Mac OS X.
@@ -120,6 +122,7 @@ def _loadMacDylib():
     l.LJUSB_Stream.errcheck = errcheck
     l.LJUSB_Read.errcheck = errcheck
     return l
+
 
 def _loadLibrary():
     """_loadLibrary()
@@ -203,7 +206,6 @@ class Device(object):
         self.modbusPrependZeros = True
         self.deviceLock = threading.Lock()
         self.deviceName = "LabJack"
-
 
     def _writeToLJSocketHandle(self, writeBuffer, modbus):
         # if modbus is True and self.modbusPrependZeros:
@@ -965,6 +967,7 @@ class Device(object):
 
 # --------------------- BEGIN LabJackPython ---------------------------------
 
+
 def setChecksum(command):
     """Returns a command with checksums places in the proper locations
 
@@ -1028,6 +1031,7 @@ def verifyChecksum(buffer):
         return True
 
     return False
+
 
 #  1 = LJ_ctUSB
 def listAll(deviceType, connectionType=1):
@@ -1134,11 +1138,13 @@ def listAll(deviceType, connectionType=1):
         if deviceType == 6:
             return __listAllU6Unix()
 
+
 def isHandleValid(handle):
     if _os_name == 'nt':
         return True
     else:
         return staticLib.LJUSB_IsHandleValid(handle)
+
 
 def deviceCount(devType=None):
     """Returns the number of devices connected."""
@@ -1159,6 +1165,7 @@ def deviceCount(devType=None):
         else:
             return staticLib.LJUSB_GetDevCount(devType)
 
+
 def getDevCounts():
     if _os_name == "nt":
         # Right now there is no good way to count all the U12s on a Windows box
@@ -1176,6 +1183,7 @@ def getDevCounts():
             returnDict[int(devIds[i])] = int(devCounts[i])
 
         return returnDict
+
 
 def openAllLabJacks():
     if _os_name == "nt":
@@ -1204,6 +1212,7 @@ def openAllLabJacks():
 
     return devices
 
+
 def _openLabJackUsingLJSocket(deviceType, firstFound, pAddress, LJSocket, handleOnly):
     if LJSocket is not '':
         ip, port = LJSocket.split(":")
@@ -1213,6 +1222,7 @@ def _openLabJackUsingLJSocket(deviceType, firstFound, pAddress, LJSocket, handle
         handle = LJSocketHandle('localhost', 6000, deviceType, firstFound, pAddress)
 
     return handle
+
 
 def _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, devNumber):
     if devNumber is not None:
@@ -1234,6 +1244,7 @@ def _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, 
     devHandle = handle.value
 
     return devHandle
+
 
 def _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber):
     devType = ctypes.c_ulong(deviceType)
@@ -1269,6 +1280,7 @@ def _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber):
                 device.close()
 
     raise LabJackException(LJE_LABJACK_NOT_FOUND)
+
 
 def _openUE9OverEthernet(firstFound, pAddress, devNumber):
     if firstFound is not True and pAddress is not None:
@@ -1339,6 +1351,7 @@ def _openUE9OverEthernet(firstFound, pAddress, devNumber):
     except:
         raise LabJackException("LJE_LABJACK_NOT_FOUND: Couldn't find the specified LabJack.")
 
+
 # Windows, Linux, and Mac
 def openLabJack(deviceType, connectionType, firstFound=True, pAddress=None, devNumber=None, handleOnly=False, LJSocket=None):
     """openLabJack(deviceType, connectionType, firstFound = True, pAddress = 1, LJSocket = None)
@@ -1365,6 +1378,7 @@ def openLabJack(deviceType, connectionType, firstFound=True, pAddress=None, devN
         return _makeDeviceFromHandle(handle, deviceType)
     else:
         return Device(handle, devType=deviceType)
+
 
 def _makeDeviceFromHandle(handle, deviceType):
     """ A helper function to get set all the info about a device from a handle"""
@@ -1508,6 +1522,7 @@ def _makeDeviceFromHandle(handle, deviceType):
 
     return device
 
+
 # Windows
 def AddRequest(Handle, IOType, Channel, Value, x1, UserData):
     """AddRequest(handle, ioType, channel, value, x1, userData)
@@ -1567,6 +1582,7 @@ def AddRequestS(Handle, pIOType, Channel, Value, x1, UserData):
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
+
 # Windows
 def AddRequestSS(Handle, pIOType, pChannel, Value, x1, UserData):
     """Add a request to the LabJackUD request stack
@@ -1610,6 +1626,7 @@ def AddRequestSS(Handle, pIOType, pChannel, Value, x1, UserData):
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
+
 # Windows
 def Go():
     """Complete all requests currently on the LabJackUD request stack
@@ -1637,6 +1654,7 @@ def Go():
         if ec != 0: raise LabJackException(ec)
     else:
         raise LabJackException("Function only supported for Windows")
+
 
 # Windows
 def GoOne(Handle):
@@ -1667,6 +1685,7 @@ def GoOne(Handle):
         if ec != 0: raise LabJackException(ec)
     else:
         raise LabJackException(0, "Function only supported for Windows")
+
 
 # Windows
 def eGet(Handle, IOType, Channel, pValue, x1):
@@ -1806,6 +1825,7 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
+
 # Windows
 def eGetS(Handle, pIOType, Channel, pValue, x1):
     """Perform one call to the LabJack Device
@@ -1844,6 +1864,7 @@ def eGetS(Handle, pIOType, Channel, pValue, x1):
         return pv.value
     else:
         raise LabJackException(0, "Function only supported for Windows")
+
 
 # Windows
 def eGetSS(Handle, pIOType, pChannel, pValue, x1):
@@ -1894,6 +1915,7 @@ def eGetRawS(Handle, pIOType, Channel, pValue, x1):
     """
     pass
 
+
 # Windows
 def ePut(Handle, IOType, Channel, Value, x1):
     """Put one value to the LabJack device
@@ -1935,6 +1957,7 @@ def ePut(Handle, IOType, Channel, Value, x1):
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
+    
 # Windows
 def ePutS(Handle, pIOType, Channel, Value, x1):
     """Put one value to the LabJack device
@@ -1976,6 +1999,7 @@ def ePutS(Handle, pIOType, Channel, Value, x1):
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
+    
 # Windows
 def ePutSS(Handle, pIOType, pChannel, Value, x1):
     """Put one value to the LabJack device
@@ -2017,6 +2041,7 @@ def ePutSS(Handle, pIOType, pChannel, Value, x1):
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
+
 # Windows
 def GetResult(Handle, IOType, Channel):
     """Put one value to the LabJack device
@@ -2055,6 +2080,7 @@ def GetResult(Handle, IOType, Channel):
         return pv.value
     else:
         raise LabJackException(0, "Function only supported for Windows")
+
 
 # Windows
 def GetResultS(Handle, pIOType, Channel):
@@ -2095,6 +2121,7 @@ def GetResultS(Handle, pIOType, Channel):
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
+
 # Windows
 def GetResultSS(Handle, pIOType, pChannel):
     """Put one value to the LabJack device
@@ -2133,6 +2160,7 @@ def GetResultSS(Handle, pIOType, pChannel):
         return pv.value
     else:
         raise LabJackException(0, "Function only supported for Windows")
+
 
 # Windows
 def GetFirstResult(Handle):
@@ -2181,6 +2209,7 @@ def GetFirstResult(Handle):
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
+
 # Windows
 def GetNextResult(Handle):
     """List All LabJack devices of a specific type over a specific connection type.
@@ -2228,6 +2257,7 @@ def GetNextResult(Handle):
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
+
 # Windows
 def DoubleToStringAddress(number):
     """Converts a number (base 10) to an IP string.
@@ -2250,6 +2280,7 @@ def DoubleToStringAddress(number):
     number = int(number)
     address = "%i.%i.%i.%i" % ((number >> 8 * 3 & 0xFF), (number >> 8 * 2 & 0xFF), (number >> 8 & 0xFF), (number & 0xFF))
     return address
+
 
 def StringToDoubleAddress(pString):
     """Converts an IP string to a number (base 10).
@@ -2278,6 +2309,7 @@ def StringToDoubleAddress(pString):
         raise LabJackException(0, "IP address not correctly formatted")
 
     return value
+
 
 # Windows
 def StringToConstant(pString):
@@ -2371,6 +2403,7 @@ ERROR_TO_STRING_DICT['114'] = ("UART_NOT_ENABLED", "")
 ERROR_TO_STRING_DICT['115'] = ("UART_RXOVERFLOW", "")
 ERROR_TO_STRING_DICT['116'] = ("I2C_BUS_BUSY", "")
 
+
 def lowlevelErrorToString(errorcode):
     """Converts a low-level errorcode into a string.
     """
@@ -2386,6 +2419,7 @@ def lowlevelErrorToString(errorcode):
         msg = "%s (%s)" % (name, errorcode)
 
     return msg
+
 
 # Windows
 def ErrorToString(ErrorCode):
@@ -2410,6 +2444,7 @@ def ErrorToString(ErrorCode):
         return pString.value
     else:
         raise LabJackException(0, "Function only supported for Windows")
+
 
 # Windows, Linux, and Mac
 def GetDriverVersion():
@@ -2438,6 +2473,7 @@ def GetDriverVersion():
     elif _os_name == 'posix':
         staticLib.LJUSB_GetLibraryVersion.restype = ctypes.c_float
         return "%.2f" % staticLib.LJUSB_GetLibraryVersion()
+
 
 # Windows
 def TCVoltsToTemp(TCType, TCVolts, CJTempK):
@@ -2492,6 +2528,7 @@ def Close():
     else:
         raise LabJackException(0, "Function only supported for Windows")
 
+
 # Windows, Linux and Mac
 def DriverPresent():
     try:
@@ -2516,6 +2553,7 @@ def DriverPresent():
                 except:
                     return False
     return False
+
 
 # Currently Windows only
 def U12DriverPresent():
@@ -2563,6 +2601,7 @@ def LJHash(hashStr, size):
         retBuff += outBuff[i]
 
     return retBuff
+
 
 def __listAllUE9Unix(connectionType):
     """Private listAll function for use on unix and mac machines to find UE9s.
@@ -2671,6 +2710,7 @@ def __listAllU6Unix():
             pass
 
     return deviceList
+
 
 def setChecksum16(buffer):
     total = 0
@@ -2832,6 +2872,7 @@ class UE9TCPHandle(object):
             e = sys.exc_info()[1]
             print("UE9 Handle close exception: %s" % e)
 
+
 def toDouble(bytes):
     """
     Name: toDouble(buffer)
@@ -2841,6 +2882,7 @@ def toDouble(bytes):
     right, left = unpack("<Ii", pack("B" * 8, *bytes[0:8]))
 
     return float(left) + float(right) / (2 ** 32)
+
 
 def hexWithoutQuotes(l):
     """
@@ -2852,6 +2894,7 @@ def hexWithoutQuotes(l):
 
     """
     return str([hex(i) for i in l]).replace("'", "")
+
 
 def toList(buffer):
     """
@@ -2868,6 +2911,7 @@ def toList(buffer):
         return [ord(ch) for ch in buffer]
     else:
         return [int(val) for val in buffer]
+
 
 def streamByteToInt(byte):
     """
