@@ -32,7 +32,7 @@ import time
 from struct import pack, unpack
 
 
-_os_name = "" #Set to "nt" or "posix" in _loadLibrary
+_os_name = ""  # Set to "nt" or "posix" in _loadLibrary
 
 
 class U12Exception(Exception):
@@ -132,7 +132,7 @@ class BitField(object):
     '0x6b'
 
     See the description of the __init__ method for setting the label parameters.    """
-    def __init__(self, rawByte = None, labelPrefix = "bit", labelList = None, zeroLabel = "0", oneLabel = "1"):
+    def __init__(self, rawByte=None, labelPrefix="bit", labelList=None, zeroLabel="0", oneLabel="1"):
         """
         Name: BitField.__init__(rawByte = None, labelPrefix = "bit",
                                 labelList = None, zeroLabel = "0",
@@ -198,8 +198,8 @@ class BitField(object):
         self.oneLabel = oneLabel
 
         self.rawValue = 0
-        self.rawBits = [ 0 ] * 8
-        self.data = [ self.zeroLabel ] * 8
+        self.rawBits = [0] * 8
+        self.data = [self.zeroLabel] * 8
 
         items = min(8, len(self.labelList))
         for i in reversed(range(items)):
@@ -226,7 +226,7 @@ class BitField(object):
 
         items = min(8, len(self.labelList))
         for i in reversed(range(items)):
-            self.rawBits.append( ((raw >> (i)) & 1) )
+            self.rawBits.append(((raw >> (i)) & 1))
             self.data.append(self.oneLabel if bool(((raw >> (i)) & 1)) else self.zeroLabel)
 
     def asByte(self):
@@ -243,7 +243,7 @@ class BitField(object):
         """
         byteVal = 0
         for i, v in enumerate(reversed(self.rawBits)):
-            byteVal += ( 1 << i ) * v
+            byteVal += (1 << i) * v
 
         return byteVal
 
@@ -349,7 +349,7 @@ def errcheck(ret, func, args):
 def _loadLinuxSo():
     try:
         l = ctypes.CDLL("liblabjackusb.so", use_errno=True)
-    except TypeError: # Python 2.5
+    except TypeError:  # Python 2.5
         l = ctypes.CDLL("liblabjackusb.so")
     l.LJUSB_Stream.errcheck = errcheck
     l.LJUSB_Read.errcheck = errcheck
@@ -358,7 +358,7 @@ def _loadLinuxSo():
 def _loadMacDylib():
     try:
         l = ctypes.CDLL("liblabjackusb.dylib", use_errno=True)
-    except TypeError: # Python 2.5
+    except TypeError:  # Python 2.5
         l = ctypes.CDLL("liblabjackusb.dylib")
     l.LJUSB_Stream.errcheck = errcheck
     l.LJUSB_Read.errcheck = errcheck
@@ -373,10 +373,10 @@ def _loadLibrary():
     _os_name = "nt"
     try:
         if sys.platform.startswith("win32"):
-            #Windows detected
+            # Windows detected
             return ctypes.WinDLL("ljackuw")
         if sys.platform.startswith("cygwin"):
-            #Cygwin detected. WinDLL not available, but CDLL seems to work.
+            # Cygwin detected. WinDLL not available, but CDLL seems to work.
             return ctypes.CDLL("ljackuw")
     except Exception:
         e = sys.exc_info()[1]
@@ -386,14 +386,14 @@ def _loadLibrary():
     addStr = "Exodriver"
     try:
         if sys.platform.startswith("linux"):
-            #Linux detected
+            # Linux detected
             addStr = "Linux SO"
             return _loadLinuxSo()
         if sys.platform.startswith("darwin"):
-            #Mac detected
+            # Mac detected
             addStr = "Mac Dylib"
             return _loadMacDylib()
-        #Other OS? Just try to load the Exodriver like a Linux SO
+        # Other OS? Just try to load the Exodriver like a Linux SO
         addStr = "Other SO"
         return _loadLinuxSo()
     except OSError:
@@ -418,7 +418,7 @@ class U12(object):
     u12 = U12()
 
     """
-    def __init__(self, id = -1, serialNumber = None, debug = False):
+    def __init__(self, id=-1, serialNumber=None, debug=False):
         self.id = id
         self.serialNumber = serialNumber
         self.deviceName = "U12"
@@ -434,7 +434,7 @@ class U12(object):
 
             self.open(id, serialNumber)
 
-    def open(self, id = -1, serialNumber = None):
+    def open(self, id=-1, serialNumber=None):
         """
         Opens the U12.
 
@@ -456,7 +456,7 @@ class U12(object):
                 numDevices = staticLib.LJUSB_GetDevCount(devType)
 
                 for i in range(numDevices):
-                    handle = openDev(i+1, 0, devType)
+                    handle = openDev(i + 1, 0, devType)
 
                     if handle != 0 and handle is not None:
                         self.handle = ctypes.c_void_p(handle)
@@ -478,7 +478,7 @@ class U12(object):
                 numDevices = staticLib.LJUSB_GetDevCount(devType)
 
                 for i in range(numDevices):
-                    handle = openDev(i+1, 0, devType)
+                    handle = openDev(i + 1, 0, devType)
 
                     if handle != 0 and handle is not None:
                         self.handle = ctypes.c_void_p(handle)
@@ -504,8 +504,8 @@ class U12(object):
                     self.handle = ctypes.c_void_p(handle)
 
                     # U12 ignores first command, so let's write a command.
-                    command = [ 0 ] * 8
-                    command[5] = 0x57 # 0b01010111
+                    command = [0] * 8
+                    command[5] = 0x57  # 0b01010111
 
                     try:
                         self.write(command)
@@ -540,14 +540,14 @@ class U12(object):
 
             if self.debug:
                 print("Writing: " + hexWithoutQuotes(writeBuffer))
-            newA = (ctypes.c_byte*len(writeBuffer))(0)
+            newA = (ctypes.c_byte * len(writeBuffer))(0)
             for i in range(len(writeBuffer)):
                 newA[i] = ctypes.c_byte(writeBuffer[i])
 
             writeBytes = staticLib.LJUSB_Write(self.handle, ctypes.byref(newA), len(writeBuffer))
 
             if writeBytes != len(writeBuffer):
-                raise U12Exception( "Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
+                raise U12Exception("Could only write %s of %s bytes." % (writeBytes, len(writeBuffer)))
 
             return writeBuffer
 
@@ -557,7 +557,7 @@ class U12(object):
         else:
             if self.handle is None:
                 raise U12Exception("The U12's handle is None. Please open a U12 with open()")
-            newA = (ctypes.c_byte*numBytes)()
+            newA = (ctypes.c_byte * numBytes)()
             readBytes = staticLib.LJUSB_ReadTO(self.handle, ctypes.byref(newA), numBytes, timeout)
             # Return a list of integers in command-response mode
             result = [(newA[i] & 0xff) for i in range(readBytes)]
@@ -607,7 +607,7 @@ class U12(object):
 
     # Begin Section 5 Functions
 
-    def rawAISample(self, channel0PGAMUX = 8, channel1PGAMUX = 9, channel2PGAMUX = 10, channel3PGAMUX = 11, UpdateIO = False, LEDState = True, IO3toIO0States = 0, EchoValue = 0):
+    def rawAISample(self, channel0PGAMUX=8, channel1PGAMUX=9, channel2PGAMUX=10, channel3PGAMUX=11, UpdateIO=False, LEDState=True, IO3toIO0States=0, EchoValue=0):
         """
         Name: U12.rawAISample(channel0PGAMUX = 8, channel1PGAMUX = 9,
                               channel2PGAMUX = 10, channel3PGAMUX = 11,
@@ -652,33 +652,33 @@ class U12(object):
         }
 
         """
-        command = [ 0 ] * 8
+        command = [0] * 8
 
         # Bits 6-4: PGA for 1st Channel
         # Bits 3-0: MUX command for 1st Channel
         command[0] = int(channel0PGAMUX)
 
-        tempNum = command[0] & 7 # 7 = 0b111
-        channel0Number = tempNum if (command[0] & 0xf) > 7 else tempNum+8
-        channel0Gain = (command[0] >> 4) & 7 # 7 = 0b111
+        tempNum = command[0] & 7  # 7 = 0b111
+        channel0Number = tempNum if (command[0] & 0xf) > 7 else tempNum + 8
+        channel0Gain = (command[0] >> 4) & 7  # 7 = 0b111
 
         command[1] = int(channel1PGAMUX)
 
-        tempNum = command[1] & 7 # 7 = 0b111
-        channel1Number = tempNum if (command[1] & 0xf) > 7 else tempNum+8
-        channel1Gain = (command[1] >> 4) & 7 # 7 = 0b111
+        tempNum = command[1] & 7  # 7 = 0b111
+        channel1Number = tempNum if (command[1] & 0xf) > 7 else tempNum + 8
+        channel1Gain = (command[1] >> 4) & 7  # 7 = 0b111
 
         command[2] = int(channel2PGAMUX)
 
-        tempNum = command[2] & 7 # 7 = 0b111
-        channel2Number = tempNum if (command[2] & 0xf) > 7 else tempNum+8
-        channel2Gain = (command[2] >> 4) & 7 # 7 = 0b111
+        tempNum = command[2] & 7  # 7 = 0b111
+        channel2Number = tempNum if (command[2] & 0xf) > 7 else tempNum + 8
+        channel2Gain = (command[2] >> 4) & 7  # 7 = 0b111
 
         command[3] = int(channel3PGAMUX)
 
-        tempNum = command[3] & 7 # 7 = 0b111
-        channel3Number = tempNum if (command[3] & 0xf) > 7 else tempNum+8
-        channel3Gain = (command[3] >> 4) & 7 # 7 = 0b111
+        tempNum = command[3] & 7  # 7 = 0b111
+        channel3Number = tempNum if (command[3] & 0xf) > 7 else tempNum + 8
+        channel3Gain = (command[3] >> 4) & 7  # 7 = 0b111
 
         # Bit 1: Update IO
         # Bit 0: LED State
@@ -693,7 +693,7 @@ class U12(object):
         bf.bit7 = 1
         bf.bit6 = 1
 
-        bf.fromByte( int(bf) | int(IO3toIO0States) )
+        bf.fromByte(int(bf) | int(IO3toIO0States))
         command[5] = int(bf)
 
         command[7] = EchoValue
@@ -732,7 +732,7 @@ class U12(object):
 
         return returnDict
 
-    def rawDIO(self, D15toD8Directions = 0, D7toD0Directions = 0, D15toD8States = 0, D7toD0States = 0, IO3toIO0DirectionsAndStates = 0, UpdateDigital = False):
+    def rawDIO(self, D15toD8Directions=0, D7toD0Directions=0, D15toD8States=0, D7toD0States=0, IO3toIO0DirectionsAndStates=0, UpdateDigital=False):
         """
         Name: U12.rawDIO(D15toD8Directions = 0, D7toD0Directions = 0,
                          D15toD8States = 0, D7toD0States = 0,
@@ -803,7 +803,7 @@ class U12(object):
         }
 
         """
-        command = [ 0 ] * 8
+        command = [0] * 8
 
         # Bits for D15 through D8 Direction
         command[0] = int(D15toD8Directions)
@@ -822,12 +822,12 @@ class U12(object):
         command[4] = int(IO3toIO0DirectionsAndStates)
 
         # 01X10111 (DIO)
-        command[5] = 0x57 # 0b01010111
+        command[5] = 0x57  # 0b01010111
 
         # Bit 0: Update Digital
         command[6] = int(bool(UpdateDigital))
 
-        #XXXXXXXX
+        # XXXXXXXX
         # command[7] = XXXXXXXX
 
         self.write(command)
@@ -851,7 +851,7 @@ class U12(object):
 
         return returnDict
 
-    def rawCounter(self, StrobeEnabled = False, ResetCounter = False):
+    def rawCounter(self, StrobeEnabled=False, ResetCounter=False):
         """
         Name: U12.rawCounter(StrobeEnabled = False, ResetCounter = False)
         Args: StrobeEnable, set to True to enable strobe.
@@ -889,7 +889,7 @@ class U12(object):
 
 
         """
-        command = [ 0 ] * 8
+        command = [0] * 8
 
         bf = BitField()
         bf.bit1 = int(StrobeEnabled)
@@ -923,7 +923,7 @@ class U12(object):
 
         return returnDict
 
-    def rawCounterPWMDIO(self, D15toD8Directions = 0, D7toD0Directions = 0, D15toD8States = 0, D7toD0States = 0, IO3toIO0DirectionsAndStates = 0, ResetCounter = False, UpdateDigital = 0, PWMA = 0, PWMB = 0):
+    def rawCounterPWMDIO(self, D15toD8Directions=0, D7toD0Directions=0, D15toD8States=0, D7toD0States=0, IO3toIO0DirectionsAndStates=0, ResetCounter=False, UpdateDigital=0, PWMA=0, PWMB=0):
         """
         Name: U12.rawCounterPWMDIO( D15toD8Directions = 0, D7toD0Directions = 0,
                                     D15toD8States = 0, D7toD0States = 0,
@@ -976,7 +976,7 @@ class U12(object):
           'Counter': 0
         }
         """
-        command = [ 0 ] * 8
+        command = [0] * 8
 
         # Bits for D15 through D8 Direction
         command[0] = int(D15toD8Directions)
@@ -998,15 +998,15 @@ class U12(object):
         bf.bit5 = int(ResetCounter)
         bf.bit4 = int(UpdateDigital)
 
-        binPWMA = int((1023 * (float(PWMA)/5.0)))
-        binPWMB = int((1023 * (float(PWMB)/5.0)))
+        binPWMA = int((1023 * (float(PWMA) / 5.0)))
+        binPWMB = int((1023 * (float(PWMB) / 5.0)))
 
         bf2 = BitField()
-        bf2.fromByte( binPWMA & 3 ) # 3 = 0b11
+        bf2.fromByte(binPWMA & 3)  # 3 = 0b11
         bf.bit3 = bf2.bit1
         bf.bit2 = bf2.bit0
 
-        bf2.fromByte( binPWMB & 3 ) # 3 = 0b11
+        bf2.fromByte(binPWMB & 3)  # 3 = 0b11
         bf.bit1 = bf2.bit1
         bf.bit0 = bf2.bit0
 
@@ -1032,7 +1032,7 @@ class U12(object):
 
         return returnDict
 
-    def rawAIBurst(self, channel0PGAMUX = 8, channel1PGAMUX = 9, channel2PGAMUX = 10, channel3PGAMUX = 11, NumberOfScans = 8, TriggerIONum = 0, TriggerState = 0, UpdateIO = False, LEDState = True, IO3ToIO0States = 0, FeatureReports = False, TriggerOn = False, SampleInterval = 15000):
+    def rawAIBurst(self, channel0PGAMUX=8, channel1PGAMUX=9, channel2PGAMUX=10, channel3PGAMUX=11, NumberOfScans=8, TriggerIONum=0, TriggerState=0, UpdateIO=False, LEDState=True, IO3ToIO0States=0, FeatureReports=False, TriggerOn=False, SampleInterval=15000):
         """
         Name: U12.rawAIBurst( channel0PGAMUX = 8, channel1PGAMUX = 9,
                               channel2PGAMUX = 10, channel3PGAMUX = 11,
@@ -1116,33 +1116,33 @@ class U12(object):
 
 
         """
-        command = [ 0 ] * 8
+        command = [0] * 8
 
         # Bits 6-4: PGA for 1st Channel
         # Bits 3-0: MUX command for 1st Channel
         command[0] = int(channel0PGAMUX)
 
-        tempNum = command[0] & 7 # 7 = 0b111
-        channel0Number = tempNum if (command[0] & 0xf) > 7 else tempNum+8
-        channel0Gain = (command[0] >> 4) & 7 # 7 = 0b111
+        tempNum = command[0] & 7  # 7 = 0b111
+        channel0Number = tempNum if (command[0] & 0xf) > 7 else tempNum + 8
+        channel0Gain = (command[0] >> 4) & 7  # 7 = 0b111
 
         command[1] = int(channel1PGAMUX)
 
-        tempNum = command[1] & 7 # 7 = 0b111
-        channel1Number = tempNum if (command[1] & 0xf) > 7 else tempNum+8
-        channel1Gain = (command[1] >> 4) & 7 # 7 = 0b111
+        tempNum = command[1] & 7  # 7 = 0b111
+        channel1Number = tempNum if (command[1] & 0xf) > 7 else tempNum + 8
+        channel1Gain = (command[1] >> 4) & 7  # 7 = 0b111
 
         command[2] = int(channel2PGAMUX)
 
-        tempNum = command[2] & 7 # 7 = 0b111
-        channel2Number = tempNum if (command[2] & 0xf) > 7 else tempNum+8
-        channel2Gain = (command[2] >> 4) & 7 # 7 = 0b111
+        tempNum = command[2] & 7  # 7 = 0b111
+        channel2Number = tempNum if (command[2] & 0xf) > 7 else tempNum + 8
+        channel2Gain = (command[2] >> 4) & 7  # 7 = 0b111
 
         command[3] = int(channel3PGAMUX)
 
-        tempNum = command[3] & 7 # 7 = 0b111
-        channel3Number = tempNum if (command[3] & 0xf) > 7 else tempNum+8
-        channel3Gain = (command[3] >> 4) & 7 # 7 = 0b111
+        tempNum = command[3] & 7  # 7 = 0b111
+        channel3Number = tempNum if (command[3] & 0xf) > 7 else tempNum + 8
+        channel3Gain = (command[3] >> 4) & 7  # 7 = 0b111
 
         if NumberOfScans > 1024 or NumberOfScans < 8:
             raise U12Exception("The number of scans must be between 1024 and 8 (inclusive)")
@@ -1150,15 +1150,15 @@ class U12(object):
         NumScansExponentMod = 10 - int(math.ceil(math.log(NumberOfScans, 2)))
         NumScans = 2 ** (10 - NumScansExponentMod)
 
-        bf = BitField( rawByte = (NumScansExponentMod << 5) )
+        bf = BitField(rawByte=(NumScansExponentMod << 5))
         # bits 4-3: IO to Trigger on
         bf.bit2 = 0
         bf.bit1 = int(bool(UpdateIO))
         bf.bit0 = int(bool(LEDState))
         command[4] = int(bf)
 
-        bf2 = BitField(rawByte = int(IO3ToIO0States))
-        #Bits 7-4: 1010 (Start Burst)
+        bf2 = BitField(rawByte=int(IO3ToIO0States))
+        # Bits 7-4: 1010 (Start Burst)
         bf2.bit7 = 1
         bf2.bit5 = 1
         command[5] = int(bf2)
@@ -1166,7 +1166,7 @@ class U12(object):
         if SampleInterval < 733:
             raise U12Exception("SampleInterval must be greater than 733.")
 
-        bf3 = BitField( rawByte = ((SampleInterval >> 8) & 0xf) )
+        bf3 = BitField(rawByte=((SampleInterval >> 8) & 0xf))
         bf3.bit7 = int(bool(FeatureReports))
         bf3.bit6 = int(bool(TriggerOn))
         command[6] = int(bf3)
@@ -1198,7 +1198,7 @@ class U12(object):
         returnDict['Channel3'] = list()
 
         for results in resultsList:
-            bf = BitField(rawByte = results[0])
+            bf = BitField(rawByte=results[0])
 
             if bf.bit7 != 1 or bf.bit6 != 0:
                 raise U12Exception("Expected a AIBurst response, got %s instead." % results[0])
@@ -1231,14 +1231,14 @@ class U12(object):
 
 
 
-    def rawAIContinuous(self, channel0PGAMUX = 8, channel1PGAMUX = 9, channel2PGAMUX = 10, channel3PGAMUX = 11, FeatureReports = False, CounterRead = False, UpdateIO = False, LEDState = True, IO3ToIO0States = 0, SampleInterval = 15000):
+    def rawAIContinuous(self, channel0PGAMUX=8, channel1PGAMUX=9, channel2PGAMUX=10, channel3PGAMUX=11, FeatureReports=False, CounterRead=False, UpdateIO=False, LEDState=True, IO3ToIO0States=0, SampleInterval=15000):
         """
         Currently in development.
 
         The function is mostly implemented, but is currently too slow to be
         useful.
         """
-        command = [ 0 ] * 8
+        command = [0] * 8
 
         # Bits 6-4: PGA for 1st Channel
         # Bits 3-0: MUX command for 1st Channel
@@ -1256,13 +1256,13 @@ class U12(object):
         command[4] = int(bf)
 
         # Bits 7-4: 1001 (Start Continuous)
-        bf2 = BitField( rawByte = int(IO3ToIO0States) )
+        bf2 = BitField(rawByte=int(IO3ToIO0States))
         bf2.bit7 = 1
         bf2.bit4 = 1
 
         command[5] = int(bf2)
 
-        command[6] = ( SampleInterval >> 8)
+        command[6] = (SampleInterval >> 8)
         command[7] = SampleInterval & 0xff
 
         byte0bf = BitField()
@@ -1281,7 +1281,7 @@ class U12(object):
 
             yield returnDict
 
-    def rawPulseout(self, B1 = 10, C1 = 2, B2 = 10, C2 = 2, D7ToD0PulseSelection = 1, ClearFirst = False, NumberOfPulses = 5):
+    def rawPulseout(self, B1=10, C1=2, B2=10, C2=2, D7ToD0PulseSelection=1, ClearFirst=False, NumberOfPulses=5):
         """
         Name: U12.rawPulseout( B1 = 10, C1 = 2, B2 = 10, C2 = 2,
                                D7ToD0PulseSelection = 1, ClearFirst = False,
@@ -1345,7 +1345,7 @@ class U12(object):
         # Calculate how long the pulses should take, in milliseconds.
         # This plus 5 seconds is the read timeout like in the ljackuw/ul
         # library.
-        pulsesMS = int(NumberOfPulses * ((B1*C1*0.02)+(B2*C2*0.02)))
+        pulsesMS = int(NumberOfPulses * ((B1 * C1 * 0.02) + (B2 * C2 * 0.02)))
         timeoutMS = min(pulsesMS, 85226967)
         timeoutMS = max(timeoutMS, 1000) + 5000
         results = self.read(timeout=timeoutMS)
@@ -1376,7 +1376,7 @@ class U12(object):
         >>> d = u12.U12()
         >>> d.rawReset()
         """
-        command = [ 0 ] * 8
+        command = [0] * 8
 
         # 0b01011111 ( Reset )
         bf = BitField()
@@ -1409,7 +1409,7 @@ class U12(object):
         >>> d = u12.U12()
         >>> d.rawReenumerate()
         """
-        command = [ 0 ] * 8
+        command = [0] * 8
 
         # 0b01000000 (Re-Enumerate)
         bf = BitField()
@@ -1418,7 +1418,7 @@ class U12(object):
         self.write(command)
         self.close()
 
-    def rawWatchdog(self, IgnoreCommands = False, D0Active = False, D0State = False, D1Active = False, D1State = False, D8Active = False, D8State = False, ResetOnTimeout = False, WatchdogActive = False, Timeout = 60):
+    def rawWatchdog(self, IgnoreCommands=False, D0Active=False, D0State=False, D1Active=False, D1State=False, D8Active=False, D8State=False, ResetOnTimeout=False, WatchdogActive=False, Timeout=60):
         """
         Name: U12.rawWatchdog( IgnoreCommands = False, D0Active = False,
                                D0State = False, D1Active = False,
@@ -1440,7 +1440,7 @@ class U12(object):
         >>> print(d.rawWatchdog())
         {'FirmwareVersion': '1.10'}
         """
-        command = [ 0 ] * 8
+        command = [0] * 8
 
         command[0] = int(bool(IgnoreCommands))
 
@@ -1467,7 +1467,7 @@ class U12(object):
         # Timeout is increments of 2^16 cycles.
         # 2^16 cycles is about 0.01 seconds.
         binTimeout = int((float(Timeout) / 0.01))
-        command[6] = ( binTimeout >> 8 ) & 0xff
+        command[6] = (binTimeout >> 8) & 0xff
         command[7] = binTimeout & 0xff
 
         self.write(command)
@@ -1479,7 +1479,7 @@ class U12(object):
 
         return returnDict
 
-    def rawReadRAM(self, Address = 0):
+    def rawReadRAM(self, Address=0):
         """
         Name: U12.rawReadRAM(Address = 0)
 
@@ -1506,7 +1506,7 @@ class U12(object):
         >>> print(struct.unpack(">I", struct.pack("BBBB", *bytes))[0])
         100043690
         """
-        command = [ 0 ] * 8
+        command = [0] * 8
 
         # 01010000 (Read RAM)
         bf = BitField()
@@ -1560,7 +1560,7 @@ class U12(object):
         >>> print(d.rawWriteRAM([1, 2, 3, 4], 0x200))
         {'DataByte3': 4, 'DataByte2': 3, 'DataByte1': 2, 'DataByte0': 1}
         """
-        command = [ 0 ] * 8
+        command = [0] * 8
 
         if not isinstance(Data, list) or len(Data) > 4:
             raise U12Exception("Data wasn't a list, or was too long.")
@@ -1598,7 +1598,7 @@ class U12(object):
 
         return returnDict
 
-    def rawAsynch(self, Data, AddDelay = False, TimeoutActive = False, SetTransmitEnable = False, PortB = False, NumberOfBytesToWrite = 0, NumberOfBytesToRead = 0):
+    def rawAsynch(self, Data, AddDelay=False, TimeoutActive=False, SetTransmitEnable=False, PortB=False, NumberOfBytesToWrite=0, NumberOfBytesToRead=0):
         """
         Name: U12.rawAsynch(Data, AddDelay = False, TimeoutActive = False,
                             SetTransmitEnable = False, PortB = False,
@@ -1637,7 +1637,7 @@ class U12(object):
         }
 
         """
-        command = [ 0 ] * 8
+        command = [0] * 8
 
         if not isinstance(Data, list) or len(Data) > 4:
             raise U12Exception("Data wasn't a list, or was too long.")
@@ -1661,7 +1661,7 @@ class U12(object):
 
         command[4] = int(bf)
 
-        #01100001 (Asynch)
+        # 01100001 (Asynch)
         bf2 = BitField()
         bf2.bit6 = 1
         bf2.bit5 = 1
@@ -1684,13 +1684,13 @@ class U12(object):
         returnDict['DataByte0'] = results[3]
 
         bfLabels = ["Timeout Error Flag", "STRT Error Flag", "FRM Error Flag", "RXTris Error Flag", "TETris Error Flag", "TXTris Error Flag"]
-        bf = BitField( rawByte = results[4], labelPrefix = "", labelList = bfLabels )
+        bf = BitField(rawByte=results[4], labelPrefix="", labelList=bfLabels)
 
         returnDict["ErrorFlags"] = bf
 
         return returnDict
 
-    def rawSPI(self, Data, AddMsDelay = False, AddHundredUsDelay = False, SPIMode = 'A', NumberOfBytesToWriteRead = 0, ControlCS = False, StateOfActiveCS = False, CSLineNumber = 0):
+    def rawSPI(self, Data, AddMsDelay=False, AddHundredUsDelay=False, SPIMode='A', NumberOfBytesToWriteRead=0, ControlCS=False, StateOfActiveCS=False, CSLineNumber=0):
         """
         Name: U12.rawSPI( Data, AddMsDelay = False, AddHundredUsDelay = False,
                           SPIMode = 'A', NumberOfBytesToWriteRead = 0,
@@ -1728,7 +1728,7 @@ class U12(object):
         }
 
         """
-        command = [ 0 ] * 8
+        command = [0] * 8
 
         if not isinstance(Data, list) or len(Data) > 4:
             raise U12Exception("Data wasn't a list, or was too long.")
@@ -1753,7 +1753,7 @@ class U12(object):
             modeIndex = spiModes.index(SPIMode)
         except ValueError:
             raise U12Exception("Invalid SPIMode %r, valid modes are: %r" % (SPIMode, spiModes))
-        bf[7-modeIndex] = 1
+        bf[7 - modeIndex] = 1
 
         command[4] = int(bf)
 
@@ -1766,7 +1766,7 @@ class U12(object):
         command[5] = int(bf2)
         command[6] = NumberOfBytesToWriteRead
 
-        bf3 = BitField(rawByte = CSLineNumber)
+        bf3 = BitField(rawByte=CSLineNumber)
         bf3.bit7 = int(bool(ControlCS))
         bf3.bit6 = int(bool(StateOfActiveCS))
 
@@ -1785,13 +1785,13 @@ class U12(object):
         returnDict['DataByte0'] = results[3]
 
         bfLabels = ["CSStateTris Error Flag", "SCKTris Error Flag", "MISOTris Error Flag", "MOSITris Error Flag"]
-        bf = BitField( rawByte = results[4], labelPrefix = "", labelList = bfLabels )
+        bf = BitField(rawByte=results[4], labelPrefix="", labelList=bfLabels)
 
         returnDict["ErrorFlags"] = bf
 
         return returnDict
 
-    def rawSHT1X(self, Data = [3,0,0,0], WaitForMeasurementReady = True, IssueSerialReset = False, Add1MsDelay = False, Add300UsDelay = False, IO3State = 1, IO2State = 1, IO3Direction = 1, IO2Direction = 1, NumberOfBytesToWrite = 1, NumberOfBytesToRead = 3):
+    def rawSHT1X(self, Data=[3, 0, 0, 0], WaitForMeasurementReady=True, IssueSerialReset=False, Add1MsDelay=False, Add300UsDelay=False, IO3State=1, IO2State=1, IO3Direction=1, IO2Direction=1, NumberOfBytesToWrite=1, NumberOfBytesToRead=3):
         """
         Name: U12.rawSHT1X( Data = [3, 0, 0, 0],
                             WaitForMeasurementReady = True,
@@ -1861,7 +1861,7 @@ class U12(object):
         >>> print(rh)
         19.3360256
         """
-        command = [ 0 ] * 8
+        command = [0] * 8
 
         if NumberOfBytesToWrite != 0:
             if not isinstance(Data, list) or len(Data) > 4:
@@ -1908,13 +1908,13 @@ class U12(object):
         returnDict['DataByte0'] = results[3]
 
         bfLabels = ["Serial Reset Error Flag", "Measurement Ready Error Flag", "Ack Error Flag"]
-        bf = BitField( rawByte = results[4], labelPrefix = "", labelList = bfLabels )
+        bf = BitField(rawByte=results[4], labelPrefix="", labelList=bfLabels)
 
         returnDict["ErrorFlags"] = bf
 
         return returnDict
 
-    def eAnalogIn(self, channel, idNum = None, demo=0, gain=0):
+    def eAnalogIn(self, channel, idNum=None, demo=0, gain=0):
         """
         Name: U12.eAnalogIn(channel, idNum = None, demo=0, gain=0)
         Args: See section 4.1 of the User's Guide
@@ -1937,18 +1937,18 @@ class U12(object):
 
             if ecode != 0: raise U12Exception(ecode)
 
-            return {"idnum":ljid.value, "overVoltage":ad0.value, "voltage":ad1.value}
+            return {"idnum": ljid.value, "overVoltage": ad0.value, "voltage": ad1.value}
         else:
             # Bits 6-4: PGA for 1st Channel
             # Bits 3-0: MUX command for 1st Channel
-            channel0PGAMUX = ( ( gain & 7 ) << 4)
-            channel0PGAMUX += channel-8 if channel > 7 else channel+8
+            channel0PGAMUX = ((gain & 7) << 4)
+            channel0PGAMUX += channel - 8 if channel > 7 else channel + 8
 
-            results = self.rawAISample(channel0PGAMUX = channel0PGAMUX)
+            results = self.rawAISample(channel0PGAMUX=channel0PGAMUX)
 
-            return {"idnum" : self.id, "overVoltage" : int(results['PGAOvervoltage']), 'voltage' : results['Channel0']}
+            return {"idnum": self.id, "overVoltage": int(results['PGAOvervoltage']), 'voltage': results['Channel0']}
 
-    def eAnalogOut(self, analogOut0, analogOut1, idNum = None, demo=0):
+    def eAnalogOut(self, analogOut0, analogOut1, idNum=None, demo=0):
         """
         Name: U12.eAnalogOut(analogOut0, analogOut1, idNum = None, demo=0)
         Args: See section 4.2 of the User's Guide
@@ -1968,7 +1968,7 @@ class U12(object):
 
             if ecode != 0: raise U12Exception(ecode)
 
-            return {"idnum":ljid.value}
+            return {"idnum": ljid.value}
         else:
             if analogOut0 < 0:
                 analogOut0 = self.pwmAVoltage
@@ -1976,14 +1976,14 @@ class U12(object):
             if analogOut1 < 0:
                 analogOut1 = self.pwmBVoltage
 
-            self.rawCounterPWMDIO(PWMA = analogOut0, PWMB = analogOut1)
+            self.rawCounterPWMDIO(PWMA=analogOut0, PWMB=analogOut1)
 
             self.pwmAVoltage = analogOut0
             self.pwmBVoltage = analogOut1
 
             return {"idnum": self.id}
 
-    def eCount(self, idNum = None, demo = 0, resetCounter = 0):
+    def eCount(self, idNum=None, demo=0, resetCounter=0):
         """
         Name: U12.eCount(idNum = None, demo = 0, resetCounter = 0)
         Args: See section 4.3 of the User's Guide
@@ -2008,14 +2008,14 @@ class U12(object):
 
             if ecode != 0: raise U12Exception(ecode)
 
-            return {"idnum":ljid.value, "count":count.value, "ms":ms.value}
+            return {"idnum": ljid.value, "count": count.value, "ms": ms.value}
         else:
-            results = self.rawCounter( ResetCounter = resetCounter)
+            results = self.rawCounter(ResetCounter=resetCounter)
 
-            return {"idnum":self.id, "count":results['Counter'], "ms": (time.time() * 1000)}
+            return {"idnum": self.id, "count": results['Counter'], "ms": (time.time() * 1000)}
 
 
-    def eDigitalIn(self, channel, idNum = None, demo = 0, readD=0):
+    def eDigitalIn(self, channel, idNum=None, demo=0, readD=0):
         """
         Name: U12.eDigitalIn(channel, idNum = None, demo = 0, readD=0)
         Args: See section 4.4 of the User's Guide
@@ -2041,33 +2041,33 @@ class U12(object):
 
             if ecode != 0: raise U12Exception(ecode)
 
-            return {"idnum":ljid.value, "state":state.value}
+            return {"idnum": ljid.value, "state": state.value}
         else:
             oldstate = self.rawDIO()
 
             if readD:
                 if channel > 7:
-                    channel = channel-8
-                    direction = BitField(rawByte = int(oldstate['D15toD8Directions']))
-                    direction[7-channel] = 1
+                    channel = channel - 8
+                    direction = BitField(rawByte=int(oldstate['D15toD8Directions']))
+                    direction[7 - channel] = 1
 
-                    results = self.rawDIO(D15toD8Directions = direction, UpdateDigital = True)
+                    results = self.rawDIO(D15toD8Directions=direction, UpdateDigital=True)
 
-                    state = results['D15toD8States'][7-channel]
+                    state = results['D15toD8States'][7 - channel]
 
                 else:
-                    direction = BitField(rawByte = int(oldstate['D7toD0Directions']))
-                    direction[7-channel] = 1
-                    results = self.rawDIO(D7toD0Directions = direction, UpdateDigital = True)
+                    direction = BitField(rawByte=int(oldstate['D7toD0Directions']))
+                    direction[7 - channel] = 1
+                    results = self.rawDIO(D7toD0Directions=direction, UpdateDigital=True)
 
-                    state = results['D7toD0States'][7-channel]
+                    state = results['D7toD0States'][7 - channel]
             else:
-                results = self.rawDIO(IO3toIO0DirectionsAndStates = 255, UpdateDigital = True)
-                state = results['IO3toIO0States'][3-channel]
+                results = self.rawDIO(IO3toIO0DirectionsAndStates=255, UpdateDigital=True)
+                state = results['IO3toIO0States'][3 - channel]
 
-            return {"idnum" : self.id, "state" : state}
+            return {"idnum": self.id, "state": state}
 
-    def eDigitalOut(self, channel, state, idNum = None, demo = 0, writeD=0):
+    def eDigitalOut(self, channel, state, idNum=None, demo=0, writeD=0):
         """
         Name: U12.eDigitalOut(channel, state, idNum = None, demo = 0, writeD=0)
         Args: See section 4.5 of the User's Guide
@@ -2092,37 +2092,37 @@ class U12(object):
 
             if ecode != 0: raise U12Exception(ecode)
 
-            return {"idnum":ljid.value}
+            return {"idnum": ljid.value}
         else:
             oldstate = self.rawDIO()
 
             if writeD:
                 if channel > 7:
-                    channel = channel-8
-                    direction = BitField(rawByte = int(oldstate['D15toD8Directions']))
-                    direction[7-channel] = 0
+                    channel = channel - 8
+                    direction = BitField(rawByte=int(oldstate['D15toD8Directions']))
+                    direction[7 - channel] = 0
 
-                    states = BitField(rawByte = int(oldstate['D15toD8States']))
-                    states[7-channel] = state
+                    states = BitField(rawByte=int(oldstate['D15toD8States']))
+                    states[7 - channel] = state
 
-                    self.rawDIO(D15toD8Directions = direction, D15toD8States = states, UpdateDigital = True)
+                    self.rawDIO(D15toD8Directions=direction, D15toD8States=states, UpdateDigital=True)
 
                 else:
-                    direction = BitField(rawByte = int(oldstate['D7toD0Directions']))
-                    direction[7-channel] = 0
+                    direction = BitField(rawByte=int(oldstate['D7toD0Directions']))
+                    direction[7 - channel] = 0
 
-                    states = BitField(rawByte = int(oldstate['D7toD0States']))
-                    states[7-channel] = state
+                    states = BitField(rawByte=int(oldstate['D7toD0States']))
+                    states[7 - channel] = state
 
-                    self.rawDIO(D7toD0Directions = direction, D7toD0States = states, UpdateDigital = True)
+                    self.rawDIO(D7toD0Directions=direction, D7toD0States=states, UpdateDigital=True)
 
             else:
                 bf = BitField()
-                bf[7-(channel+4)] = 0
-                bf[7-channel] = state
-                self.rawDIO(IO3toIO0DirectionsAndStates = bf, UpdateDigital = True)
+                bf[7 - (channel + 4)] = 0
+                bf[7 - channel] = state
+                self.rawDIO(IO3toIO0DirectionsAndStates=bf, UpdateDigital=True)
 
-            return {"idnum" : self.id}
+            return {"idnum": self.id}
 
     def aiSample(self, numChannels, channels, idNum=None, demo=0, stateIOin=0, updateIO=0, ledOn=0, gains=[0, 0, 0, 0], disableCal=0):
         """
@@ -2158,7 +2158,7 @@ class U12(object):
 
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"idnum":idNum.value, "stateIO":stateIOin.value, "overVoltage":overVoltage.value, "voltages":voltages[0:numChannels]}
+        return {"idnum": idNum.value, "stateIO": stateIOin.value, "overVoltage": overVoltage.value, "voltages": voltages[0:numChannels]}
 
     def aiBurst(self, numChannels, channels, scanRate, numScans, idNum=None, demo=0, stateIOin=0, updateIO=0, ledOn=0, gains=[0, 0, 0, 0], disableCal=0, triggerIO=0, triggerState=0, timeout=1, transferMode=0):
         """
@@ -2194,7 +2194,7 @@ class U12(object):
 
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"idnum":idNum.value, "scanRate":scanRate.value, "voltages":voltages, "stateIOout":stateIOout, "overVoltage":overVoltage.value}
+        return {"idnum": idNum.value, "scanRate": scanRate.value, "voltages": voltages, "stateIOout": stateIOout, "overVoltage": overVoltage.value}
 
     def aiStreamStart(self, numChannels, channels, scanRate, idNum=None, demo=0, stateIOin=0, updateIO=0, ledOn=0, gains=[0, 0, 0, 0], disableCal=0, readCount=0):
         """
@@ -2213,7 +2213,7 @@ class U12(object):
         # check list sizes
         if len(channels) < numChannels: raise ValueError("channels must have atleast numChannels elements")
         if len(gains) < numChannels: raise ValueError("gains must have atleast numChannels elements")
-        #if len(stateIOin) < 4: raise ValueError("stateIOin must have atleast 4 elements")
+        # if len(stateIOin) < 4: raise ValueError("stateIOin must have atleast 4 elements")
 
         # Check id number
         if idNum is None:
@@ -2227,14 +2227,14 @@ class U12(object):
 
         ecode = staticLib.AIStreamStart(ctypes.byref(idNum), demo, stateIOin, updateIO, ledOn, numChannels, ctypes.byref(channelsArray), ctypes.byref(gainsArray), ctypes.byref(scanRate), disableCal, 0, readCount)
 
-        if ecode != 0: raise U12Exception(ecode) # TODO: Switch this out for exception
+        if ecode != 0: raise U12Exception(ecode)  # TODO: Switch this out for exception
 
         # The ID number must be saved for AIStream
         self.id = idNum.value
 
         self.streaming = True
 
-        return {"idnum":idNum.value, "scanRate":scanRate.value}
+        return {"idnum": idNum.value, "scanRate": scanRate.value}
 
     def aiStreamRead(self, numScans, localID=None, timeout=1):
         """
@@ -2267,9 +2267,9 @@ class U12(object):
 
         ecode = staticLib.AIStreamRead(localID, numScans, timeout, ctypes.byref(voltages), ctypes.byref(stateIOout), ctypes.byref(reserved), ctypes.byref(ljScanBacklog), ctypes.byref(overVoltage))
 
-        if ecode != 0: raise U12Exception(ecode) # TODO: Switch this out for exception
+        if ecode != 0: raise U12Exception(ecode)  # TODO: Switch this out for exception
 
-        return {"voltages":voltages, "stateIOout":stateIOout, "reserved":reserved.value, "ljScanBacklog":ljScanBacklog.value, "overVoltage":overVoltage.value}
+        return {"voltages": voltages, "stateIOout": stateIOout, "reserved": reserved.value, "ljScanBacklog": ljScanBacklog.value, "overVoltage": overVoltage.value}
 
     def aiStreamClear(self, localID=None):
         """
@@ -2293,7 +2293,7 @@ class U12(object):
 
         ecode = staticLib.AIStreamClear(localID)
 
-        if ecode != 0: raise U12Exception(ecode) # TODO: Switch this out for exception
+        if ecode != 0: raise U12Exception(ecode)  # TODO: Switch this out for exception
 
     def aoUpdate(self, idNum=None, demo=0, trisD=None, trisIO=None, stateD=None, stateIO=None, updateDigital=0, resetCounter=0, analogOut0=0, analogOut1=0):
         """
@@ -2328,9 +2328,9 @@ class U12(object):
         # Create arrays and other ctypes
         ecode = staticLib.AOUpdate(ctypes.byref(idNum), demo, trisD, trisIO, ctypes.byref(stateD), ctypes.byref(stateIO), updateDigital, resetCounter, ctypes.byref(count), ctypes.c_float(analogOut0), ctypes.c_float(analogOut1))
 
-        if ecode != 0: raise U12Exception(ecode) # TODO: Switch this out for exception
+        if ecode != 0: raise U12Exception(ecode)  # TODO: Switch this out for exception
 
-        return {"idnum":idNum.value, "stateD":stateD.value, "stateIO":stateIO.value, "count":count.value}
+        return {"idnum": idNum.value, "stateD": stateD.value, "stateIO": stateIO.value, "count": count.value}
 
     def asynchConfig(self, fullA, fullB, fullC, halfA, halfB, halfC, idNum=None, demo=None, timeoutMult=1, configA=0, configB=0, configTE=0):
         """
@@ -2343,16 +2343,16 @@ class U12(object):
         >>> {'idNum': 1}
         """
 
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
 
         ecode = staticLib.AsynchConfig(ctypes.byref(idNum), demo, timeoutMult, configA, configB, configTE, fullA, fullB, fullC, halfA, halfB, halfC)
 
-        if ecode != 0: raise U12Exception(ecode) # TODO: Switch this out for exception
+        if ecode != 0: raise U12Exception(ecode)  # TODO: Switch this out for exception
 
-        return {"idNum":idNum.value}
+        return {"idNum": idNum.value}
 
     def asynch(self, baudrate, data, idNum=None, demo=0, portB=0, enableTE=0, enableTO=0, enableDel=0, numWrite=0, numRead=0):
         """
@@ -2366,7 +2366,7 @@ class U12(object):
         >>> {'data': <u12.c_long_Array_18 object at 0x00DEFB70>, 'idnum': <type 'long'>}
         """
 
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
@@ -2382,11 +2382,11 @@ class U12(object):
 
         ecode = staticLib.Asynch(ctypes.byref(idNum), demo, portB, enableTE, enableTO, enableDel, baudrate, numWrite, numRead, ctypes.byref(dataArray))
 
-        if ecode != 0: raise U12Exception(ecode) # TODO: Switch this out for exception
+        if ecode != 0: raise U12Exception(ecode)  # TODO: Switch this out for exception
 
-        return {"idnum":long, "data":dataArray}
+        return {"idnum": long, "data": dataArray}
 
-    GainMapping = [ 1.0, 2.0, 4.0, 5.0, 8.0, 10.0, 16.0, 20.0 ]
+    GainMapping = [1.0, 2.0, 4.0, 5.0, 8.0, 10.0, 16.0, 20.0]
     def bitsToVolts(self, chnum, chgain, bits):
         """
         Name: U12.bitsToVolts(chnum, chgain, bits)
@@ -2407,9 +2407,9 @@ class U12(object):
             return volts.value
         else:
             if chnum < 8:
-                return ( float(bits) * 20.0 / 4096.0 ) - 10.0
+                return (float(bits) * 20.0 / 4096.0) - 10.0
             else:
-                volts = ( float(bits) * 40.0 / 4096.0 ) - 20.0
+                volts = (float(bits) * 40.0 / 4096.0) - 20.0
                 return volts / self.GainMapping[chgain]
 
     def voltsToBits(self, chnum, chgain, volts):
@@ -2431,7 +2431,7 @@ class U12(object):
             return bits.value
         else:
             pass
-            #*bits = RoundFL((volts+10.0F)/(20.0F/4096.0F));
+            # *bits = RoundFL((volts+10.0F)/(20.0F/4096.0F));
 
     def counter(self, idNum=None, demo=0, resetCounter=0, enableSTB=1):
         """
@@ -2444,7 +2444,7 @@ class U12(object):
         >>> {'bits': 2662}
         """
 
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
@@ -2458,7 +2458,7 @@ class U12(object):
 
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"idnum":idNum.value, "stateD": stateD.value, "stateIO":stateIO.value, "count":count.value}
+        return {"idnum": idNum.value, "stateD": stateD.value, "stateIO": stateIO.value, "count": count.value}
 
     def digitalIO(self, idNum=None, demo=0, trisD=None, trisIO=None, stateD=None, stateIO=None, updateDigital=0):
         """
@@ -2471,7 +2471,7 @@ class U12(object):
         >>> {'stateIO': 0, 'stateD': 0, 'idnum': 1, 'outputD': 0, 'trisD': 0}
         """
 
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
@@ -2485,8 +2485,8 @@ class U12(object):
 
         # Create ctypes
         if trisD is None: trisD = ctypes.c_long(999)
-        else:trisD = ctypes.c_long(trisD)
-        if stateD is None:stateD = ctypes.c_long(999)
+        else: trisD = ctypes.c_long(trisD)
+        if stateD is None: stateD = ctypes.c_long(999)
         else: stateD = ctypes.c_long(stateD)
         if stateIO is None: stateIO = ctypes.c_long(0)
         else: stateIO = ctypes.c_long(stateIO)
@@ -2498,7 +2498,7 @@ class U12(object):
         ecode = staticLib.DigitalIO(ctypes.byref(idNum), demo, ctypes.byref(trisD), trisIO, ctypes.byref(stateD), ctypes.byref(stateIO), updateDigital, ctypes.byref(outputD))
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"idnum":idNum.value, "trisD":trisD.value, "stateD":stateD.value, "stateIO":stateIO.value, "outputD":outputD.value}
+        return {"idnum": idNum.value, "trisD": trisD.value, "stateD": stateD.value, "stateIO": stateIO.value, "outputD": outputD.value}
 
     def getDriverVersion(self):
         """
@@ -2531,9 +2531,9 @@ class U12(object):
         staticLib.GetFirmwareVersion.restype = ctypes.c_float
         firmware = staticLib.GetFirmwareVersion(ctypes.byref(idNum))
 
-        if firmware > 512: raise U12Exception(firmware-512)
+        if firmware > 512: raise U12Exception(firmware - 512)
 
-        return {"idnum" : idNum.value, "firmware" : firmware}
+        return {"idnum": idNum.value, "firmware": firmware}
 
     def getWinVersion(self):
         """
@@ -2558,7 +2558,7 @@ class U12(object):
 
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"majorVersion":majorVersion.value, "minorVersion":minorVersion.value, "buildNumber":buildNumber.value, "platformID":platformID.value, "servicePackMajor":servicePackMajor.value, "servicePackMinor":servicePackMinor.value}
+        return {"majorVersion": majorVersion.value, "minorVersion": minorVersion.value, "buildNumber": buildNumber.value, "platformID": platformID.value, "servicePackMajor": servicePackMajor.value, "servicePackMinor": servicePackMinor.value}
 
     def listAll(self):
         """
@@ -2572,10 +2572,10 @@ class U12(object):
         """
 
         # Create arrays and ctypes
-        productIDList = listToCArray([0]*127, ctypes.c_long)
-        serialnumList = listToCArray([0]*127, ctypes.c_long)
-        localIDList = listToCArray([0]*127, ctypes.c_long)
-        powerList = listToCArray([0]*127, ctypes.c_long)
+        productIDList = listToCArray([0] * 127, ctypes.c_long)
+        serialnumList = listToCArray([0] * 127, ctypes.c_long)
+        localIDList = listToCArray([0] * 127, ctypes.c_long)
+        powerList = listToCArray([0] * 127, ctypes.c_long)
         arr127_type = ctypes.c_long * 127
         calMatrix_type = arr127_type * 20
         calMatrix = calMatrix_type()
@@ -2585,7 +2585,7 @@ class U12(object):
         ecode = staticLib.ListAll(ctypes.byref(productIDList), ctypes.byref(serialnumList), ctypes.byref(localIDList), ctypes.byref(powerList), ctypes.byref(calMatrix), ctypes.byref(numberFound), ctypes.byref(reserved), ctypes.byref(reserved))
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"serialnumList": serialnumList, "localIDList":localIDList, "numberFound":numberFound.value}
+        return {"serialnumList": serialnumList, "localIDList": localIDList, "numberFound": numberFound.value}
 
     def localID(self, localID, idNum=None):
         """
@@ -2597,7 +2597,7 @@ class U12(object):
         >>> dev.localID(1)
         >>> {'idnum':1}
         """
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
@@ -2605,7 +2605,7 @@ class U12(object):
         ecode = staticLib.LocalID(ctypes.byref(idNum), localID)
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"idnum":idNum.value}
+        return {"idnum": idNum.value}
 
     def noThread(self, noThread, idNum=None):
         """
@@ -2617,7 +2617,7 @@ class U12(object):
         >>> dev.noThread(1)
         >>> {'idnum':1}
         """
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
@@ -2625,7 +2625,7 @@ class U12(object):
         ecode = staticLib.NoThread(ctypes.byref(idNum), noThread)
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"idnum":idNum.value}
+        return {"idnum": idNum.value}
 
     def pulseOut(self, bitSelect, numPulses, timeB1, timeC1, timeB2, timeC2, idNum=None, demo=0, lowFirst=0):
         """
@@ -2638,7 +2638,7 @@ class U12(object):
         >>> {'idnum':1}
         """
 
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
@@ -2646,7 +2646,7 @@ class U12(object):
         ecode = staticLib.PulseOut(ctypes.byref(idNum), demo, lowFirst, bitSelect, numPulses, timeB1, timeC1, timeB2, timeC2)
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"idnum":idNum.value}
+        return {"idnum": idNum.value}
 
     def pulseOutStart(self, bitSelect, numPulses, timeB1, timeC1, timeB2, timeC2, idNum=None, demo=0, lowFirst=0):
         """
@@ -2659,7 +2659,7 @@ class U12(object):
         >>> {'idnum':1}
         """
 
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
@@ -2667,7 +2667,7 @@ class U12(object):
         ecode = staticLib.PulseOutStart(ctypes.byref(idNum), demo, lowFirst, bitSelect, numPulses, timeB1, timeC1, timeB2, timeC2)
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"idnum":idNum.value}
+        return {"idnum": idNum.value}
 
     def pulseOutFinish(self, timeoutMS, idNum=None, demo=0):
         """
@@ -2680,7 +2680,7 @@ class U12(object):
         >>> dev.pulseOutFinish(100)
         >>> {'idnum':1}
         """
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
@@ -2688,7 +2688,7 @@ class U12(object):
         ecode = staticLib.PulseOutFinish(ctypes.byref(idNum), demo, timeoutMS)
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"idnum":idNum.value}
+        return {"idnum": idNum.value}
 
     def pulseOutCalc(self, frequency):
         """
@@ -2709,7 +2709,7 @@ class U12(object):
         ecode = staticLib.PulseOutCalc(ctypes.byref(frequency), ctypes.byref(timeB), ctypes.byref(timeC))
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"frequency":frequency.value, "timeB":timeB.value, "timeC":timeC.value}
+        return {"frequency": frequency.value, "timeB": timeB.value, "timeC": timeC.value}
 
     def reEnum(self, idNum=None):
         """
@@ -2722,7 +2722,7 @@ class U12(object):
         >>> {'idnum': 1}
         """
 
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
@@ -2730,7 +2730,7 @@ class U12(object):
         ecode = staticLib.ReEnum(ctypes.byref(idNum))
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"idnum":idNum.value}
+        return {"idnum": idNum.value}
 
     def reset(self, idNum=None):
         """
@@ -2743,7 +2743,7 @@ class U12(object):
         >>> {'idnum': 1}
         """
 
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
@@ -2751,7 +2751,7 @@ class U12(object):
         ecode = staticLib.Reset(ctypes.byref(idNum))
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"idnum":idNum.value}
+        return {"idnum": idNum.value}
 
     def resetLJ(self, idNum=None):
         """
@@ -2775,7 +2775,7 @@ class U12(object):
         >>> dev.sht1X()
         >>> {'tempC': 24.69999885559082, 'rh': 39.724445343017578, 'idnum': 1, 'tempF': 76.459999084472656}
         """
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
@@ -2788,7 +2788,7 @@ class U12(object):
         ecode = staticLib.SHT1X(ctypes.byref(idNum), demo, softComm, mode, statusReg, ctypes.byref(tempC), ctypes.byref(tempF), ctypes.byref(rh))
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"idnum":idNum.value, "tempC":tempC.value, "tempF":tempF.value, "rh":rh.value}
+        return {"idnum": idNum.value, "tempC": tempC.value, "tempF": tempF.value, "rh": rh.value}
 
     def shtComm(self, numWrite, numRead, datatx, idNum=None, softComm=0, waitMeas=0, serialReset=0, dataRate=0):
         """
@@ -2797,7 +2797,7 @@ class U12(object):
         Desc: Low-level public function to send and receive up to 4 bytes to from an SHT1X sensor
         """
 
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
@@ -2812,7 +2812,7 @@ class U12(object):
         ecode = staticLib.SHTComm(ctypes.byref(idNum), softComm, waitMeas, serialReset, dataRate, numWrite, numRead, ctypes.byref(datatx), ctypes.byref(datarx))
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"idnum":idNum.value, "datarx":datarx}
+        return {"idnum": idNum.value, "datarx": datarx}
 
     def shtCRC(self, numWrite, numRead, datatx, datarx, statusReg=0):
         """
@@ -2832,7 +2832,7 @@ class U12(object):
         Args: See section 4.35 of the User's Guide
         Desc: This function retrieves temperature and/or humidity readings from an SHT1X sensor.
         """
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
@@ -2848,7 +2848,7 @@ class U12(object):
         ecode = staticLib.Synch(ctypes.byref(idNum), demo, mode, msDelay, husDelay, controlCS, csLine, csState, configD, numWriteRead, ctypes.byref(cData))
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"idnum":idNum.value, "data":cData}
+        return {"idnum": idNum.value, "data": cData}
 
     def watchdog(self, active, timeout, activeDn, stateDn, idNum=None, demo=0, reset=0):
         """
@@ -2861,7 +2861,7 @@ class U12(object):
         >>> {'idnum': 1}
         """
 
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
@@ -2872,9 +2872,9 @@ class U12(object):
         ecode = staticLib.Watchdog(ctypes.byref(idNum), demo, active, timeout, reset, activeDn[0], activeDn[1], activeDn[2], stateDn[0], stateDn[1], stateDn[2])
         if ecode != 0: raise U12Exception(ecode)
 
-        return {"idnum":idNum.value}
+        return {"idnum": idNum.value}
 
-    def readMem(self, address, idnum = None):
+    def readMem(self, address, idnum=None):
         """
         Name: U12.readMem(address, idnum=None)
         Args: See section 4.36 of the User's Guide
@@ -2979,7 +2979,7 @@ def getErrorString(errorcode):
     >>> dev.getErrorString(1)
     >>> Unkown error
     """
-    errorString = ctypes.c_char_p(" "*50)
+    errorString = ctypes.c_char_p(" " * 50)
     staticLib.GetErrorString(errorcode, errorString)
     return errorString.value
 
