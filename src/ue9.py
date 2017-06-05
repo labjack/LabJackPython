@@ -1081,7 +1081,7 @@ class UE9(Device):
         Note: You must call streamConfig() before calling this function.
         """
         self.flushBuffer()
-        if self.streamStarted == False and clearData == True:
+        if not self.streamStarted and clearData is True:
             self.streamClearData()
         Device.streamStart(self)
 
@@ -1124,7 +1124,7 @@ class UE9(Device):
             zeroVal = 0
 
         while True:
-            if self.ethernet and newTimeLoop == True:
+            if self.ethernet and newTimeLoop is True:
                 newTimeLoop = False
                 startTime = datetime.datetime.now()
 
@@ -1150,7 +1150,7 @@ class UE9(Device):
                         print(e)
                 i += 1
 
-            if len(result) == 0 and self.ethernet == False:
+            if len(result) == 0 and not self.ethernet:
                 # No data over USB
                 yield None
                 continue
@@ -1206,7 +1206,7 @@ class UE9(Device):
         """
         Device.streamStop(self)
         self.flushBuffer()
-        if self.streamStarted == False and clearData == True:
+        if not self.streamStarted and clearData is True:
             self.streamClearData()
 
     def processStreamData(self, result, numBytes=None):
@@ -1229,7 +1229,7 @@ class UE9(Device):
         numChannels = len(self.streamChannelNumbers)
         j = self.streamPacketOffset
         for packet in self.breakupPackets(result, numBytes):
-            if self.ethernet == False:
+            if not self.ethernet:
                 packet = packet[:-2]  # remove the extra bytes
             for sample in self.samplesFromPacket(packet):
                 if j >= numChannels:
