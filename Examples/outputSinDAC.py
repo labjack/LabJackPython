@@ -14,12 +14,16 @@
 # greater than update interval.
 
 import math # For sin function
+import os # For name
 import signal # For timing
 from datetime import datetime # For printing times
 
 import u3
 import u6
 import ue9
+
+
+assert os.name == "posix", "This example is not compatible with Windows operating systems."
 
 # Constants. Change these to change the results:
 
