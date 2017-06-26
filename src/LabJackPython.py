@@ -134,13 +134,8 @@ def _loadLibrary():
             #Cygwin detected. WinDLL not available, but CDLL seems to work.
             wlib = ctypes.CDLL("labjackud.dll")
         if wlib is not None:
-            try:
-                wlib.eGetPtr
-                #eGetPtr is available in the UD driver version installed.
-                _use_ptr = True
-            except:
-                #eGetPtr is not available in the UD driver version installed.
-                _use_ptr = False
+            # eGetPtr may not be available on the UD driver version installed.
+            _use_ptr = hasattr(wlib, "eGetPtr")
             return wlib
     except Exception:
         e = sys.exc_info()[1]
