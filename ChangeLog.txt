@@ -296,3 +296,4 @@ Version History
     - Updated setup.py to remove Python 2.5 support and add Python 3+ support.
     - Updated setup.py to use setuptools when available.
     - Added a full path Mac OS X Exodriver load attempt if normal load fails.
+    - Fixed the GetDriverVersion function.

@@ -2410,32 +2410,27 @@ def ErrorToString(ErrorCode):
 
 #Windows, Linux, and Mac
 def GetDriverVersion():
-    """Converts an LabJackUD valid error code to a String.
+    """Gets the version of the UD driver on Windows or the Exodriver on
+    Linux/Mac.
 
     For Windows, Linux, and Mac
 
     Sample Usage:
 
     >>> GetDriverVersion()
-    2.64
-    
-    >>> GetDriverVersion()
-    Mac
-    
-    @rtype: number/String
-    @return: Value of the driver version as a String
-        - For Mac machines the return type is "Mac"
-        - For Windows and Linux systems the return type is a number that represents the driver version
+    2.6400
+
+    @rtype: String
+    @return: Driver version number as a String.
     """
-    
-    if _os_name == 'nt':        
-        staticLib.GetDriverVersion.restype = ctypes.c_float
-        return str(staticLib.GetDriverVersion())
+    if _os_name == 'nt':
+        staticLib.GetDriverVersion.restype = ctypes.c_double
+        return "%.4f" % staticLib.GetDriverVersion()
         
     elif _os_name == 'posix':
         staticLib.LJUSB_GetLibraryVersion.restype = ctypes.c_float
-        return "%.2f" % staticLib.LJUSB_GetLibraryVersion()
-        
+        return "%.4f" % staticLib.LJUSB_GetLibraryVersion()
+
 #Windows
 def TCVoltsToTemp(TCType, TCVolts, CJTempK):
     """Converts a thermo couple voltage reading to an appropriate temperature reading.
