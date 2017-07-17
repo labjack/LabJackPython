@@ -297,3 +297,5 @@ Version History
     - Updated setup.py to use setuptools when available.
     - Added a full path Mac OS X Exodriver load attempt if normal load fails.
     - Fixed the GetDriverVersion function.
+    - Renamed the Unix only outputSinDAC example to outputSinDacUnix.
+    - Added cross-platform outputSinDac example.
