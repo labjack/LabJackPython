@@ -3,27 +3,27 @@ examples for the LabJack U3, U6, UE9 and U12.
 05/26/2015
 support@labjack.com
 
-Python 2.6 or higher is required to use LabJackPython. Python 3.x is not
-supported.
+LabJackPython requires Python 2.6 or higher. Modules have been updated for
+Python 3.x but not all functionality has been tested yet. Functionality used in
+examples are tested. Please report bugs to support@labjack.com or on GitHub:
+
+    https://github.com/labjack/LabJackPython
 
 To use Modbus first check that your LabJack device meets the minimum required
 firmware version listed on this page:
 
-    http://labjack.com/support/modbus
+    https://labjack.com/support/software/api/modbus/ud-modbus
 
 To upgrade firmware look at this page:
 
-    http://labjack.com/support/firmware
+    https://labjack.com/support/firmware
 
-To use Modbus on a UE9 over Ethernet, install Comm firmware 1.50 or higher:
+To use Modbus on a UE9 over Ethernet, install Comm firmware 1.50 or higher.
 
-    http://labjack.com/support/firmware/ue9
-
-To install LabJackPython, run the following command in a terminal:
+To install LabJackPython, run the following command in a terminal (remove "sudo"
+on Windows):
 
     $ sudo python setup.py install
-
-(Leave off the `sudo' on Windows.)
 
 From there, interacting with your devices is easy.
 
@@ -66,8 +66,10 @@ For U12:
 }
 >>> d.close()
 
-From there, check the Examples/ directory, especially the workingWithModbus.py
-file to get started.
+For examples, check the Examples/ directory. For additional information, go to
+the LabJackPython page on LabJack's website:
+
+    https://labjack.com/support/software/examples/ud/labjackpython
 
 
 LICENSE
