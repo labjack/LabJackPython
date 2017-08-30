@@ -2339,40 +2339,47 @@ class U12(object):
         Desc: Requires firmware V1.1 or higher. This function writes to the asynch registers and sets the direction of the D lines (input/output) as needed.
 
         >>> dev = U12()
-        >>> dev.asynchConfig(96,1,1,22,2,1)
+        >>> dev.asynchConfig(96, 1, 1, 22, 2, 1)
         >>> {'idNum': 1}
         """
 
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
 
         ecode = staticLib.AsynchConfig(ctypes.byref(idNum), demo, timeoutMult, configA, configB, configTE, fullA, fullB, fullC, halfA, halfB, halfC)
 
-        if ecode != 0: raise U12Exception(ecode) # TODO: Switch this out for exception
+        if ecode != 0:
+            raise U12Exception(ecode)  # TODO: Switch this out for exception
 
-        return {"idNum":idNum.value}
+        return {"idNum": idNum.value}
 
     def asynch(self, baudrate, data, idNum=None, demo=0, portB=0, enableTE=0, enableTO=0, enableDel=0, numWrite=0, numRead=0):
         """
-        Name: U12.asynchConfig(fullA, fullB, fullC, halfA, halfB, halfC, idNum=None, demo=None, timeoutMult=1, configA=0, configB=0, configTE=0)
+        Name: U12.async(baudrate, data, idNum=None, demo=0, portB=0, enableTE=0, enableTO=0, enableDel=0, numWrite=0, numRead=0)
         Args: See section 4.13 of the User's Guide
         Desc: Requires firmware V1.1 or higher. This function writes to the asynch registers and sets the direction of the D lines (input/output) as needed.
 
         >>> dev = U12()
-        >>> dev.asynch(96,1,1,22,2,1)
+        >>> dev.asynchConfig(96, 1, 1, 22, 2, 1)
+        >>> {'idNum': 1}
         >>> dev.asynch(19200, [0, 0])
         >>> {'data': <u12.c_long_Array_18 object at 0x00DEFB70>, 'idnum': <type 'long'>}
         """
 
-        #Check id number
+        # Check id number
         if idNum is None:
             idNum = self.id
         idNum = ctypes.c_long(idNum)
 
         # Check size of data
-        if len(data) > 18: raise ValueError("data can not be larger than 18 elements")
+        if len(data) > 18:
+            raise ValueError("data can not be larger than 18 elements")
+
+        if numWrite == 0:
+            # Default numWrites. Set to size of data list.
+            numWrite = len(data)
 
         # Make data 18 elements large
         dataArray = [0] * 18
@@ -2382,9 +2389,10 @@ class U12(object):
 
         ecode = staticLib.Asynch(ctypes.byref(idNum), demo, portB, enableTE, enableTO, enableDel, baudrate, numWrite, numRead, ctypes.byref(dataArray))
 
-        if ecode != 0: raise U12Exception(ecode) # TODO: Switch this out for exception
+        if ecode != 0:
+            raise U12Exception(ecode)  # TODO: Switch this out for exception
 
-        return {"idnum":long, "data":dataArray}
+        return {"idnum": idNum.value, "data": dataArray}
 
     GainMapping = [ 1.0, 2.0, 4.0, 5.0, 8.0, 10.0, 16.0, 20.0 ]
     def bitsToVolts(self, chnum, chgain, bits):

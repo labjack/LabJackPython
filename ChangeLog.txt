@@ -299,3 +299,4 @@ Version History
     - Fixed the GetDriverVersion function.
     - Renamed the Unix only outputSinDAC example to outputSinDacUnix.
     - Added cross-platform outputSinDac example.
+    - Fixed the U12 asynch method.
