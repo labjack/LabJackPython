@@ -1131,18 +1131,18 @@ class U3(Device):
         return returnDict
     processStreamData.section = 3
 
-    def watchdog(self, ResetOnTimeout = False, SetDIOStateOnTimeout = False, TimeoutPeriod = 60, DIOState = 0, DIONumber = 0, onlyRead=False):
+    def watchdog(self, ResetOnTimeout = False, SetDIOStateOnTimeout = False, TimeoutPeriod = 60, DIOState = 0, DIONumber = 0, onlyRead = False):
         """
         Name: U3.watchdog(ResetOnTimeout = False, SetDIOStateOnTimeout = False,
                           TimeoutPeriod = 60, DIOState = 0, DIONumber = 0,
                           onlyRead = False)
-        
+
         Args: Check out section 5.2.14 of the user's guide.
               Set onlyRead to True to perform only a read
-        
+
         Desc: This function will write the configuration of the watchdog,
               unless onlyRead is set to True.
-        
+
         Returns a dictionary:
         {
             'WatchDogEnabled' : True if the watchdog is enabled, otherwise False
@@ -1152,11 +1152,11 @@ class U3(Device):
             'DIOState' : The state the DIO will be set to on timeout
             'DIONumber' : Which DIO will be set on timeout
         }
-        
+
         NOTE: Requires U3 hardware version 1.21 or greater.
         """
-        command = [ 0 ] * 16
-        
+        command = [0] * 16
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x05
@@ -1165,49 +1165,47 @@ class U3(Device):
         #command[5] = Checksum16 (MSB)
         if not onlyRead:
             command[6] = 1
-        
+
         if ResetOnTimeout:
             command[7] |= 1 << 5
         if SetDIOStateOnTimeout:
             command[7] |= 1 << 4
-        
-        t = pack("<H", TimeoutPeriod)
-        command[8] = ord(t[0])
-        command[9] = ord(t[1])
-        
-        command[10] = (( DIOState & 1 ) << 7) + ( DIONumber & 15)
-        
-        
+
+        command[8] = TimeoutPeriod & 0xFF
+        command[9] = TimeoutPeriod >> 8
+
+        command[10] = ((DIOState & 1) << 7) + (DIONumber & 15)
+
         result = self._writeRead(command, 16, [0xF8, 0x05, 0x09])
-        
+
         watchdogStatus = {}
-        
+
         if result[7] == 0 or result[7] == 255:
             watchdogStatus['WatchDogEnabled'] = False
             watchdogStatus['ResetOnTimeout'] = False
             watchdogStatus['SetDIOStateOnTimeout'] = False
         else:
             watchdogStatus['WatchDogEnabled'] = True
-            
+
             if (result[7] >> 5) & 1:
                 watchdogStatus['ResetOnTimeout'] = True
             else:
                 watchdogStatus['ResetOnTimeout'] = False
-                
+
             if (result[7] >> 4) & 1:
                 watchdogStatus['SetDIOStateOnTimeout'] = True
             else:
                 watchdogStatus['SetDIOStateOnTimeout'] = False
-        
+
         watchdogStatus['TimeoutPeriod'] = unpack('<H', pack("BB", *result[8:10]))
-        
+
         if (result[10] >> 7) & 1:
             watchdogStatus['DIOState'] = 1
         else:
             watchdogStatus['DIOState'] = 0 
-        
-        watchdogStatus['DIONumber'] = ( result[10] & 15 )
-        
+
+        watchdogStatus['DIONumber'] = (result[10] & 15)
+
         return watchdogStatus
     watchdog.section = 2
 
@@ -1294,23 +1292,23 @@ class U3(Device):
               olderHardware, If using hardware 1.21, please set olderHardware 
                              to True and read the timer configuration first.
               configurePins, Will call the configIO to set up pins for you.
-        
+
         Desc: Configures the U3 UART for asynchronous communication. 
-        
+
         returns a dictionary:
         {
             'Update' : True means new parameters were written
             'UARTEnable' : True means the UART is enabled
             'BaudFactor' : The baud factor being used
         }
-        
+
         Note: Requires U3 hardware version 1.21+.
         """
         if configurePins:
             self.configIO(EnableUART=True)
-        
-        command = [ 0 ] * 10
-            
+
+        command = [0] * 10
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x02
@@ -1318,38 +1316,37 @@ class U3(Device):
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
         #command[6] = 0x00
-        
+
         if Update:
-            command[7] |= ( 1 << 7 )
+            command[7] |= (1 << 7)
         if UARTEnable:
-            command[7] |= ( 1 << 6 )
-        
+            command[7] |= (1 << 6)
+
         #command[8] = Reserved
         if olderHardware:
             command[9] = (2**8) - self.timerClockBase//DesiredBaud
         else:
             BaudFactor = (2**16) - 48000000//(2 * DesiredBaud)
-            t = pack("<H", BaudFactor)
-            command[8] = ord(t[0])
-            command[9] = ord(t[1])
-        
+            command[8] = BaudFactor & 0xFF
+            command[9] = BaudFactor >> 8
+
         if olderHardware:
             result = self._writeRead(command, 10, [0xF8, 0x02, 0x14])
         else:
             result = self._writeRead(command, 10, [0xF8, 0x02, 0x14])
-        
+
         returnDict = {}
-        
+
         if (result[7] >> 7) & 1:
             returnDict['Update'] = True
         else:
             returnDict['Update'] = False
-        
+
         if (result[7] >> 6) & 1:
             returnDict['UARTEnable'] = True
         else:
             returnDict['UARTEnable'] = False
-            
+
         if olderHardware:
             returnDict['BaudFactor'] = result[9]
         else:
@@ -1357,7 +1354,7 @@ class U3(Device):
 
         return returnDict
     asynchConfig.section = 2
-    
+
     def asynchTX(self, AsynchBytes):
         """
         Name: U3.asynchTX(AsynchBytes)
