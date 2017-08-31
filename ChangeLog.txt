@@ -300,3 +300,5 @@ Version History
     - Renamed the Unix only outputSinDAC example to outputSinDacUnix.
     - Added cross-platform outputSinDac example.
     - Fixed the U12 asynch method.
+    - Fixed the BaudFactor calculation in the UE9 asynchConfig method.
+

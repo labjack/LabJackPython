@@ -109,13 +109,13 @@ class UE9(Device):
         """
         self.ethernet = ethernet
         Device.open(self, 9, Ethernet = ethernet, firstFound = firstFound, serial = serial, localId = localId, devNumber = devNumber, ipAddress = ipAddress, handleOnly = handleOnly, LJSocket = LJSocket)
-        
+
     def commConfig(self, LocalID = None, IPAddress = None, Gateway = None, Subnet = None, PortA = None, PortB = None, DHCPEnabled = None):
         """
         Name: UE9.commConfig(LocalID = None, IPAddress = None, Gateway = None,
                 Subnet = None, PortA = None, PortB = None, DHCPEnabled = None)
-        Args: LocalID, Set the LocalID
-              IPAddress, Set the IPAddress 
+        Args: LocalID, Set the Local ID
+              IPAddress, Set the IP Address
               Gateway, Set the Gateway
               Subnet, Set the Subnet
               PortA, Set Port A
@@ -123,7 +123,7 @@ class UE9(Device):
               DHCPEnabled, True = Enabled, False = Disabled
         Desc: Writes and reads various configuration settings associated
               with the Comm processor. Section 5.2.1 of the User's Guide.
-        
+
         >>> myUe9 = ue9.UE9()
         >>> myUe9.commConfig()
         {'CommFWVersion': '1.47',
@@ -140,8 +140,8 @@ class UE9(Device):
          'SerialNumber': 27121XXXX,
          'Subnet': '255.255.255.0'}
         """
-        command = [ 0 ] * 38
-        
+        command = [0] * 38
+
         #command[0] = Checksum8
         command[1] = 0x78
         command[2] = 0x10
@@ -153,52 +153,50 @@ class UE9(Device):
         if LocalID is not None:
             command[6] |= 1
             command[8] = LocalID
-        
+
         if IPAddress is not None:
             command[6] |= (1 << 2)
             ipbytes = IPAddress.split('.')
-            ipbytes = [ int(x) for x in ipbytes ]
+            ipbytes = [int(x) for x in ipbytes]
             ipbytes.reverse()
             command[10:14] = ipbytes
-        
+
         if Gateway is not None:
             command[6] |= (1 << 3)
             gwbytes = Gateway.split('.')
-            gwbytes = [ int(x) for x in gwbytes ]
+            gwbytes = [int(x) for x in gwbytes]
             gwbytes.reverse()
             command[14:18] = gwbytes
-        
+
         if Subnet is not None:
             command[6] |= (1 << 4)
             snbytes = Subnet.split('.')
-            snbytes = [ int(x) for x in snbytes ]
+            snbytes = [int(x) for x in snbytes]
             snbytes.reverse()
             command[18:21] = snbytes
-            
+
         if PortA is not None:
             command[6] |= (1 << 5)
-            t = pack("<H", PortA)
-            command[22] = ord(t[0])
-            command[23] = ord(t[1])
-        
+            command[22] = PortA & 0xFF
+            command[23] = PortA >> 8
+
         if PortB is not None:
             command[6] |= (1 << 5)
-            t = pack("<H", PortB)
-            command[24] = ord(t[0])
-            command[25] = ord(t[1])
+            command[24] = PortB & 0xFF
+            command[25] = PortB >> 8
 
         if DHCPEnabled is not None:
             command[6] |= (1 << 6)
             if DHCPEnabled:
                 command[26] = 1
-        
+
         result = self._writeRead(command, 38, [], checkBytes = False)
 
         if len(result) == 0:
             raise LabJackException("Got a zero length packet.")
         elif result[0] == 0xB8 and result[1] == 0xB8:
             raise LabJackException("Device detected a bad checksum.")
-        elif result[1:4] != [ 0x78, 0x10, 0x01 ]:
+        elif result[1:4] != [0x78, 0x10, 0x01]:
             raise LabJackException("Got incorrect command bytes.")
         elif not verifyChecksum(result):
             raise LabJackException("Checksum was incorrect.")
@@ -212,16 +210,13 @@ class UE9(Device):
         self.portB = unpack("<H", pack("BB", *result[24:26]))[0]
         self.DHCPEnabled = bool(result[26])
         self.productId = result[27]
-
         self.macAddress = "%02X:%02X:%02X:%02X:%02X:%02X" % (result[33], result[32], result[31], result[30], result[29], result[28])
-        
         self.serialNumber = unpack("<I", pack("BBBB", result[28], result[29], result[30], 0x10))[0]
-        
         self.hwVersion = "%s.%02d" % (result[35], result[34])
         self.commFWVersion = "%s.%02d" % (result[37], result[36])
         self.firmwareVersion = [self.controlFWVersion, self.commFWVersion]
 
-        return { 'LocalID' : self.localId, 'PowerLevel' : self.powerLevel, 'IPAddress' : self.ipAddress, 'Gateway' : self.gateway, 'Subnet' : self.subnet, 'PortA' : self.portA, 'PortB' : self.portB, 'DHCPEnabled' : self.DHCPEnabled, 'ProductID' : self.productId, 'MACAddress' : self.macAddress, 'HWVersion' : self.hwVersion, 'CommFWVersion' : self.commFWVersion, 'SerialNumber' : self.serialNumber}
+        return {'LocalID': self.localId, 'PowerLevel': self.powerLevel, 'IPAddress': self.ipAddress, 'Gateway': self.gateway, 'Subnet': self.subnet, 'PortA': self.portA, 'PortB': self.portB, 'DHCPEnabled': self.DHCPEnabled, 'ProductID': self.productId, 'MACAddress': self.macAddress, 'HWVersion': self.hwVersion, 'CommFWVersion': self.commFWVersion, 'SerialNumber': self.serialNumber}
 
     def flushBuffer(self):
         """
@@ -1242,46 +1237,45 @@ class UE9(Device):
         Args: See section 5.3.13.1 of the user's guide.
         Desc: Writes the configuration of the watchdog.
         """
-        command = [ 0 ] * 16
-        
+        command = [0] * 16
+
         command[1] = 0xF8
         command[2] = 0x05
         command[3] = 0x09
-        
+
         if ResetCommonTimeout:
             command[7] |= (1 << 6)
-        
+
         if ResetControlonTimeout:
             command[7] |= (1 << 5)
-        
+
         if UpdateDigitalIOB:
             command[7] |= (1 << 4)
-        
+
         if UpdateDigitalIOA:
             command[7] |= (1 << 3)
-        
+
         if UpdateDAC1onTimeout:
             command[7] |= (1 << 1)
-        
+
         if UpdateDAC0onTimeout:
             command[7] |= (1 << 0)
-        
-        t = pack("<H", TimeoutPeriod)
-        command[8] = ord(t[0])
-        command[9] = ord(t[1])
-        
+
+        command[8] = TimeoutPeriod & 0xFF
+        command[9] = TimeoutPeriod >> 8
+
         command[10] = DIOConfigA
         command[11] = DIOConfigB
-        
-        command[12] = DAC0 & 0xff
-        command[13] = (int(DAC0Enabled) << 7) + ((DAC0 >> 8) & 0xf)
-        
-        command[14] = DAC1 & 0xff
-        command[15] = (int(DAC1Enabled) << 7) + ((DAC1 >> 8) & 0xf)
-        
+
+        command[12] = DAC0 & 0xFF
+        command[13] = (int(DAC0Enabled) << 7) + ((DAC0 >> 8) & 0xF)
+
+        command[14] = DAC1 & 0xFF
+        command[15] = (int(DAC1Enabled) << 7) + ((DAC1 >> 8) & 0xF)
+
         result = self._writeRead(command, 8, [0xF8, 0x01, 0x09])
 
-        return { 'UpdateDAC0onTimeout' : bool(result[7]& 1), 'UpdateDAC1onTimeout' : bool((result[7] >> 1) & 1), 'UpdateDigitalIOAonTimeout' : bool((result[7] >> 3) & 1), 'UpdateDigitalIOBonTimeout' : bool((result[7] >> 4) & 1), 'ResetControlOnTimeout' : bool((result[7] >> 5) & 1), 'ResetCommOnTimeout' : bool((result[7] >> 6) & 1) }
+        return {'UpdateDAC0onTimeout': bool(result[7] & 1), 'UpdateDAC1onTimeout': bool((result[7] >> 1) & 1), 'UpdateDigitalIOAonTimeout': bool((result[7] >> 3) & 1), 'UpdateDigitalIOBonTimeout': bool((result[7] >> 4) & 1), 'ResetControlOnTimeout': bool((result[7] >> 5) & 1), 'ResetCommOnTimeout': bool((result[7] >> 6) & 1)}
 
     def watchdogRead(self):
         """
@@ -1289,15 +1283,15 @@ class UE9(Device):
         Args: None
         Desc: Reads the current watchdog settings.
         """
-        command = [ 0 ] * 6
+        command = [0] * 6
         command[1] = 0xF8
         command[2] = 0x00
         command[3] = 0x09
-        
+
         command = setChecksum8(command, 6)
 
         result = self._writeRead(command, 16, [0xF8, 0x05, 0x09], checksum = False)
-        return { 'UpdateDAC0onTimeout' : bool(result[7]& 1), 'UpdateDAC1onTimeout' : bool((result[7] >> 1) & 1), 'UpdateDigitalIOAonTimeout' : bool((result[7] >> 3) & 1), 'UpdateDigitalIOBonTimeout' : bool((result[7] >> 4) & 1), 'ResetControlOnTimeout' : bool((result[7] >> 5) & 1), 'ResetCommOnTimeout' : bool((result[7] >> 6) & 1), 'TimeoutPeriod' : unpack('<H', pack("BB", *result[8:10]))[0], 'DIOConfigA' : result[10], 'DIOConfigB' : result[11], 'DAC0' : unpack('<H', pack("BB", *result[12:14]))[0], 'DAC1' : unpack('<H', pack("BB", *result[14:16]))[0] }
+        return {'UpdateDAC0onTimeout': bool(result[7] & 1), 'UpdateDAC1onTimeout': bool((result[7] >> 1) & 1), 'UpdateDigitalIOAonTimeout': bool((result[7] >> 3) & 1), 'UpdateDigitalIOBonTimeout': bool((result[7] >> 4) & 1), 'ResetControlOnTimeout': bool((result[7] >> 5) & 1), 'ResetCommOnTimeout': bool((result[7] >> 6) & 1), 'TimeoutPeriod': unpack('<H', pack("BB", *result[8:10]))[0], 'DIOConfigA': result[10], 'DIOConfigB': result[11], 'DAC0': unpack('<H', pack("BB", *result[12:14]))[0], 'DAC1': unpack('<H', pack("BB", *result[14:16]))[0]}
 
     def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 1, CLKPinNum = 0, MISOPinNum = 3, MOSIPinNum = 2, CSPINNum = None):
         """
@@ -1369,24 +1363,23 @@ class UE9(Device):
 
         return { 'NumSPIBytesTransferred' : result[7], 'SPIBytes' : result[8:] }
 
-    def asynchConfig(self, Update = True, UARTEnable = True, DesiredBaud  = 9600):
+    def asynchConfig(self, Update = True, UARTEnable = True, DesiredBaud = 9600):
         """
         Name: UE9.asynchConfig(Update = True, UARTEnable = True, 
-                              DesiredBaud = 9600)
+                               DesiredBaud = 9600)
         Args: See section 5.3.17 of the User's Guide.
 
-        Desc: Configures the U3 UART for asynchronous communication. 
-        
+        Desc: Configures the UE9 UART for asynchronous communication.
+
         returns a dictionary:
         {
-            'Update' : True means new parameters were written
-            'UARTEnable' : True means the UART is enabled
-            'BaudFactor' : The baud factor being used
+            'Update': True means new parameters were written
+            'UARTEnable': True means the UART is enabled
+            'BaudFactor': The baud factor being used
         }
         """
-        
-        command = [ 0 ] * 10
-            
+        command = [0] * 10
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x02
@@ -1394,21 +1387,20 @@ class UE9(Device):
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
         #command[6] = 0x00
-        
+
         if Update:
-            command[7] |= ( 1 << 7 )
+            command[7] |= (1 << 7)
         if UARTEnable:
-            command[7] |= ( 1 << 6 )
-        
-        BaudFactor = (2**16) - 48000000/(2 * DesiredBaud)
-        t = pack("<H", BaudFactor)
-        command[8] = ord(t[0])
-        command[9] = ord(t[1])
-        
+            command[7] |= (1 << 6)
+
+        BaudFactor = (2**16) - (3000000 // DesiredBaud)
+        command[8] = BaudFactor & 0xFF
+        command[9] = BaudFactor >> 8
+
         result = self._writeRead(command, 10, [0xF8, 0x02, 0x14])
-        
+
         returnDict = {}
-        
+
         if (result[7] >> 7) & 1:
             returnDict['Update'] = True
         else:
@@ -1417,7 +1409,7 @@ class UE9(Device):
             returnDict['UARTEnable'] = True
         else:
             returnDict['UARTEnable'] = False
-            
+
         returnDict['BaudFactor'] = unpack("<H", pack("BB", *result[8:]))[0]
 
         return returnDict
@@ -1426,32 +1418,32 @@ class UE9(Device):
         """
         Name: UE9.asynchTX(AsynchBytes)
         Args: AsynchBytes, must be a list of bytes to transfer.
-        Desc: Sends bytes to the U3 UART which will be sent asynchronously on
+        Desc: Sends bytes to the UE9 UART which will be sent asynchronously on
               the transmit line. See section 5.3.18 of the user's guide.
-        
+
         returns a dictionary:
         {
-            'NumAsynchBytesSent' : Number of Asynch Bytes Sent
-            'NumAsynchBytesInRXBuffer' : How many bytes are currently in the
-                                         RX buffer.
+            'NumAsynchBytesSent': Number of Asynch Bytes Sent
+            'NumAsynchBytesInRXBuffer': How many bytes are currently in the
+                                        RX buffer.
         }
         """
         if not isinstance(AsynchBytes, list):
             raise LabJackException("AsynchBytes must be a list")
-        
+
         numBytes = len(AsynchBytes)
-        
+
         oddPacket = False
-        if numBytes%2 != 0:
+        if numBytes % 2 != 0:
             AsynchBytes.append(0)
-            numBytes = numBytes+1
+            numBytes = numBytes + 1
             oddPacket = True
-        
-        command = [ 0 ] * ( 8 + numBytes)
-        
+
+        command = [0] * (8 + numBytes)
+
         #command[0] = Checksum8
         command[1] = 0xF8
-        command[2] = 1 + ( numBytes/2 )
+        command[2] = 1 + (numBytes // 2)
         command[3] = 0x15
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
@@ -1459,30 +1451,30 @@ class UE9(Device):
         command[7] = numBytes
         if oddPacket:
             command[7] = numBytes - 1
-        
+
         command[8:] = AsynchBytes
-        
+
         result = self._writeRead(command, 10, [0xF8, 0x02, 0x15])
-        
-        return { 'NumAsynchBytesSent' : result[7], 'NumAsynchBytesInRXBuffer' : result[8] }
+
+        return {'NumAsynchBytesSent': result[7], 'NumAsynchBytesInRXBuffer': result[8]}
 
     def asynchRX(self, Flush = False):
         """
         Name: UE9.asynchRX(Flush = False)
         Args: Flush, Set to True to flush
-        Desc: Reads the oldest 32 bytes from the U3 UART RX buffer
+        Desc: Reads the oldest 32 bytes from the UE9 UART RX buffer
               (received on receive terminal). The buffer holds 256 bytes. See
               section 5.3.19 of the User's Guide.
 
         returns a dictonary:
         {
-            'AsynchBytes' : List of received bytes
-            'NumAsynchBytesInRXBuffer' : Number of AsynchBytes are in the RX
-                                         Buffer.
+            'AsynchBytes': List of received bytes
+            'NumAsynchBytesInRXBuffer': Number of AsynchBytes are in the RX
+                                        buffer.
         }
         """
-        command = [ 0 ] * 8
-        
+        command = [0] * 8
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x01
@@ -1492,11 +1484,10 @@ class UE9(Device):
         #command[6] = 0x00
         if Flush:
             command[7] = 1
-        
-        
+
         result = self._writeRead(command, 40, [0xF8, 0x11, 0x16])
-        
-        return { 'AsynchBytes' : result[8:], 'NumAsynchBytesInRXBuffer' : result[7] }
+
+        return {'AsynchBytes': result[8:], 'NumAsynchBytesInRXBuffer': result[7]}
 
     def i2c(self, Address, I2CBytes, EnableClockStretching = False, NoStopWhenRestarting = False, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 1, SCLPinNum = 0, NumI2CBytesToReceive = 0, AddressByte = None):
         """
