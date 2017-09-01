@@ -740,15 +740,15 @@ class U6(Device):
                           SetDIOStateOnTimeout = False, TimeoutPeriod = 60,
                           DIOState = 0, DIONumber = 0)
         Args: Write, Set to True to write new values to the watchdog.
-              ResetOnTimeout, True means reset the device on timeout
-              SetDIOStateOnTimeout, True means set the sate of a DIO on timeout
-              TimeoutPeriod, Time, in seconds, to wait before timing out.
-              DIOState, 1 = High, 0 = Low
-              DIONumber, which DIO to set.
+              ResetOnTimeout, True means reset the device on timeout.
+              SetDIOStateOnTimeout, True means set the sate of a DIO on timeout.
+              TimeoutPeriod, Time (in seconds) to wait before timing out.
+              DIOState, 1 = High, 0 = Low.
+              DIONumber, Which DIO to set.
         Desc: Controls a firmware based watchdog timer.
         """
-        command = [ 0 ] * 16
-        
+        command = [0] * 16
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x05
@@ -761,43 +761,43 @@ class U6(Device):
             command[7] = (1 << 5)
         if SetDIOStateOnTimeout:
             command[7] |= (1 << 4)
-        
+
         t = pack("<H", TimeoutPeriod)
-        command[8] = ord(t[0])
-        command[9] = ord(t[1])
+        command[8] = TimeoutPeriod & 0xFF
+        command[9] = TimeoutPeriod >> 8
         command[10] = ((DIOState & 1 ) << 7)
-        command[10] |= (DIONumber & 0xf)
-        
-        result = self._writeRead(command, 16, [ 0xF8, 0x05, 0x09])
-        
+        command[10] |= (DIONumber & 0xF)
+
+        result = self._writeRead(command, 16, [0xF8, 0x05, 0x09])
+
         watchdogStatus = {}
-        
+
         if result[7] == 0:
             watchdogStatus['WatchDogEnabled'] = False
             watchdogStatus['ResetOnTimeout'] = False
             watchdogStatus['SetDIOStateOnTimeout'] = False
         else:
             watchdogStatus['WatchDogEnabled'] = True
-            
+
             if (result[7] >> 5) & 1:
                 watchdogStatus['ResetOnTimeout'] = True
             else:
                 watchdogStatus['ResetOnTimeout'] = False
-                
+
             if (result[7] >> 4) & 1:
                 watchdogStatus['SetDIOStateOnTimeout'] = True
             else:
                 watchdogStatus['SetDIOStateOnTimeout'] = False
-        
+
         watchdogStatus['TimeoutPeriod'] = unpack('<H', pack("BB", *result[8:10]))
-        
+
         if (result[10] >> 7) & 1:
             watchdogStatus['DIOState'] = 1
         else:
             watchdogStatus['DIOState'] = 0 
-        
-        watchdogStatus['DIONumber'] = ( result[10] & 15 )
-        
+
+        watchdogStatus['DIONumber'] = (result[10] & 15)
+
         return watchdogStatus
 
     def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 0, CLKPinNum = 1, MISOPinNum = 2, MOSIPinNum = 3, CSPINNum = None):
@@ -886,19 +886,25 @@ class U6(Device):
                               DesiredBaud = None, BaudFactor = 63036)
         Args: Update, If True, new values are written.
               UARTEnable, If True, UART will be enabled.
-              DesiredBaud, If set, will apply the formualt to 
-                           calculate BaudFactor.
+              DesiredBaud, If set, will apply the formula to calculate
+                           BaudFactor.
               BaudFactor, = 2^16 - 48000000/(2 * Desired Baud). Ignored
-                        if DesiredBaud is set.
+                          if DesiredBaud is set.
         Desc: Configures the U6 UART for asynchronous communication. See
               section 5.2.18 of the User's Guide.
+
+        returns a dictionary:
+        {
+            'Update': True means new parameters were written
+            'UARTEnable': True means the UART is enabled
+            'BaudFactor': The baud factor being used
+        }
         """
-        
         if UARTEnable:
             self.configIO(EnableUART = True)
-        
-        command = [ 0 ] * 10
-        
+
+        command = [0] * 10
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x02
@@ -910,19 +916,31 @@ class U6(Device):
             command[7] = (1 << 7)
         if UARTEnable:
             command[7] |= (1 << 6)
-        
+
         if DesiredBaud is not None:
-            BaudFactor = (2**16) - 48000000/(2 * DesiredBaud)   
-        
-        t = pack("<H", BaudFactor)
-        command[8] = ord(t[0])
-        command[9] = ord(t[1])
-        
-        results = self._writeRead(command, 10, [0xF8, 0x02, 0x14])
-            
-        if command[8] != results[8] and command[9] != results[9]:
-            raise LabJackException("BaudFactor didn't stick.")
-        
+            BaudFactor = (2**16) - 48000000 // (2 * DesiredBaud)
+
+        command[8] = BaudFactor & 0xFF
+        command[9] = BaudFactor >> 8
+
+        result = self._writeRead(command, 10, [0xF8, 0x02, 0x14])
+
+        returnDict = {}
+
+        if (result[7] >> 7) & 1:
+            returnDict['Update'] = True
+        else:
+            returnDict['Update'] = False
+
+        if (result[7] >> 6) & 1:
+            returnDict['UARTEnable'] = True
+        else:
+            returnDict['UARTEnable'] = False
+
+        returnDict['BaudFactor'] = unpack("<H", pack("BB", *result[8:]))[0]
+
+        return returnDict
+
     def asynchTX(self, AsynchBytes):
         """
         Name: U6.asynchTX(AsynchBytes)
@@ -930,19 +948,18 @@ class U6(Device):
         Desc: Sends bytes to the U6 UART which will be sent asynchronously
               on the transmit line. Section 5.2.19 of the User's Guide.
         """
-        
         numBytes = len(AsynchBytes)
-        
+
         oddPacket = False
-        if numBytes%2 != 0:
+        if numBytes % 2 != 0:
             oddPacket = True
             AsynchBytes.append(0)
             numBytes = numBytes + 1
-        
-        command = [ 0 ] * (8+numBytes)
+
+        command = [0] * (8 + numBytes)
         #command[0] = Checksum8
         command[1] = 0xF8
-        command[2] = 1 + (numBytes/2)
+        command[2] = 1 + (numBytes // 2)
         command[3] = 0x15
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
@@ -951,23 +968,23 @@ class U6(Device):
         if oddPacket:
             command[7] = numBytes-1
         command[8:] = AsynchBytes
-        
+
         result = self._writeRead(command, 10, [ 0xF8, 0x02, 0x15])
-        
-        return { 'NumAsynchBytesSent' : result[7], 'NumAsynchBytesInRXBuffer' : result[8] }
-    
+
+        return {'NumAsynchBytesSent': result[7], 'NumAsynchBytesInRXBuffer': result[8]}
+
     def asynchRX(self, Flush = False):
         """
-        Name: U6.asynchTX(AsynchBytes)
+        Name: U6.asynchRX(Flush = False)
         Args: Flush, If True, empties the entire 256-byte RX buffer.
         Desc: Sends bytes to the U6 UART which will be sent asynchronously
               on the transmit line. Section 5.2.20 of the User's Guide.
         """
-        command = [ 0, 0xF8, 0x01, 0x16, 0, 0, 0, int(Flush)]
-        
-        result = self._writeRead(command, 40, [ 0xF8, 0x11, 0x16 ])
-        
-        return { 'NumAsynchBytesInRXBuffer' : result[7], 'AsynchBytes' : result[8:] }
+        command = [0, 0xF8, 0x01, 0x16, 0, 0, 0, int(Flush)]
+
+        result = self._writeRead(command, 40, [0xF8, 0x11, 0x16])
+
+        return {'NumAsynchBytesInRXBuffer': result[7], 'AsynchBytes': result[8:]}
 
     def i2c(self, Address, I2CBytes, EnableClockStretching = False, NoStopWhenRestarting = False, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 0, SCLPinNum = 1, NumI2CBytesToReceive = 0, AddressByte = None):
         """
