@@ -301,4 +301,7 @@ Version History
     - Added cross-platform outputSinDac example.
     - Fixed the U12 asynch method.
     - Fixed the BaudFactor calculation in the UE9 asynchConfig method.
-    - Updated U6 asynchConfig method so it returns a dict. with response info.
+    - Updated the U6 asynchConfig method so that it returns a dictionary with
+      response info.
+    - Fixed the U3 configIO method so Counters are set properly.
+    - Fixed the U6 configIO method so EnableUART are set properly.

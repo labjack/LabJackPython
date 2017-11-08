@@ -292,12 +292,12 @@ class U3(Device):
 
     def configIO(self, TimerCounterPinOffset = None, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None):
         """
-        Name: U3.configIO(TimerCounterPinOffset = 4, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None)
-        
+        Name: U3.configIO(TimerCounterPinOffset = None, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None)
+
         Args: See section 5.2.3 of the user's guide.
         
         Desc: The configIO command.
-        
+
         Examples:
         Simplest:
         >>> import u3
@@ -313,7 +313,7 @@ class U3(Device):
          'EnableCounter1': False,
          'EnableCounter0': False
         }
-        
+
         Set all FIOs and EIOs to digital (until power cycle):
         >>> import u3
         >>> d = u3.U3()
@@ -330,26 +330,26 @@ class U3(Device):
         }
 
         """
-        
+
         writeMask = 0
-        
+
         if EIOAnalog is not None:
             writeMask |= 1
             writeMask |= 8
-        
+
         if FIOAnalog is not None:
             writeMask |= 1
             writeMask |= 4
-            
+
         if EnableUART is not None:
             writeMask |= 1
             writeMask |= (1 << 5)
-            
+
         if TimerCounterPinOffset is not None or EnableCounter1 is not None or EnableCounter0 is not None or NumberOfTimersEnabled is not None :
             writeMask |= 1
-        
+
         command = [ 0 ] * 12
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x03
@@ -359,45 +359,45 @@ class U3(Device):
         command[6] = writeMask
         #command[7] = Reserved
         command[8] = 0
-        
-        if EnableUART is not None:
-            command[9] = int(EnableUART) << 2
-        
+
+        if EnableUART is not None and EnableUART:
+            command[9] = 1 << 2
+
         if TimerCounterPinOffset is None:
             command[8] |= ( 4 & 15 ) << 4
         else:
             command[8] |= ( TimerCounterPinOffset & 15 ) << 4
-            
-        if EnableCounter1 is not None:
+
+        if EnableCounter1 is not None and EnableCounter1:
             command[8] |= 1 << 3
-        if EnableCounter0 is not None:
+        if EnableCounter0 is not None and EnableCounter0:
             command[8] |= 1 << 2
         if NumberOfTimersEnabled is not None:
             command[8] |= ( NumberOfTimersEnabled & 3 )
-            
+
         if FIOAnalog is not None:
             command[10] = FIOAnalog
-        
+
         if EIOAnalog is not None:
             command[11] = EIOAnalog
-        
+
         result = self._writeRead(command, 12, [0xF8, 0x03, 0x0B])
-        
+
         self.timerCounterConfig = result[8]
-        
+
         self.numberTimersEnabled = self.timerCounterConfig & 3
         self.counter0Enabled = bool( (self.timerCounterConfig >> 2) & 1 )
         self.counter1Enabled = bool( (self.timerCounterConfig >> 3) & 1 )
         self.timerCounterPinOffset = ( self.timerCounterConfig >> 4 )
-        
-        
+
+
         self.dac1Enable = result[9]
         self.fioAnalog = result[10]
         self.eioAnalog = result[11]
-        
+
         return { 'TimerCounterConfig' : self.timerCounterConfig, 'DAC1Enable' : self.dac1Enable, 'FIOAnalog' : self.fioAnalog, 'EIOAnalog' : self.eioAnalog, 'NumberOfTimersEnabled' : self.numberTimersEnabled, 'EnableCounter0' : self.counter0Enabled, 'EnableCounter1' : self.counter1Enabled, 'TimerCounterPinOffset' : self.timerCounterPinOffset }
     configIO.section = 2
-    
+
     def configTimerClock(self, TimerClockBase = None, TimerClockDivisor = None):
         """
         Name: U3.configTimerClock(TimerClockBase = None, TimerClockDivisor = None)

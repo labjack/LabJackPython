@@ -297,11 +297,11 @@ class U6(Device):
               EnableCounter1, Set to True to enable counter 1, F to disable
               EnableCounter0, Set to True to enable counter 0, F to disable
               TimerCounterPinOffset, where should the timers/counters start
-              
+
               if all args are None, command just reads.
-              
+
         Desc: Writes and reads the current IO configuration.
-        
+
         >>> myU6 = u6.U6()
         >>> myU6.configIO()
         {'Counter0Enabled': False,
@@ -310,40 +310,42 @@ class U6(Device):
          'TimerCounterPinOffset': 0}
         """
         command = [ 0 ] * 16
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x05
         command[3] = 0x0B
         #command[4]  = Checksum16 (LSB)
         #command[5]  = Checksum16 (MSB)
-        
+
         if NumberTimersEnabled is not None:
             command[6] = 1
             command[7] = NumberTimersEnabled
-        
+
         if EnableCounter0 is not None:
             command[6] = 1
-            
+
             if EnableCounter0:
                 command[8] = 1
-        
+
         if EnableCounter1 is not None:
             command[6] = 1
-            
+
             if EnableCounter1:
                 command[8] |= (1 << 1)
-        
+
         if TimerCounterPinOffset is not None:
             command[6] = 1
             command[9] = TimerCounterPinOffset
-            
+
         if EnableUART is not None:
             command[6] |= 1
-            command[6] |= (1 << 5)
-        
+
+            if EnableUART:
+                command[6] |= (1 << 5)
+
         result = self._writeRead(command, 16, [0xf8, 0x05, 0x0B])
-        
+
         return { 'NumberTimersEnabled' : result[8], 'Counter0Enabled' : bool(result[9] & 1), 'Counter1Enabled' : bool( (result[9] >> 1) & 1), 'TimerCounterPinOffset' : result[10] }
 
     def configTimerClock(self, TimerClockBase = None, TimerClockDivisor = None):
