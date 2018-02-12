@@ -1239,12 +1239,12 @@ def _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber):
 
     if devNumber is not None:
         handle = openDev(devNumber, 0, devType)
-        if handle <= 0:
+        if handle is None or handle <= 0:
             raise NullHandleException()
         return handle
     elif firstFound:
         handle = openDev(1, 0, devType)
-        if handle <= 0:
+        if handle is None or handle <= 0:
             raise NullHandleException()
         return handle
     else:      
@@ -1254,7 +1254,7 @@ def _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber):
             handle = openDev(i + 1, 0, devType)
             
             try:
-                if handle <= 0:
+                if handle is None or handle <= 0:
                     raise NullHandleException()
                 device = _makeDeviceFromHandle(handle, deviceType)
             except:
