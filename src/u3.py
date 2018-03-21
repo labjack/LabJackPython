@@ -2028,7 +2028,8 @@ class WaitShort(FeedbackCommand):
     '''
     WaitShort Feedback command
 
-    specify the number of 128us time increments to wait
+    specify the number of 128 microseconds time increments to wait (0-255)
+    (U3C = 128 us, U3B = 64 us, U3A = 128 us)
 
     >>> import u3
     >>> d = u3.U3()
@@ -2048,9 +2049,10 @@ class WaitShort(FeedbackCommand):
 class WaitLong(FeedbackCommand):
     '''
     WaitLong Feedback command
-    
-    specify the number of 32ms time increments to wait
-    
+
+    specify the number of 16384 microseconds time increments to wait (0-255)
+    (U3C = 16384 us, U3B = 16384 us, U3A = 32768 us)
+
     >>> import u3
     >>> d = u3.U3()
     >>> d.debug = True

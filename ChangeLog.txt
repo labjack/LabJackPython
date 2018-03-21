@@ -305,3 +305,4 @@ Version History
       response info.
     - Fixed the U3 configIO method so Counters are set properly.
     - Fixed the U6 configIO method so EnableUART are set properly.
+    - Fixed U3 and U6 WaitShort and WaitLong documentation.

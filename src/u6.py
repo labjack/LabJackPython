@@ -1831,24 +1831,24 @@ class WaitShort(FeedbackCommand):
     '''
     WaitShort Feedback command
 
-    specify the number of 128us time increments to wait
-    
+    specify the number of 64 microseconds time increments to wait (0-255)
+
     >>> d.getFeedback( u6.WaitShort( Time ) )
     [ None ]
     '''
     def __init__(self, Time):
         self.time = Time % 256
         self.cmdBytes = [ 5, Time % 256 ]
-        
+
     def __repr__(self):
         return "<u6.WaitShort( Time = %s )>" % self.time
 
 class WaitLong(FeedbackCommand):
     '''
     WaitLong Feedback command
-    
-    specify the number of 32ms time increments to wait
-    
+
+    specify the number of 16384 microseconds time increments to wait (0-255)
+
     >>> d.getFeedback( u6.WaitLog( Time ) )
     [ None ]
     '''
