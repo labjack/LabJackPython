@@ -349,7 +349,7 @@ class Device(object):
             if readBytes == 0:
                 return ''
             # return the byte string in stream mode
-            return pack('b' * readBytes, *newA)
+            return pack('b' * readBytes, *newA[0:readBytes])
         else:
             readBytes = staticLib.LJUSB_Read(self.handle, ctypes.byref(newA), numBytes)
             # return a list of integers in command/response mode
