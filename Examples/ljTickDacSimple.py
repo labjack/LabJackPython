@@ -118,3 +118,6 @@ print("DACA and DACB set to %.5f V and %.5f V" % (dacA, dacB))
 ainChan = 0
 volt = dev.getAIN(ainChan)
 print("AIN%s voltage = %.5f V" % (ainChan, volt))
+
+# Close the device
+dev.close()
