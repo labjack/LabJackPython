@@ -171,6 +171,10 @@ class U3(Device):
          ... , 
          'ProductID': 3
         }
+        
+        Direction and state commands are set via binary encoding.
+        For example, to set FIO0 and FIO6 to be Outputs by default, the value for FIODirection is 65.
+        This is because 2^0 = 1, and 2^6 = 64. 64 + 1 = 65.
         """
 
         writeMask = 0
