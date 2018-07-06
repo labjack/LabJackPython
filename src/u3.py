@@ -139,12 +139,28 @@ class U3(Device):
 
     def configU3(self, LocalID = None, TimerCounterConfig = None, FIOAnalog = None, FIODirection = None, FIOState = None, EIOAnalog = None, EIODirection = None, EIOState = None, CIODirection = None, CIOState = None, DAC1Enable = None, DAC0 = None, DAC1 = None, TimerClockConfig = None, TimerClockDivisor = None, CompatibilityOptions = None):
         """
-        Name: U3.configU3(LocalID = None, TimerCounterConfig = None, FIOAnalog = None, FIODirection = None, FIOState = None, EIOAnalog = None, EIODirection = None, EIOState = None, CIODirection = None, CIOState = None, DAC1Enable = None, DAC0 = None, DAC1 = None, TimerClockConfig = None, TimerClockDivisor = None, CompatibilityOptions = None)
+        Name: U3.configU3(LocalID = None, TimerCounterConfig = None,
+                          FIOAnalog = None, FIODirection = None,
+                          FIOState = None, EIOAnalog = None,
+                          EIODirection = None, EIOState = None,
+                          CIODirection = None, CIOState = None,
+                          DAC1Enable = None, DAC0 = None,
+                          DAC1 = None, TimerClockConfig = None,
+                          TimerClockDivisor = None, CompatibilityOptions = None)
 
         Args: See section 5.2.2 of the users guide.
 
         Desc: Sends the low-level configU3 command. Also saves relevant
               information to the U3 object for later use.
+
+        Note: Analog, Direction, and State parameters are binary-encoded,
+              8-bit values where each bit corresponds to individual line
+              setting. The setting for FIO0/EIO0/CIO0 is on bit 0,
+              FIO1/EIO1/CIO1 is on bit 1, FIO2/EIO2/CIO2 is on bit 2, etc.
+
+              For example, to set FIO0 and FIO6 to outputs by default, the value
+              for FIODirection is 65 which in binary is b01000001. This can be
+              calculated with 2^6 + 2^0 = 65, where 2^6 = 64, and 2^0 = 1.
 
         Example:
         Simplest:
@@ -164,17 +180,13 @@ class U3(Device):
         Configure all FIOs and EI0s to analog on boot:
         >>> import u3
         >>> d = u3.U3()
-        >>> print(d.configU3( FIOAnalog = 255, EIOAnalog = 255))
+        >>> print(d.configU3(FIOAnalog = 255, EIOAnalog = 255))
         {
          'FIOAnalog': 255,
          'EIOAnalog': 255,
          ... , 
          'ProductID': 3
         }
-        
-        Direction and state commands are set via binary encoding.
-        For example, to set FIO0 and FIO6 to be Outputs by default, the value for FIODirection is 65.
-        This is because 2^0 = 1, and 2^6 = 64. 64 + 1 = 65.
         """
 
         writeMask = 0
@@ -296,10 +308,13 @@ class U3(Device):
 
     def configIO(self, TimerCounterPinOffset = None, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None):
         """
-        Name: U3.configIO(TimerCounterPinOffset = None, EnableCounter1 = None, EnableCounter0 = None, NumberOfTimersEnabled = None, FIOAnalog = None, EIOAnalog = None, EnableUART = None)
+        Name: U3.configIO(TimerCounterPinOffset = None, EnableCounter1 = None,
+                          EnableCounter0 = None, NumberOfTimersEnabled = None,
+                          FIOAnalog = None, EIOAnalog = None,
+                          EnableUART = None)
 
         Args: See section 5.2.3 of the user's guide.
-        
+
         Desc: The configIO command.
 
         Examples:
