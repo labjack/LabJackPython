@@ -91,7 +91,7 @@ class U3(Device):
 
         To open a U3 with Local ID = 2:
         >>> import u3
-        >>> d = u3.U3(localId = 2)
+        >>> d = u3.U3(firstFound = False, localId = 2)
         """
         Device.__init__(self, None, devType = 3)
         self.debug = debug
