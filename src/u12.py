@@ -2164,11 +2164,12 @@ class U12(object):
         """
         Name: U12.aiBurst(numChannels, channels, scanRate, numScans, idNum=None, demo=0, stateIOin=[0, 0, 0, 0], updateIO=0, ledOn=0, gains=[0, 0, 0, 0], disableCal=0, triggerIO=0, triggerState=0, timeout=1, transferMode=0)
         Args: See section 4.7 of the User's Guide
-        Desc: Reads a specified number of scans (up to 4096) at a specified scan rate (up to 8192 Hz) from 1,2, or 4 analog inputs
+        Desc: Reads a specified number of scans (up to 4096) at a specified scan
+              rate (up to 8192 Hz) from 1,2, or 4 analog inputs.
 
         >>> dev = U12()
         >>> dev.aiBurst(1, [0], 400, 10)
-        {'overVoltage': 0, 'scanRate': 400.0, 'stateIOout': <u12.c_long_Array_4096 object at 0x00DB4BC0>, 'idnum': 1, 'voltages': <u12.c_float_Array_4096_Array_4 object at 0x00DB4B70>}
+        {'overVoltage': 0, 'scanRate': 400.0, 'stateIOout': <u12.c_long_Array_4096 object at 0x00DB4BC0>, 'idnum': 1, 'voltages': <u12.<u12.c_float_Array_4_Array_4096 object at 0x00DB4B70>}
         """
 
         # Check id number
@@ -2176,25 +2177,45 @@ class U12(object):
             idNum = self.id
         idNum = ctypes.c_long(idNum)
 
-        # check list sizes
-        if len(channels) < numChannels: raise ValueError("channels must have atleast numChannels elements")
-        if len(gains) < numChannels: raise ValueError("gains must have atleast numChannels elements")
+        # Check list sizes
+        if len(channels) < numChannels:
+            raise ValueError("channels must have atleast numChannels elements")
+        if len(gains) < numChannels:
+            raise ValueError("gains must have atleast numChannels elements")
 
         # Convert lists to arrays and create other ctypes
         channelsArray = listToCArray(channels, ctypes.c_long)
         gainsArray = listToCArray(gains, ctypes.c_long)
         scanRate = ctypes.c_float(scanRate)
-        arr4096_type = ctypes.c_float * 4096
-        voltages_type = arr4096_type * 4
+        voltages_type = (ctypes.c_float * 4) * 4096
         voltages = voltages_type()
         stateIOout = (ctypes.c_long * 4096)()
         overVoltage = ctypes.c_long(999)
 
-        ecode = staticLib.AIBurst(ctypes.byref(idNum), demo, stateIOin, updateIO, ledOn, numChannels, ctypes.byref(channelsArray), ctypes.byref(gainsArray), ctypes.byref(scanRate), disableCal, triggerIO, triggerState, numScans, timeout, ctypes.byref(voltages), ctypes.byref(stateIOout), ctypes.byref(overVoltage), transferMode)
+        ecode = staticLib.AIBurst(ctypes.byref(idNum),
+                                  int(demo),
+                                  int(stateIOin),
+                                  int(updateIO),
+                                  int(ledOn),
+                                  int(numChannels),
+                                  ctypes.byref(channelsArray),
+                                  ctypes.byref(gainsArray),
+                                  ctypes.byref(scanRate),
+                                  int(disableCal),
+                                  int(triggerIO),
+                                  int(triggerState),
+                                  int(numScans),
+                                  int(timeout),
+                                  ctypes.cast(voltages, ctypes.POINTER(voltages_type)),
+                                  ctypes.byref(stateIOout),
+                                  ctypes.byref(overVoltage),
+                                  int(transferMode))
+        if ecode != 0:
+            raise U12Exception(ecode)
 
-        if ecode != 0: raise U12Exception(ecode)
-
-        return {"idnum":idNum.value, "scanRate":scanRate.value, "voltages":voltages, "stateIOout":stateIOout, "overVoltage":overVoltage.value}
+        return {"idnum":idNum.value, "scanRate":scanRate.value,
+                "voltages":voltages, "stateIOout":stateIOout,
+                "overVoltage":overVoltage.value}
 
     def aiStreamStart(self, numChannels, channels, scanRate, idNum=None, demo=0, stateIOin=0, updateIO=0, ledOn=0, gains=[0, 0, 0, 0], disableCal=0, readCount=0):
         """
