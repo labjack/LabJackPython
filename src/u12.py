@@ -347,10 +347,7 @@ def errcheck(ret, func, args):
         return ret
 
 def _loadLinuxSo():
-    try:
-        l = ctypes.CDLL("liblabjackusb.so", use_errno=True)
-    except TypeError: # Python 2.5
-        l = ctypes.CDLL("liblabjackusb.so")
+    l = ctypes.CDLL("liblabjackusb.so", use_errno=True)
     l.LJUSB_Stream.errcheck = errcheck
     l.LJUSB_Read.errcheck = errcheck
     return l
@@ -358,8 +355,9 @@ def _loadLinuxSo():
 def _loadMacDylib():
     try:
         l = ctypes.CDLL("liblabjackusb.dylib", use_errno=True)
-    except TypeError: # Python 2.5
-        l = ctypes.CDLL("liblabjackusb.dylib")
+    except:
+        #Try to load with full path.
+        l = ctypes.CDLL("/usr/local/lib/liblabjackusb.dylib", use_errno=True)
     l.LJUSB_Stream.errcheck = errcheck
     l.LJUSB_Read.errcheck = errcheck
     return l
