@@ -1557,19 +1557,32 @@ class UE9(Device):
     def sht1x(self, DataPinNum = 0, ClockPinNum = 1, SHTOptions = 0xc0):
         """
         Name: UE9.sht1x(DataPinNum = 0, ClockPinNum = 1, SHTOptions = 0xc0)
-        Args: DataPinNum, Which pin is the Data line
-              ClockPinNum, Which line is the Clock line
-        SHTOptions (and proof people read documentation):
-            bit 7 = Read Temperature
-            bit 6 = Read Realtive Humidity
-            bit 2 = Heater. 1 = on, 0 = off
-            bit 1 = Reserved at 0
-            bit 0 = Resolution. 1 = 8 bit RH, 12 bit T; 0 = 12 RH, 14 bit T
-        Desc: Reads temperature and humidity from a Sensirion SHT1X sensor.
-              Section 5.3.21 of the User's Guide.
+        Args: DataPinNum, Which pin is the Data
+              ClockPinNum, Which pin is the Clock
+              SHTOptions:
+                  bit 7 = Read Relative Humidity
+                  bit 6 = Read Temperature
+                  bit 2 = Heater: 1 = on, 0 = off
+                  bit 1 = Reserved at 0
+                  bit 0 = Resolution:
+                          1 = 8-bit RH, 12-bit Temp
+                          0 = 12-bit RH, 14-bit Temp
+        Desc: Reads temperature and humidity from a Sensirion SHT1X sensor,
+              which is used by the EI-1050.
+              See section 5.3.21 of the User's Guide for more details.
+
+        Returns a dictonary:
+        {
+            'StatusReg' : SHT1X status register
+            'StatusRegCRC' : SHT1X status register CRC value
+            'Temperature' : The temperature in C
+            'TemperatureCRC' : The CRC value for the temperature
+            'Humidity' : The humidity
+            'HumidityCRC' : The CRC value for the humidity
+        }
         """
         command = [ 0 ] * 10
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x02
@@ -1580,16 +1593,16 @@ class UE9(Device):
         command[7] = ClockPinNum
         #command[8] = Reserved
         command[9] = SHTOptions
-        
+
         result = self._writeRead(command, 16, [ 0xF8, 0x05, 0x39])
-        
+
         val = (result[11]*256) + result[10]
         temp = -39.60 + 0.01*val
         
         val = (result[14]*256) + result[13]
         humid = -4 + 0.0405*val + -.0000028*(val*val)
         humid = (temp - 25)*(0.01 + 0.00008*val) + humid
-         
+
         return { 'StatusReg' : result[8], 'StatusCRC' : result[9], 'Temperature' : temp, 'TemperatureCRC' : result[12], 'Humidity' : humid, 'HumidityCRC' : result[15] }
 
     def getAIN(self, channel, BipGain = 0x00, Resolution = 12, SettlingTime = 0):

@@ -1533,16 +1533,25 @@ class U3(Device):
         else:
             return { 'AckArray' : result[8:], 'I2CBytes' : [] }
     i2c.section = 2
-    
+
     def sht1x(self, DataPinNum = 4, ClockPinNum = 5, SHTOptions = 0xc0):
         """
         Name: U3.sht1x(DataPinNum = 4, ClockPinNum = 5, SHTOptions = 0xc0)
-        
-        Args: See section 5.2.20 of the user's guide.
-              SHTOptions, see below.
-        
-        Desc: Reads temperature and humidity from a Sensirion SHT1X sensor
-              (which is used by the EI-1050).
+
+        Args: DataPinNum, Which pin is the Data
+              ClockPinNum, Which pin is the Clock
+              SHTOptions:
+                  bit 7 = Read Relative Humidity
+                  bit 6 = Read Temperature
+                  bit 2 = Heater: 1 = on, 0 = off
+                  bit 1 = Reserved at 0
+                  bit 0 = Resolution:
+                          1 = 8-bit RH, 12-bit Temp
+                          0 = 12-bit RH, 14-bit Temp
+
+        Desc: Reads temperature and humidity from a Sensirion SHT1X sensor,
+              which is used by the EI-1050.
+              See section 5.2.20 of the User's Guide for more details.
 
         Returns a dictonary:
         {
@@ -1555,16 +1564,9 @@ class U3(Device):
         }
 
         Note: Requires hardware version 1.21 or greater.
-        
-        SHTOptions (and proof people read documentation):
-            bit 7 = Read Temperature
-            bit 6 = Read Realtive Humidity
-            bit 2 = Heater. 1 = on, 0 = off
-            bit 1 = Reserved at 0
-            bit 0 = Resolution. 1 = 8 bit RH, 12 bit T; 0 = 12 RH, 14 bit T
         """
         command = [ 0 ] * 10
-        
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x02
@@ -1575,19 +1577,19 @@ class U3(Device):
         command[7] = ClockPinNum
         #command[8] = Reserved
         command[9] = SHTOptions
-        
+
         result = self._writeRead(command, 16, [0xF8, 0x05, 0x39])
-        
+
         val = (result[11]*256) + result[10]
         temp = -39.60 + 0.01*val
-        
+
         val = (result[14]*256) + result[13]
         humid = -4 + 0.0405*val + -.0000028*(val*val)
         humid = (temp - 25)*(0.01 + 0.00008*val) + humid
-        
+
         return { 'StatusReg' : result[8], 'StatusRegCRC' : result[9], 'Temperature' : temp, 'TemperatureCRC' : result[12] , 'Humidity' : humid, 'HumidityCRC' : result[15] }
     sht1x.section = 2
-    
+
     def binaryToCalibratedAnalogVoltage(self, bits, isLowVoltage = True, isSingleEnded = True, isSpecialSetting = False, channelNumber = 0):
         """
         Name: U3.binaryToCalibratedAnalogVoltage(bits, isLowVoltage = True,
