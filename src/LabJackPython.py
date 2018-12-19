@@ -16,6 +16,7 @@ from __future__ import with_statement
 import atexit  # For auto-closing devices
 import socket
 import ctypes  # import after socket or cygwin crashes "Aborted (core dump)"
+import errno
 import sys
 import threading  # For a thread-safe device lock
 
@@ -45,8 +46,8 @@ _use_py2 = sys.version_info < (3, 0)  # Indicates to use Python 2.x or
 class LabJackException(Exception):
     """Custom Exception meant for dealing specifically with LabJack Exceptions.
 
-    Error codes are either going to be a LabJackUD error code or a -1.  The -1 implies
-    a python wrapper specific error.
+    Error codes are either going to be a LabJackUD error code or a -1.  The -1
+    implies a Python wrapper specific error.
 
     WINDOWS ONLY
     If errorString is not specified then errorString is set by errorCode.
@@ -74,8 +75,15 @@ class LowlevelErrorException(LabJackException):
 
 class NullHandleException(LabJackException):
     """Raised when the return value of OpenDevice is null."""
-    def __init__(self):
-        self.errorString = "Couldn't open device. Please check that the device you are trying to open is connected."
+    def __init__(self, info=None):
+        if info is None:
+            # Default additional information message.
+            info = "Please check that the device you are trying to open is connected."
+        else:
+            # Set additional information message.
+            info = str(info)
+
+        self.errorString = "Couldn't open device. " + info
 
 
 def errcheck(ret, func, args):
@@ -134,7 +142,7 @@ def _loadLibrary():
             #Cygwin detected. WinDLL not available, but CDLL seems to work.
             wlib = ctypes.CDLL("labjackud.dll")
         if wlib is not None:
-            # eGetPtr may not be available on the UD driver version installed.
+            #eGetPtr may not be available on the UD driver version installed.
             _use_ptr = hasattr(wlib, "eGetPtr")
             return wlib
     except Exception:
@@ -1232,40 +1240,67 @@ def _openLabJackUsingUDDriver(deviceType, connectionType, firstFound, pAddress, 
 
     return devHandle
 
+def _isOpenAccessError():
+    """Returns True if no access/claim errno detected after device open,
+    otherwise False. Use imediately after openDev if it returns a Null
+    handle.
+    """
+    err = ctypes.get_errno()
+    if err == errno.EBUSY or err == errno.EACCES:
+        return True
+    else:
+        return False
+
 def _openLabJackUsingExodriver(deviceType, firstFound, pAddress, devNumber):
     devType = ctypes.c_ulong(deviceType)
     openDev = staticLib.LJUSB_OpenDevice
     openDev.restype = ctypes.c_void_p
 
+    accessInfoPart = "is not already open in another or the current process"
+    accessInfoFull = "Device access or claim error. Please check that the device " + accessInfoPart + "."
+    info = None
+
     if devNumber is not None:
         handle = openDev(devNumber, 0, devType)
         if handle is None or handle <= 0:
-            raise NullHandleException()
+            if _isOpenAccessError():
+                info = accessInfoFull
+            raise NullHandleException(info)
         return handle
     elif firstFound:
         handle = openDev(1, 0, devType)
         if handle is None or handle <= 0:
-            raise NullHandleException()
+            if _isOpenAccessError():
+                info = accessInfoFull
+            raise NullHandleException(info)
         return handle
-    else:      
+    else:
         numDevices = staticLib.LJUSB_GetDevCount(deviceType)
-        
+
+        noAccessDetected = False
         for i in range(numDevices):
             handle = openDev(i + 1, 0, devType)
-            
             try:
                 if handle is None or handle <= 0:
+                    if _isOpenAccessError():
+                        noAccessDetected = True
                     raise NullHandleException()
                 device = _makeDeviceFromHandle(handle, deviceType)
             except:
                 continue
-            
+
             if device.localId == pAddress or device.serialNumber == pAddress or device.ipAddress == pAddress:
                 return device
             else:
                 device.close()
-        
-    raise LabJackException(LJE_LABJACK_NOT_FOUND) 
+
+        info = "Please check that the device you are trying to open is connected"
+        if noAccessDetected:
+            info += ", or " + accessInfoPart
+        info += "."
+        raise LabJackException(LJE_LABJACK_NOT_FOUND, "Couldn't open device. " + info)
+
+    raise LabJackException(LJE_LABJACK_NOT_FOUND)
 
 def _openUE9OverEthernet(firstFound, pAddress, devNumber):
     if firstFound is not True and pAddress is not None:
