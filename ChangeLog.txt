@@ -309,3 +309,4 @@ Version History
     - Fixed the U12 aiBurst method so that the returned voltages list is
       correct.
     - Added device access/claim error detection to Exodriver open.
+    - Updated versioning for PEP compliancy using this format: 1.<YEAR><MONTH>

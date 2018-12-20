@@ -1,6 +1,6 @@
 LabJackPython: Cross-platform (Windows, Linux, Mac OS X) Python modules and
 examples for the LabJack U3, U6, UE9 and U12.
-05/26/2015
+12/20/2018
 support@labjack.com
 
 LabJackPython requires Python 2.6 or higher. Modules have been updated for
@@ -24,6 +24,12 @@ To install LabJackPython, run the following command in a terminal (remove "sudo"
 on Windows):
 
     $ sudo python setup.py install
+
+If there are multiple versions Python installed, run the install command with
+the Python version you want to install to. For example, on Linux if both
+Python 2.7 and 3.5 are installed, you can install to Python 3.5 with:
+
+    $ sudo python3.5 setup.py install
 
 From there, interacting with your devices is easy.
 

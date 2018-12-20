@@ -34,10 +34,10 @@ CLASSIFIERS = [
     ]
 
 setup(name='LabJackPython',
-      version='5-26-2015',
+      version='1.201812',
       description='The LabJack Python modules for the LabJack U3, U6, UE9 and U12.',
       license='MIT X11',
-      url='http://labjack.com/support/labjackpython',
+      url='https://labjack.com/support/software/examples/ud/labjackpython',
       author='LabJack Corporation',
       author_email='support@labjack.com',
       maintainer='LabJack Corporation',
