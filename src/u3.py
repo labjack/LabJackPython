@@ -1253,6 +1253,9 @@ class U3(Device):
             CSPinNum = CSPINNum
 
         numSPIBytes = len(SPIBytes)
+
+        if numSPIBytes > 50:
+            raise LabJackException("The maximum number of bytes that can be sent/received in one packet is 50")
         
         oddPacket = False
         if numSPIBytes%2 != 0:
@@ -1354,6 +1357,9 @@ class U3(Device):
         else:
             result = self._writeRead(command, 10, [0xF8, 0x02, 0x14])
 
+        if result[6] != 0:
+            raise LowlevelErrorException(result[6], "The asynchConfig command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
+
         returnDict = {}
 
         if (result[7] >> 7) & 1:
@@ -1420,6 +1426,9 @@ class U3(Device):
         
         result = self._writeRead(command, 10, [0xF8, 0x02, 0x15])
         
+        if result[6] != 0:
+            raise LowlevelErrorException(result[6], "The asynchTX command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
+
         return { 'NumAsynchBytesSent' : result[7], 'NumAsynchBytesInRXBuffer' : result[8] }
     asynchTX.section = 2
     
@@ -1457,6 +1466,10 @@ class U3(Device):
         
         result = self._writeRead(command, 40, [0xF8, 0x11, 0x16])
         
+        if result[6] != 0:
+            raise LowlevelErrorException(result[6], "The asynchRX command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
+
+
         return { 'AsynchBytes' : result[8:], 'NumAsynchBytesInRXBuffer' : result[7] }
     asynchRX.section = 2
     
@@ -1483,6 +1496,10 @@ class U3(Device):
             raise LabJackException("I2CBytes must be a list")
         
         numBytes = len(I2CBytes)
+        if numBytes > 50:
+            raise LabJackException("The maximum number of bytes that can be sent in one packet is 50")
+        if NumI2CBytesToReceive > 52:
+            raise LabJackException("The maximum number of bytes that can be read in one packet is 52")
         
         oddPacket = False
         if numBytes%2 != 0:
@@ -1524,7 +1541,10 @@ class U3(Device):
             oddResponse = True
         
         result = self._writeRead(command, 12+NumI2CBytesToReceive, [0xF8, (3+(NumI2CBytesToReceive/2)), 0x3B])
-                
+        
+        if result[6] != 0:
+            raise LowlevelErrorException(result[6], "The i2c command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
+
         if len(result) > 12:
             if oddResponse:
                 return { 'AckArray' : result[8:12], 'I2CBytes' : result[12:-1] }
@@ -1579,6 +1599,9 @@ class U3(Device):
         command[9] = SHTOptions
 
         result = self._writeRead(command, 16, [0xF8, 0x05, 0x39])
+
+        if result[6] != 0:
+            raise LowlevelErrorException(result[6], "The sht1x command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
 
         val = (result[11]*256) + result[10]
         temp = -39.60 + 0.01*val
