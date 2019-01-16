@@ -1318,6 +1318,9 @@ class UE9(Device):
         
         numSPIBytes = len(SPIBytes)
         
+        if numSPIBytes > 50:
+            raise LabJackException("The maximum number of bytes that can be sent/received in one packet is 50")
+        
         oddPacket = False
         if numSPIBytes%2 != 0:
             SPIBytes.append(0)
@@ -1399,6 +1402,9 @@ class UE9(Device):
 
         result = self._writeRead(command, 10, [0xF8, 0x02, 0x14])
 
+        if result[6] != 0:
+            raise LowlevelErrorException(result[6], "The asynchConfig command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
+
         returnDict = {}
 
         if (result[7] >> 7) & 1:
@@ -1456,6 +1462,9 @@ class UE9(Device):
 
         result = self._writeRead(command, 10, [0xF8, 0x02, 0x15])
 
+        if result[6] != 0:
+            raise LowlevelErrorException(result[6], "The asynchTX command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
+
         return {'NumAsynchBytesSent': result[7], 'NumAsynchBytesInRXBuffer': result[8]}
 
     def asynchRX(self, Flush = False):
@@ -1487,6 +1496,9 @@ class UE9(Device):
 
         result = self._writeRead(command, 40, [0xF8, 0x11, 0x16])
 
+        if result[6] != 0:
+            raise LowlevelErrorException(result[6], "The asynchRX command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
+
         return {'AsynchBytes': result[8:], 'NumAsynchBytesInRXBuffer': result[7]}
 
     def i2c(self, Address, I2CBytes, EnableClockStretching = False, NoStopWhenRestarting = False, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 1, SCLPinNum = 0, NumI2CBytesToReceive = 0, AddressByte = None):
@@ -1504,6 +1516,11 @@ class UE9(Device):
             raise LabJackException("I2CBytes must be a list")
 
         numBytes = len(I2CBytes)
+        if numBytes > 50:
+            raise LabJackException("The maximum number of bytes that can be sent in one packet is 50")
+        if NumI2CBytesToReceive > 52:
+            raise LabJackException("The maximum number of bytes that can be read in one packet is 52")
+        
 
         oddPacket = False
         if numBytes % 2 != 0:
@@ -1545,6 +1562,9 @@ class UE9(Device):
             oddResponse = True
 
         result = self._writeRead(command, 12 + NumI2CBytesToReceive, [0xF8, (3 + (NumI2CBytesToReceive/2)), 0x3B])
+
+        if result[6] != 0:
+            raise LowlevelErrorException(result[6], "The i2c command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
 
         if len(result) > 12:
             if oddResponse:
@@ -1595,6 +1615,9 @@ class UE9(Device):
         command[9] = SHTOptions
 
         result = self._writeRead(command, 16, [ 0xF8, 0x05, 0x39])
+
+        if result[6] != 0:
+            raise LowlevelErrorException(result[6], "The sht1x command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
 
         val = (result[11]*256) + result[10]
         temp = -39.60 + 0.01*val
