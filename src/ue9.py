@@ -1362,9 +1362,6 @@ class UE9(Device):
 
         result = self._writeRead(command, 8+numSPIBytes, [0xF8, 1+(numSPIBytes//2), 0x3A])
 
-        if result[6] != 0:
-            raise LowlevelErrorException(result[6], "The spi command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
-
         return {'NumSPIBytesTransferred': result[7], 'SPIBytes': result[8:]}
 
     def asynchConfig(self, Update = True, UARTEnable = True, DesiredBaud = 9600):
@@ -1403,9 +1400,6 @@ class UE9(Device):
         command[9] = BaudFactor >> 8
 
         result = self._writeRead(command, 10, [0xF8, 0x02, 0x14])
-
-        if result[6] != 0:
-            raise LowlevelErrorException(result[6], "The asynchConfig command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
 
         returnDict = {}
 
@@ -1469,9 +1463,6 @@ class UE9(Device):
 
         result = self._writeRead(command, 10, [0xF8, 0x02, 0x15])
 
-        if result[6] != 0:
-            raise LowlevelErrorException(result[6], "The asynchTX command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
-
         return {'NumAsynchBytesSent': result[7], 'NumAsynchBytesInRXBuffer': result[8]}
 
     def asynchRX(self, Flush = False):
@@ -1504,9 +1495,6 @@ class UE9(Device):
             command[7] = 1
 
         result = self._writeRead(command, 40, [0xF8, 0x11, 0x16])
-
-        if result[6] != 0:
-            raise LowlevelErrorException(result[6], "The asynchRX command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
 
         return {'AsynchBytes': result[8:], 'NumAsynchBytesInRXBuffer': result[7]}
 
@@ -1573,9 +1561,6 @@ class UE9(Device):
 
         result = self._writeRead(command, 12 + NumI2CBytesToReceive, [0xF8, (3 + (NumI2CBytesToReceive/2)), 0x3B])
 
-        if result[6] != 0:
-            raise LowlevelErrorException(result[6], "The i2c command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
-
         if len(result) > 12:
             if oddResponse:
                 return {'AckArray': result[8:12], 'I2CBytes': result[12:-1]}
@@ -1611,7 +1596,7 @@ class UE9(Device):
             'HumidityCRC' : The CRC value for the humidity
         }
         """
-        command = [ 0 ] * 10
+        command = [0] * 10
 
         #command[0] = Checksum8
         command[1] = 0xF8
@@ -1624,10 +1609,7 @@ class UE9(Device):
         #command[8] = Reserved
         command[9] = SHTOptions
 
-        result = self._writeRead(command, 16, [ 0xF8, 0x05, 0x39])
-
-        if result[6] != 0:
-            raise LowlevelErrorException(result[6], "The sht1x command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
+        result = self._writeRead(command, 16, [0xF8, 0x05, 0x39])
 
         val = (result[11]*256) + result[10]
         temp = -39.60 + 0.01*val
@@ -1636,7 +1618,7 @@ class UE9(Device):
         humid = -4 + 0.0405*val + -.0000028*(val*val)
         humid = (temp - 25)*(0.01 + 0.00008*val) + humid
 
-        return { 'StatusReg' : result[8], 'StatusCRC' : result[9], 'Temperature' : temp, 'TemperatureCRC' : result[12], 'Humidity' : humid, 'HumidityCRC' : result[15] }
+        return {'StatusReg': result[8], 'StatusCRC': result[9], 'Temperature': temp, 'TemperatureCRC': result[12], 'Humidity': humid, 'HumidityCRC': result[15]}
 
     def getAIN(self, channel, BipGain = 0x00, Resolution = 12, SettlingTime = 0):
         """

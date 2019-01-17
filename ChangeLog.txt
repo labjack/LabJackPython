@@ -310,8 +310,6 @@ Version History
       correct.
     - Added device access/claim error detection to Exodriver open.
     - Updated versioning for PEP compliancy using this format: 1.<YEAR><MONTH>
-    - Fixed an issue in SPI, Asynch, I2C, and SHT1x functions where error codes
-      aren't checked.
     - Added exceptions to spi, async and i2c methods when send/receive bytes
       are more than the U3, U6 and UE9 supports.
     - Fixed spi methods for U6 and UE9 for Python 3.
