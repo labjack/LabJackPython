@@ -312,7 +312,6 @@ Version History
     - Updated versioning for PEP compliancy using this format: 1.<YEAR><MONTH>
     - Fixed an issue in SPI, Asynch, I2C, and SHT1x functions where error codes
       aren't checked.
-    - Prevent I2C functions from attempting to write or read more data
-      the maximum number of bytes allowed in firmware.  Write:50, Read:52.
-    - Prevent SPI function from attempting to write or read more data
-      than the maximum number of bytes allowed in firmware.  50.
+    - Added exceptions to spi, async and i2c methods when send/receive bytes
+      are more than the U3, U6 and UE9 supports.
+    - Fixed spi methods for U6 and UE9 for Python 3.

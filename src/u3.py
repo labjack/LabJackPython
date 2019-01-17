@@ -1228,22 +1228,23 @@ class U3(Device):
         return watchdogStatus
     watchdog.section = 2
 
-    def spi(self, SPIBytes, AutoCS=True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 4, CLKPinNum = 5, MISOPinNum = 6, MOSIPinNum = 7, CSPINNum = None):
+    def spi(self, SPIBytes, AutoCS = True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 4, CLKPinNum = 5, MISOPinNum = 6, MOSIPinNum = 7, CSPINNum = None):
         """
-        Name: U3.spi(SPIBytes, AutoCS=True, DisableDirConfig = False,
+        Name: U3.spi(SPIBytes, AutoCS = True, DisableDirConfig = False,
                      SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 4,
                      CLKPinNum = 5, MISOPinNum = 6, MOSIPinNum = 7)
-        
+
         Args: SPIBytes, a list of bytes to be transferred.
               See Section 5.2.15 of the user's guide.
-        
+
         Desc: Sends and receives serial data using SPI synchronous
               communication.
 
-        NOTE: Requires U3 hardware version 1.21 or greater.  Also,
-              the return has been changed to a dictionary with
-              NumSPIBytesTransferred and SPIBytes.  The keyword
-              argument CSPinNum was named CSPINNum in old versions.
+        NOTES: Requires U3 hardware version 1.21 or greater.
+               The return has been changed to a dictionary with
+               NumSPIBytesTransferred and SPIBytes.
+               The keyword argument CSPinNum was named CSPINNum in old
+               versions.
         """
         if not isinstance(SPIBytes, list):
             raise LabJackException("SPIBytes MUST be a list of bytes")
@@ -1255,35 +1256,35 @@ class U3(Device):
         numSPIBytes = len(SPIBytes)
 
         if numSPIBytes > 50:
-            raise LabJackException("The maximum number of bytes that can be sent/received in one packet is 50")
-        
+            raise LabJackException("The maximum number of bytes that can be sent/received is 50")
+
         oddPacket = False
         if numSPIBytes%2 != 0:
             SPIBytes.append(0)
             numSPIBytes = numSPIBytes + 1
             oddPacket = True
-        
-        command = [ 0 ] * (13 + numSPIBytes)
-        
+
+        command = [0] * (13 + numSPIBytes)
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 4 + (numSPIBytes//2)
         command[3] = 0x3A
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
-        
+
         if AutoCS:
             command[6] |= (1 << 7)
         if DisableDirConfig:
             command[6] |= (1 << 6)
-        
+
         spiModes = ('A', 'B', 'C', 'D')
         try:
             modeIndex = spiModes.index(SPIMode)
         except ValueError:
             raise LabJackException("Invalid SPIMode %r, valid modes are: %r" % (SPIMode, spiModes))
         command[6] |= modeIndex
-        
+
         command[7] = SPIClockFactor
         #command[8] = Reserved
         command[9] = CSPinNum
@@ -1293,21 +1294,21 @@ class U3(Device):
         command[13] = numSPIBytes
         if oddPacket:
             command[13] = numSPIBytes - 1
-        
+
         command[14:] = SPIBytes
-        
-        result = self._writeRead(command, 8+numSPIBytes, [ 0xF8, 1+(numSPIBytes/2), 0x3A ])
-        
+
+        result = self._writeRead(command, 8+numSPIBytes, [0xF8, 1+(numSPIBytes//2), 0x3A])
+
         if result[6] != 0:
             raise LowlevelErrorException(result[6], "The spi command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
 
-        return { 'NumSPIBytesTransferred' : result[7], 'SPIBytes' : result[8:] }
+        return {'NumSPIBytesTransferred': result[7], 'SPIBytes': result[8:]}
 
     spi.section = 2
 
     def asynchConfig(self, Update = True, UARTEnable = True, DesiredBaud = 9600, olderHardware = False, configurePins = True):
         """
-        Name: U3.asynchConfig(Update = True, UARTEnable = True, 
+        Name: U3.asynchConfig(Update = True, UARTEnable = True,
                               DesiredBaud = 9600, olderHardware = False,
                               configurePins = True)
         Args: See section 5.2.16 of the User's Guide.
@@ -1383,37 +1384,40 @@ class U3(Device):
     def asynchTX(self, AsynchBytes):
         """
         Name: U3.asynchTX(AsynchBytes)
-        
+
         Args: AsynchBytes, must be a list of bytes to transfer.
-        
+
         Desc: Sends bytes to the U3 UART which will be sent asynchronously on
               the transmit line. See section 5.2.17 of the user's guide.
-        
+
         returns a dictionary:
         {
             'NumAsynchBytesSent' : Number of Asynch Bytes Sent
             'NumAsynchBytesInRXBuffer' : How many bytes are currently in the
                                          RX buffer.
         }
-        
+
         Note: Requres U3 hardware version 1.21 or greater.
         """
         if not isinstance(AsynchBytes, list):
             raise LabJackException("AsynchBytes must be a list")
-        
+
         numBytes = len(AsynchBytes)
-        
+
+        if numBytes > 56:
+            raise LabJackException("The maximum number of bytes that can be sent is 56")
+
         oddPacket = False
         if numBytes%2 != 0:
             AsynchBytes.append(0)
-            numBytes = numBytes+1
+            numBytes = numBytes + 1
             oddPacket = True
-        
-        command = [ 0 ] * ( 8 + numBytes)
-        
+
+        command = [0] * (8 + numBytes)
+
         #command[0] = Checksum8
         command[1] = 0xF8
-        command[2] = 1 + ( numBytes//2 )
+        command[2] = 1 + (numBytes//2)
         command[3] = 0x15
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
@@ -1421,26 +1425,26 @@ class U3(Device):
         command[7] = numBytes
         if oddPacket:
             command[7] = numBytes - 1
-        
+
         command[8:] = AsynchBytes
-        
+
         result = self._writeRead(command, 10, [0xF8, 0x02, 0x15])
-        
+
         if result[6] != 0:
             raise LowlevelErrorException(result[6], "The asynchTX command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
 
-        return { 'NumAsynchBytesSent' : result[7], 'NumAsynchBytesInRXBuffer' : result[8] }
+        return {'NumAsynchBytesSent': result[7], 'NumAsynchBytesInRXBuffer': result[8]}
     asynchTX.section = 2
-    
+
     def asynchRX(self, Flush = False):
         """
         Name: U3.asynchRX(Flush = False)
-        
+
         Args: Flush, Set to True to flush
-        
+
         Desc: Reads the oldest 32 bytes from the U3 UART RX buffer
-              (received on receive terminal). The buffer holds 256 bytes. See
-              section 5.2.18 of the User's Guide.
+              (received on receive terminal). The buffer holds 256 bytes.
+              See section 5.2.18 of the User's Guide.
 
         returns a dictonary:
         {
@@ -1451,8 +1455,8 @@ class U3(Device):
 
         Note: Requres U3 hardware version 1.21 or greater.
         """
-        command = [ 0 ] * 8
-        
+        command = [0] * 8
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 0x01
@@ -1462,53 +1466,52 @@ class U3(Device):
         #command[6] = 0x00
         if Flush:
             command[7] = 1
-        
-        
+
         result = self._writeRead(command, 40, [0xF8, 0x11, 0x16])
-        
+
         if result[6] != 0:
             raise LowlevelErrorException(result[6], "The asynchRX command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
 
-
-        return { 'AsynchBytes' : result[8:], 'NumAsynchBytesInRXBuffer' : result[7] }
+        return {'AsynchBytes': result[8:], 'NumAsynchBytesInRXBuffer': result[7]}
     asynchRX.section = 2
-    
+
     def i2c(self, Address, I2CBytes, EnableClockStretching = False, NoStopWhenRestarting = False, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 6, SCLPinNum = 7, NumI2CBytesToReceive = 0, AddressByte = None):
         """
         Name: U3.i2c(Address, I2CBytes, ResetAtStart = False, 
                      EnableClockStretching = False, SpeedAdjust = 0,
                      SDAPinNum = 6, SCLPinNum = 7, NumI2CBytesToReceive = 0,
                      AddressByte = None)
-        
+
         Args: Address, the address (not shifted over)
               I2CBytes, must be a list of bytes to send.
               See section 5.2.19 of the user's guide.
               AddressByte, use this if you don't want a shift applied.
-                           This address will be put it in the low-level 
+                           This address will be put it in the low-level
                            packet directly and overrides Address. Optional.
-        
+
         Desc: Sends and receives serial data using I2C synchronous
               communication.
-        
+
         Note: Requires hardware version 1.21 or greater.
         """
         if not isinstance(I2CBytes, list):
             raise LabJackException("I2CBytes must be a list")
-        
+
         numBytes = len(I2CBytes)
+
         if numBytes > 50:
-            raise LabJackException("The maximum number of bytes that can be sent in one packet is 50")
+            raise LabJackException("The maximum number of bytes that can be sent is 50")
         if NumI2CBytesToReceive > 52:
-            raise LabJackException("The maximum number of bytes that can be read in one packet is 52")
-        
+            raise LabJackException("The maximum number of bytes that can be received is 52")
+
         oddPacket = False
         if numBytes%2 != 0:
             I2CBytes.append(0)
             numBytes = numBytes + 1
             oddPacket = True
-        
-        command = [ 0 ] * (14 + numBytes)
-        
+
+        command = [0] * (14 + numBytes)
+
         #command[0] = Checksum8
         command[1] = 0xF8
         command[2] = 4 + (numBytes//2)
@@ -1521,7 +1524,7 @@ class U3(Device):
             command[6] |= (1 << 2)
         if EnableClockStretching:
             command[6] |= (1 << 3)
-        
+
         command[7] = SpeedAdjust
         command[8] = SDAPinNum
         command[9] = SCLPinNum
@@ -1531,27 +1534,27 @@ class U3(Device):
             command[10] = Address << 1
         command[12] = numBytes
         if oddPacket:
-            command[12] = numBytes-1
+            command[12] = numBytes - 1
         command[13] = NumI2CBytesToReceive
         command[14:] = I2CBytes
-        
+
         oddResponse = False
         if NumI2CBytesToReceive%2 != 0:
             NumI2CBytesToReceive = NumI2CBytesToReceive+1
             oddResponse = True
-        
+
         result = self._writeRead(command, 12+NumI2CBytesToReceive, [0xF8, (3+(NumI2CBytesToReceive/2)), 0x3B])
-        
+
         if result[6] != 0:
             raise LowlevelErrorException(result[6], "The i2c command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
 
         if len(result) > 12:
             if oddResponse:
-                return { 'AckArray' : result[8:12], 'I2CBytes' : result[12:-1] }
+                return {'AckArray': result[8:12], 'I2CBytes': result[12:-1]}
             else:
-                return { 'AckArray' : result[8:12], 'I2CBytes' : result[12:] }
+                return {'AckArray': result[8:12], 'I2CBytes': result[12:]}
         else:
-            return { 'AckArray' : result[8:], 'I2CBytes' : [] }
+            return {'AckArray': result[8:], 'I2CBytes': []}
     i2c.section = 2
 
     def sht1x(self, DataPinNum = 4, ClockPinNum = 5, SHTOptions = 0xc0):

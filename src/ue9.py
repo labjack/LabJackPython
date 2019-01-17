@@ -1298,16 +1298,17 @@ class UE9(Device):
         Name: UE9.spi(SPIBytes, AutoCS=True, DisableDirConfig = False,
                      SPIMode = 'A', SPIClockFactor = 0, CSPinNum = 1,
                      CLKPinNum = 0, MISOPinNum = 3, MOSIPinNum = 2)
-        
+
         Args: SPIBytes, a list of bytes to be transferred.
               See Section 5.3.16 of the user's guide.
-        
+
         Desc: Sends and receives serial data using SPI synchronous
               communication.
-        
-        NOTE: The return has been changed to a dictionary with
-              NumSPIBytesTransferred and SPIBytes.  The keyword
-              argument CSPinNum was named CSPINNum in old versions.
+
+        NOTES: The return has been changed to a dictionary with
+               NumSPIBytesTransferred and SPIBytes.
+               The keyword argument CSPinNum was named CSPINNum in old
+               versions.
         """
         if not isinstance(SPIBytes, list):
             raise LabJackException("SPIBytes MUST be a list of bytes")
@@ -1315,38 +1316,38 @@ class UE9(Device):
         if CSPINNum is not None:
             warnings.warn("CSPINNum is deprecated, use CSPinNum instead", DeprecationWarning)
             CSPinNum = CSPINNum
-        
+
         numSPIBytes = len(SPIBytes)
-        
+
         if numSPIBytes > 50:
-            raise LabJackException("The maximum number of bytes that can be sent/received in one packet is 50")
-        
+            raise LabJackException("The maximum number of bytes that can be sent/received is 50")
+
         oddPacket = False
         if numSPIBytes%2 != 0:
             SPIBytes.append(0)
             numSPIBytes = numSPIBytes + 1
             oddPacket = True
-        
-        command = [ 0 ] * (13 + numSPIBytes)
-        
+
+        command = [0] * (13 + numSPIBytes)
+
         #command[0] = Checksum8
         command[1] = 0xF8
-        command[2] = 4 + (numSPIBytes/2)
+        command[2] = 4 + (numSPIBytes//2)
         command[3] = 0x3A
         #command[4] = Checksum16 (LSB)
         #command[5] = Checksum16 (MSB)
-        
+
         if AutoCS:
             command[6] |= (1 << 7)
         if DisableDirConfig:
             command[6] |= (1 << 6)
-        
+
         spiModes = ('A', 'B', 'C', 'D')
         try:
             command[6] |= ( spiModes.index(SPIMode) & 3 )
         except ValueError:
             raise LabJackException("Invalid SPIMode %r, valid modes are: %r" % (SPIMode, spiModes))
-        
+
         command[7] = SPIClockFactor
         #command[8] = Reserved
         command[9] = CSPinNum
@@ -1356,20 +1357,21 @@ class UE9(Device):
         command[13] = numSPIBytes
         if oddPacket:
             command[13] = numSPIBytes - 1
-        
+
         command[14:] = SPIBytes
-        
-        result = self._writeRead(command, 8+numSPIBytes, [ 0xF8, 1+(numSPIBytes/2), 0x3A ])
-        
+
+        result = self._writeRead(command, 8+numSPIBytes, [0xF8, 1+(numSPIBytes//2), 0x3A])
+
         if result[6] != 0:
             raise LowlevelErrorException(result[6], "The spi command returned an error:\n    %s" % lowlevelErrorToString(result[6]))
 
-        return { 'NumSPIBytesTransferred' : result[7], 'SPIBytes' : result[8:] }
+        return {'NumSPIBytesTransferred': result[7], 'SPIBytes': result[8:]}
 
     def asynchConfig(self, Update = True, UARTEnable = True, DesiredBaud = 9600):
         """
         Name: UE9.asynchConfig(Update = True, UARTEnable = True, 
                                DesiredBaud = 9600)
+
         Args: See section 5.3.17 of the User's Guide.
 
         Desc: Configures the UE9 UART for asynchronous communication.
@@ -1423,7 +1425,9 @@ class UE9(Device):
     def asynchTX(self, AsynchBytes):
         """
         Name: UE9.asynchTX(AsynchBytes)
+
         Args: AsynchBytes, must be a list of bytes to transfer.
+
         Desc: Sends bytes to the UE9 UART which will be sent asynchronously on
               the transmit line. See section 5.3.18 of the user's guide.
 
@@ -1438,6 +1442,9 @@ class UE9(Device):
             raise LabJackException("AsynchBytes must be a list")
 
         numBytes = len(AsynchBytes)
+
+        if numBytes > 56:
+            raise LabJackException("The maximum number of bytes that can be sent is 56")
 
         oddPacket = False
         if numBytes % 2 != 0:
@@ -1470,7 +1477,9 @@ class UE9(Device):
     def asynchRX(self, Flush = False):
         """
         Name: UE9.asynchRX(Flush = False)
+
         Args: Flush, Set to True to flush
+
         Desc: Reads the oldest 32 bytes from the UE9 UART RX buffer
               (received on receive terminal). The buffer holds 256 bytes. See
               section 5.3.19 of the User's Guide.
@@ -1504,11 +1513,13 @@ class UE9(Device):
     def i2c(self, Address, I2CBytes, EnableClockStretching = False, NoStopWhenRestarting = False, ResetAtStart = False, SpeedAdjust = 0, SDAPinNum = 1, SCLPinNum = 0, NumI2CBytesToReceive = 0, AddressByte = None):
         """
         Name: UE9.i2c(Address, I2CBytes, ResetAtStart = False, EnableClockStretching = False, SpeedAdjust = 0, SDAPinNum = 0, SCLPinNum = 1, NumI2CBytesToReceive = 0, AddressByte = None)
+
         Args: Address, the address (not shifted over)
               I2CBytes, must be a list of bytes to send.
               See section 5.3.20 of the user's guide.
               AddressByte, The address as you would put it in the lowlevel
                            packet. Overrides Address. Optional
+
         Desc: Sends and receives serial data using I2C synchronous
               communication.
         """
@@ -1517,10 +1528,9 @@ class UE9(Device):
 
         numBytes = len(I2CBytes)
         if numBytes > 50:
-            raise LabJackException("The maximum number of bytes that can be sent in one packet is 50")
+            raise LabJackException("The maximum number of bytes that can be sent is 50")
         if NumI2CBytesToReceive > 52:
-            raise LabJackException("The maximum number of bytes that can be read in one packet is 52")
-        
+            raise LabJackException("The maximum number of bytes that can be received is 52")
 
         oddPacket = False
         if numBytes % 2 != 0:
