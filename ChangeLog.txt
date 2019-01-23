@@ -254,7 +254,7 @@ Version History
       endian.
     - Fixed many Pyflakes warnings such as unused variables and unused imports.
     - Removed use of "import *" from most modules.
-- Next Release
+- 2.0.0 January 23, 2019
     - Moved the ctypes import after socket to prevent an "Aborted (core dump)"
       exit error on Cygwin.
     - _makeDeviceFromHandle function now gets/sets the U3's bootloaderVersion.
@@ -265,8 +265,8 @@ Version History
       "CSPINNum" has been renamed to "CSPinNum" to be consistent with the other
       keyword arguments.  The old "CSPINNum" will still work but is deprecated
       and will be removed in a future version.
-    - Removed the u3SampleAndLogToCloudDot.py example.  The CloudDot service
-      this example uses is no longer available.
+    - Removed the u3SampleAndLogToCloudDot.py example. The CloudDot service this
+      example uses is no longer available.
     - Updated the U6 streamConfig docstring.
     - Fixed a bug in the U6 processStreamData method where high-resolution
       calibration constants were being used on a U6-Pro by mistake when
@@ -309,7 +309,8 @@ Version History
     - Fixed the U12 aiBurst method so that the returned voltages list is
       correct.
     - Added device access/claim error detection to Exodriver open.
-    - Updated versioning for PEP compliancy using this format: 1.<YEAR><MONTH>
     - Added exceptions to spi, async and i2c methods when send/receive bytes
       are more than the U3, U6 and UE9 supports.
     - Fixed spi methods for U6 and UE9 for Python 3.
+    - Updated version to 2.0.0 for PEP compliancy and a more standardized
+      semantic than the previous data based versioning.

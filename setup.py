@@ -28,13 +28,14 @@ CLASSIFIERS = [
     'Programming Language :: Python :: 3.4',
     'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
     'Topic :: Software Development',
     'Topic :: Software Development :: Embedded Systems',
     'Topic :: System :: Hardware'
     ]
 
 setup(name='LabJackPython',
-      version='1.201812',
+      version='2.0.0',
       description='The LabJack Python modules for the LabJack U3, U6, UE9 and U12.',
       license='MIT X11',
       url='https://labjack.com/support/software/examples/ud/labjackpython',
