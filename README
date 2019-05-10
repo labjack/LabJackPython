@@ -3,8 +3,7 @@ examples for the LabJack U3, U6, UE9 and U12.
 01/23/2019
 support@labjack.com
 
-LabJackPython requires Python 2.6, 2.7 or 3.x. For Python 3.x, most
-functionality has been tested but not all yet. Please report bugs to
+LabJackPython requires Python 2.6, 2.7 or 3.x. Please report bugs to
 support@labjack.com or on GitHub:
 
     https://github.com/labjack/LabJackPython
@@ -72,7 +71,7 @@ For U12:
 }
 >>> d.close()
 
-For examples, check the Examples/ directory. For additional information, go to
+For examples, check the Examples directory. For additional information, go to
 the LabJackPython page on LabJack's website:
 
     https://labjack.com/support/software/examples/ud/labjackpython
