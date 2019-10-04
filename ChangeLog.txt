@@ -314,3 +314,6 @@ Version History
     - Fixed spi methods for U6 and UE9 for Python 3.
     - Updated version to 2.0.0 for PEP compliancy and a more standardized
       semantic than the previous data based versioning.
+- 2.0.1
+    - Updated stream reads with a longer timeout to prevent partial reads with
+      certain stream settings.

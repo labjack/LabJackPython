@@ -35,7 +35,7 @@ CLASSIFIERS = [
     ]
 
 setup(name='LabJackPython',
-      version='2.0.0',
+      version='2.0.1',
       description='The LabJack Python modules for the LabJack U3, U6, UE9 and U12.',
       license='MIT X11',
       url='https://labjack.com/support/software/examples/ud/labjackpython',

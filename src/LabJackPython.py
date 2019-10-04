@@ -25,7 +25,7 @@ from struct import pack, unpack
 import Modbus
 
 
-LABJACKPYTHON_VERSION = "2.0.0"
+LABJACKPYTHON_VERSION = "2.0.1"
 __version__ = LABJACKPYTHON_VERSION
 
 SOCKET_TIMEOUT = 3
@@ -109,7 +109,7 @@ def _loadLinuxSo():
     Attempts to load the liblabjackusb.so for Linux.
     """
     l = ctypes.CDLL("liblabjackusb.so", use_errno=True)
-    l.LJUSB_Stream.errcheck = errcheck
+    l.LJUSB_StreamTO.errcheck = errcheck
     l.LJUSB_Read.errcheck = errcheck
     return l
 
@@ -122,7 +122,7 @@ def _loadMacDylib():
     except:
         #Try to load with full path.
         l = ctypes.CDLL("/usr/local/lib/liblabjackusb.dylib", use_errno=True)
-    l.LJUSB_Stream.errcheck = errcheck
+    l.LJUSB_StreamTO.errcheck = errcheck
     l.LJUSB_Read.errcheck = errcheck
     return l
 
@@ -354,7 +354,7 @@ class Device(object):
         newA = (ctypes.c_byte*numBytes)()
         
         if stream:
-            readBytes = staticLib.LJUSB_Stream(self.handle, ctypes.byref(newA), numBytes)
+            readBytes = staticLib.LJUSB_StreamTO(self.handle, ctypes.byref(newA), numBytes, 1500)
             if readBytes == 0:
                 return ''
             # return the byte string in stream mode
