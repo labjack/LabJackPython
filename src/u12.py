@@ -2893,11 +2893,14 @@ class U12(object):
             idNum = self.id
         idNum = ctypes.c_long(idNum)
 
-        if len(activeDn) is not 3: raise ValueError("activeDn must have 3 elements")
-        if len(stateDn) is not 3: raise ValueError("stateDn must have 3 elements")
+        if len(activeDn) != 3:
+            raise ValueError("activeDn must have 3 elements")
+        if len(stateDn) != 3:
+            raise ValueError("stateDn must have 3 elements")
 
         ecode = staticLib.Watchdog(ctypes.byref(idNum), demo, active, timeout, reset, activeDn[0], activeDn[1], activeDn[2], stateDn[0], stateDn[1], stateDn[2])
-        if ecode != 0: raise U12Exception(ecode)
+        if ecode != 0:
+            raise U12Exception(ecode)
 
         return {"idnum":idNum.value}
 

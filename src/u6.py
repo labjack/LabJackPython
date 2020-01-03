@@ -248,7 +248,7 @@ class U6(Device):
          'SerialNumber': 360005087,
          'VersionInfo': 4}
         """
-        command = [ 0 ] * 26
+        command = [0] * 26
 
         #command[0] = Checksum8
         command[1] = 0xF8
@@ -260,15 +260,15 @@ class U6(Device):
         if LocalID is not None:
             command[6] = (1 << 3)
             command[8] = LocalID
-            
-        #command[7] = Reserved
 
+        #command[7] = Reserved
         #command[9-25] = Reserved 
+
         try:
             result = self._writeRead(command, 38, [0xF8, 0x10, 0x08])
         except LabJackException:
             e = sys.exc_info()[1]
-            if e.errorCode is 4:
+            if e.errorCode == 4:
                 print("NOTE: ConfigU6 returned an error of 4. This probably means you are using U6 with a *really old* firmware. Please upgrade your U6's firmware as soon as possible.")
                 result = self._writeRead(command, 38, [0xF8, 0x10, 0x08], checkBytes = False)
             else:

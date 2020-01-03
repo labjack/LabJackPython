@@ -317,3 +317,5 @@ Version History
 - 2.0.1
     - Updated stream reads with a longer timeout to prevent partial reads with
       certain stream settings.
+- 2.0.2
+    - Fixed SyntaxWarnings from Python 3.8.

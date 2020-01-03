@@ -25,7 +25,7 @@ from struct import pack, unpack
 import Modbus
 
 
-LABJACKPYTHON_VERSION = "2.0.1"
+LABJACKPYTHON_VERSION = "2.0.2"
 __version__ = LABJACKPYTHON_VERSION
 
 SOCKET_TIMEOUT = 3
@@ -1211,7 +1211,7 @@ def openAllLabJacks():
     return devices
 
 def _openLabJackUsingLJSocket(deviceType, firstFound, pAddress, LJSocket, handleOnly):
-    if LJSocket is not '':
+    if LJSocket is not None and LJSocket != '':
         ip, port = LJSocket.split(":")
         port = int(port)
         handle = LJSocketHandle(ip, port, deviceType, firstFound, pAddress)
@@ -2291,25 +2291,25 @@ def StringToDoubleAddress(pString):
 
     >>> StringToDoubleAddress("192.168.1.209")
     3232235985L
-    
+
     @type  pString: String
     @param pString: String to be converted.
-    
+
     @rtype: number
     @return: The number (base 10) that represents the IP string.
-        
-    @raise LabJackException: 
-    """  
+
+    @raise LabJackException:
+    """
     parts = pString.split('.')
-    
-    if len(parts) is not 4:
+
+    if len(parts) != 4:
         raise LabJackException(0, "IP address not correctly formatted")
-    
+
     try:
         value = (int(parts[0]) << 8*3) + (int(parts[1]) << 8*2) + (int(parts[2]) << 8) + int(parts[3])
     except ValueError:
         raise LabJackException(0, "IP address not correctly formatted")
-    
+
     return value
 
 #Windows
@@ -2412,12 +2412,12 @@ def lowlevelErrorToString(errorcode):
     except KeyError:
         name = "UNKNOWN_ERROR"
         advice = "Unrecognized error code (%s)" % errorcode
-    
-    if advice is not "":
+
+    if advice != "":
         msg = "%s (%s)\n%s" % (name, errorcode, advice)
     else:
         msg = "%s (%s)" % (name, errorcode)
-        
+
     return msg
 
 #Windows
