@@ -71,8 +71,24 @@ For U12:
 }
 >>> d.close()
 
-For examples, check the Examples directory. For additional information, go to
-the LabJackPython page on LabJack's website:
+For examples, check the Examples directory.
+
+For documentation, please refer to the docstrings in the module source code,
+or use the help function on the module, class or method.
+
+For the U3, refer to its u3.py source, or use the “help(u3)” call in Python
+(“import u3” beforehand).
+
+For the U6, refer to its u6.py source, or use the “help(u6)” call in Python
+(“import u6” beforehand).
+
+For the UE9, refer to its ue9.py source, or use the “help(ue9)” call in Python
+(“import ue9” beforehand).
+
+For the U12, refer to its u12.py source, or use the “help(u12)” call in Python
+(“import u12” beforehand).
+
+For additional information, go to the LabJackPython page on LabJack's website:
 
     https://labjack.com/support/software/examples/ud/labjackpython
 
