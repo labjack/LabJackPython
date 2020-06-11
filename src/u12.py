@@ -372,10 +372,10 @@ def _loadLibrary():
     try:
         if sys.platform.startswith("win32"):
             #Windows detected
-            return ctypes.WinDLL("ljackuw")
+            return ctypes.WinDLL("ljackuw.dll")
         if sys.platform.startswith("cygwin"):
             #Cygwin detected. WinDLL not available, but CDLL seems to work.
-            return ctypes.CDLL("ljackuw")
+            return ctypes.CDLL("ljackuw.dll")
     except Exception:
         e = sys.exc_info()[1]
         raise U12Exception("Could not load LabJack UW driver.\n\n    The error was: %s" % e)

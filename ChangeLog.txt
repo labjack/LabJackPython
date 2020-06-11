@@ -319,3 +319,5 @@ Version History
       certain stream settings.
 - 2.0.2
     - Fixed SyntaxWarnings from Python 3.8.
+- 2.0.3
+    - Updated Windows WindDLL/CDLL calls to include the dll file extension.

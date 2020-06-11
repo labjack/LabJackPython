@@ -25,7 +25,7 @@ from struct import pack, unpack
 import Modbus
 
 
-LABJACKPYTHON_VERSION = "2.0.2"
+LABJACKPYTHON_VERSION = "2.0.3"
 __version__ = LABJACKPYTHON_VERSION
 
 SOCKET_TIMEOUT = 3
@@ -138,7 +138,7 @@ def _loadLibrary():
         wlib = None
         if sys.platform.startswith("win32"):
             #Windows detected
-            wlib = ctypes.WinDLL("labjackud")
+            wlib = ctypes.WinDLL("labjackud.dll")
         if sys.platform.startswith("cygwin"):
             #Cygwin detected. WinDLL not available, but CDLL seems to work.
             wlib = ctypes.CDLL("labjackud.dll")
