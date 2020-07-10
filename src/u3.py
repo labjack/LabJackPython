@@ -1023,14 +1023,24 @@ class U3(Device):
         if (ScanFrequency is not None) or (SampleFrequency is not None):
             if ScanFrequency is None:
                 ScanFrequency = SampleFrequency
-            if ScanFrequency < 1000:
+            if ScanFrequency >= 61.03515:
+                DivideClockBy256 = False
+                if ScanFrequency >= 732.43304:
+                    InternalStreamClockFrequency = 1
+                    ScanInterval = 48000000 // ScanFrequency
+                else:
+                    InternalStreamClockFrequency = 0
+                    ScanInterval = 4000000 // ScanFrequency
+            else:
+                DivideClockBy256 = True
                 if ScanFrequency < 25:
                     SamplesPerPacket = ScanFrequency
-                DivideClockBy256 = True
-                ScanInterval = 15625 // ScanFrequency
-            else:
-                DivideClockBy256 = False
-                ScanInterval = 4000000 // ScanFrequency
+                if ScanFrequency >= 2.86106:
+                    InternalStreamClockFrequency = 1
+                    ScanInterval = 187500 // ScanFrequency
+                else:
+                    InternalStreamClockFrequency = 0
+                    ScanInterval = 15625 // ScanFrequency
 
         # Force Scan Interval into correct range
         ScanInterval = min(ScanInterval, 65535)

@@ -321,3 +321,8 @@ Version History
     - Fixed SyntaxWarnings from Python 3.8.
 - 2.0.3
     - Updated Windows WindDLL/CDLL calls to include the dll file extension.
+- 2.0.4
+    - Fixed the U3 and U6 stream ScanFrequency for 100 to 1000 Hz so it does not
+      use low-level settings that cause interupt overloads on the device.
+    - General U3 and U6 stream improvements with ScanFrequency and its low-level
+      stream clock and scan interval configuration.
