@@ -1124,39 +1124,40 @@ class U3(Device):
 
         numChannels = len(self.streamChannelNumbers)
 
-        for packet in self.breakupPackets(result, numBytes):
-            for sample in self.samplesFromPacket(packet):
-                if self.streamPacketOffset >= numChannels:
-                    self.streamPacketOffset = 0
+        if self.streamPacketOffset >= numChannels:
+            self.streamPacketOffset = 0
 
-                if self.streamChannelNumbers[self.streamPacketOffset] in (193, 194):
-                    value = unpack('<BB', sample)
-                elif self.streamChannelNumbers[self.streamPacketOffset] >= 200:
-                    value = unpack('<H', sample)[0]
+        all_samples = [x for packet in self.breakupPackets(result, numBytes) for x in self.samplesFromPacket(packet)]
+        for i in range(numChannels):
+            packed_values = all_samples[i::numChannels]
+            channelIndex = (self.streamPacketOffset + i) % numChannels
+
+            if self.streamChannelNumbers[channelIndex] in (193, 194):
+                values = [unpack('<BB', sample) for sample in packed_values]
+            elif self.streamChannelNumbers[channelIndex] >= 200:
+                values = [unpack('<H', sample)[0] for sample in packed_values]
+            else:
+                values = [unpack('<H', sample)[0] for sample in packed_values]
+                if self.streamNegChannels[channelIndex] == 31:
+                    # do unsigned
+                    singleEnded = True
                 else:
-                    if self.streamNegChannels[self.streamPacketOffset] == 31:
-                        # do unsigned
-                        value = unpack('<H', sample)[0]
-                        singleEnded = True
-                    else:
-                        # do signed
-                        value = unpack('<H', sample)[0]
-                        singleEnded = False
+                    # do signed
+                    singleEnded = False
 
-                    lvChannel = True
-                    if self.isHV and self.streamChannelNumbers[self.streamPacketOffset] < 4:
-                        lvChannel = False
+                lvChannel = True
+                if self.isHV and self.streamChannelNumbers[channelIndex] < 4:
+                    lvChannel = False
 
-                    isSpecial = False
-                    if self.streamNegChannels[self.streamPacketOffset] == 32:
-                        isSpecial = True
+                isSpecial = False
+                if self.streamNegChannels[channelIndex] == 32:
+                    isSpecial = True
 
-                    value = self.binaryToCalibratedAnalogVoltage(value, isLowVoltage = lvChannel, isSingleEnded = singleEnded, channelNumber = self.streamChannelNumbers[self.streamPacketOffset], isSpecialSetting = isSpecial)
+                values = [self.binaryToCalibratedAnalogVoltage(x, isLowVoltage = lvChannel, isSingleEnded = singleEnded, channelNumber = self.streamChannelNumbers[channelIndex], isSpecialSetting = isSpecial) for x in values]
 
-                returnDict["AIN%s" % self.streamChannelNumbers[self.streamPacketOffset]].append(value)
+            returnDict["AIN%s" % self.streamChannelNumbers[channelIndex]] = values
 
-                self.streamPacketOffset += 1
-
+        self.streamPacketOffset = (self.streamPacketOffset + len(all_samples)) % numChannels
         return returnDict
     processStreamData.section = 3
 
