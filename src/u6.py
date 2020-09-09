@@ -1497,8 +1497,8 @@ class U6(Device):
                             channel is positiveChannel+1.
         Desc: Reads an AIN and applies the calibration constants to it.
         
-        >>> myU6.getAIN(14)
-        299.87723471224308
+        >>> myU6.getAIN(0)
+        10.109889201523673
         """
         result = self.getFeedback(AIN24AR(positiveChannel, resolutionIndex, gainIndex, settlingFactor, differential))
         

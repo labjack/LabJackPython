@@ -1,6 +1,6 @@
 LabJackPython: Cross-platform (Windows, Linux, Mac OS X) Python modules and
 examples for the LabJack U3, U6, UE9 and U12.
-01/23/2019
+09/09/2020
 support@labjack.com
 
 LabJackPython requires Python 2.6, 2.7 or 3.x. Please report bugs to
