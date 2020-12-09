@@ -326,3 +326,5 @@ Version History
       use low-level settings that cause interupt overloads on the device.
     - General U3 and U6 stream improvements with ScanFrequency and its low-level
       stream clock and scan interval configuration.
+- 2.0.5
+    - Fixed the spi, i2c and asynch methods to not change the arguments.

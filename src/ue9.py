@@ -1324,7 +1324,6 @@ class UE9(Device):
 
         oddPacket = False
         if numSPIBytes%2 != 0:
-            SPIBytes.append(0)
             numSPIBytes = numSPIBytes + 1
             oddPacket = True
 
@@ -1358,7 +1357,7 @@ class UE9(Device):
         if oddPacket:
             command[13] = numSPIBytes - 1
 
-        command[14:] = SPIBytes
+        command[14:] = SPIBytes + [0]*oddPacket
 
         result = self._writeRead(command, 8+numSPIBytes, [0xF8, 1+(numSPIBytes//2), 0x3A])
 
@@ -1442,7 +1441,6 @@ class UE9(Device):
 
         oddPacket = False
         if numBytes % 2 != 0:
-            AsynchBytes.append(0)
             numBytes = numBytes + 1
             oddPacket = True
 
@@ -1459,7 +1457,7 @@ class UE9(Device):
         if oddPacket:
             command[7] = numBytes - 1
 
-        command[8:] = AsynchBytes
+        command[8:] = AsynchBytes + [0]*oddPacket
 
         result = self._writeRead(command, 10, [0xF8, 0x02, 0x15])
 
@@ -1522,7 +1520,6 @@ class UE9(Device):
 
         oddPacket = False
         if numBytes % 2 != 0:
-            I2CBytes.append(0)
             numBytes = numBytes + 1
             oddPacket = True
 
@@ -1552,7 +1549,7 @@ class UE9(Device):
         if oddPacket:
             command[12] = numBytes - 1
         command[13] = NumI2CBytesToReceive
-        command[14:] = I2CBytes
+        command[14:] = I2CBytes + [0]*oddPacket
 
         oddResponse = False
         if NumI2CBytesToReceive % 2 != 0:
