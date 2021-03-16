@@ -82,7 +82,7 @@ ret = dev.i2c(SHT3X_ADDRESS, writeBytes, False, False, False, SPEED_THROTTLE, SD
               SCL_PIN_NUM, numBytesToRead)
 checkAck(0, ret["AckArray"])
 
-# Convert the tempCerature and RH binary to appropriate measurement units
+# Convert the temperature and RH binary to appropriate measurement units
 temp = ret["I2CBytes"][0]*256 + ret["I2CBytes"][1]
 tempC = 175*temp / 65535 - 45
 rh = ret["I2CBytes"][3]*256 + ret["I2CBytes"][4]
