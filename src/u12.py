@@ -429,6 +429,7 @@ class U12(object):
             # Save some variables to save state.
             self.pwmAVoltage = 0
             self.pwmBVoltage = 0
+            self.IO3toIO0DirectionsAndStates = BitField(rawByte = 255)
 
             self.open(id, serialNumber)
 
@@ -2060,7 +2061,8 @@ class U12(object):
 
                     state = results['D7toD0States'][7-channel]
             else:
-                results = self.rawDIO(IO3toIO0DirectionsAndStates = 255, UpdateDigital = True)
+                self.IO3toIO0DirectionsAndStates[7-(channel+4)] = 1
+                results = self.rawDIO(IO3toIO0DirectionsAndStates = self.IO3toIO0DirectionsAndStates, UpdateDigital = True)
                 state = results['IO3toIO0States'][3-channel]
 
             return {"idnum" : self.id, "state" : state}
@@ -2115,10 +2117,9 @@ class U12(object):
                     self.rawDIO(D7toD0Directions = direction, D7toD0States = states, UpdateDigital = True)
 
             else:
-                bf = BitField()
-                bf[7-(channel+4)] = 0
-                bf[7-channel] = state
-                self.rawDIO(IO3toIO0DirectionsAndStates = bf, UpdateDigital = True)
+                self.IO3toIO0DirectionsAndStates[7-(channel+4)] = 0
+                self.IO3toIO0DirectionsAndStates[7-channel] = state
+                self.rawDIO(IO3toIO0DirectionsAndStates = self.IO3toIO0DirectionsAndStates, UpdateDigital = True)
 
             return {"idnum" : self.id}
 
