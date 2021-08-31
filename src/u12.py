@@ -429,6 +429,7 @@ class U12(object):
             # Save some variables to save state.
             self.pwmAVoltage = 0
             self.pwmBVoltage = 0
+            self.IO3toIO0DirectionsAndStates = BitField(rawByte = 255)
 
             self.open(id, serialNumber)
 
@@ -706,6 +707,9 @@ class U12(object):
         if bf.bit7 != 1 or bf.bit6 != 0:
             raise U12Exception("Expected a AIStream response, got %s instead." % results[0])
 
+        if bool(UpdateIO):
+            self.IO3toIO0DirectionsAndStates = BitField(rawByte = (int(self.IO3toIO0DirectionsAndStates) & 0xF0) | (int(IO3toIO0States) & 0x0F))
+
         returnDict = {}
         returnDict['EchoValue'] = results[1]
         returnDict['PGAOvervoltage'] = bool(bf.bit4)
@@ -835,6 +839,9 @@ class U12(object):
 
         if results[0] != 87:
             raise U12Exception("Expected a DIO response, got %s instead." % results[0])
+
+        if bool(UpdateDigital):
+            self.IO3toIO0DirectionsAndStates = BitField(rawByte = int(IO3toIO0DirectionsAndStates))
 
         returnDict['D15toD8States'] = BitField(results[1], "D", list(range(15, 7, -1)), "Low", "High")
         returnDict['D7toD0States'] = BitField(results[2], "D", list(range(7, -1, -1)), "Low", "High")
@@ -1016,6 +1023,9 @@ class U12(object):
         self.write(command)
         results = self.read()
 
+        if bool(UpdateDigital):
+            self.IO3toIO0DirectionsAndStates = BitField(rawByte = int(IO3toIO0DirectionsAndStates))
+
         returnDict = {}
 
         returnDict['D15toD8States'] = BitField(results[1], "D", list(range(15, 7, -1)), "Low", "High")
@@ -1173,6 +1183,9 @@ class U12(object):
 
         self.write(command)
 
+        if bool(UpdateIO):
+            self.IO3toIO0DirectionsAndStates = BitField(rawByte = (int(self.IO3toIO0DirectionsAndStates) & 0xF0) | (int(IO3toIO0States) & 0x0F))
+
         resultsList = []
         for i in range(NumScans):
             resultsList.append(self.read())
@@ -1267,6 +1280,10 @@ class U12(object):
         returnDict = dict()
 
         self.write(command)
+
+        if bool(UpdateIO):
+            self.IO3toIO0DirectionsAndStates = BitField(rawByte = (int(self.IO3toIO0DirectionsAndStates) & 0xF0) | (int(IO3toIO0States) & 0x0F))
+
         while True:
             results = self.read()
 
@@ -1899,6 +1916,13 @@ class U12(object):
         if results[5] != command[5]:
             raise U12Exception("Expected SHT1x response, got %s instead." % results[5])
 
+        self.IO3toIO0DirectionsAndStates.bit7 = int(bool(IO3Direction))
+        self.IO3toIO0DirectionsAndStates.bit6 = int(bool(IO2Direction))
+        self.IO3toIO0DirectionsAndStates.bit5 = 0
+        self.IO3toIO0DirectionsAndStates.bit4 = 1
+        self.IO3toIO0DirectionsAndStates.bit3 = int(bool(IO3State))
+        self.IO3toIO0DirectionsAndStates.bit2 = int(bool(IO2State))
+
         returnDict = dict()
         returnDict['DataByte3'] = results[0]
         returnDict['DataByte2'] = results[1]
@@ -2060,7 +2084,8 @@ class U12(object):
 
                     state = results['D7toD0States'][7-channel]
             else:
-                results = self.rawDIO(IO3toIO0DirectionsAndStates = 255, UpdateDigital = True)
+                self.IO3toIO0DirectionsAndStates[7-(channel+4)] = 1
+                results = self.rawDIO(IO3toIO0DirectionsAndStates = self.IO3toIO0DirectionsAndStates, UpdateDigital = True)
                 state = results['IO3toIO0States'][3-channel]
 
             return {"idnum" : self.id, "state" : state}
@@ -2115,10 +2140,9 @@ class U12(object):
                     self.rawDIO(D7toD0Directions = direction, D7toD0States = states, UpdateDigital = True)
 
             else:
-                bf = BitField()
-                bf[7-(channel+4)] = 0
-                bf[7-channel] = state
-                self.rawDIO(IO3toIO0DirectionsAndStates = bf, UpdateDigital = True)
+                self.IO3toIO0DirectionsAndStates[7-(channel+4)] = 0
+                self.IO3toIO0DirectionsAndStates[7-channel] = state
+                self.rawDIO(IO3toIO0DirectionsAndStates = self.IO3toIO0DirectionsAndStates, UpdateDigital = True)
 
             return {"idnum" : self.id}
 
