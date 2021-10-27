@@ -2149,7 +2149,7 @@ class U12(object):
                 # Set the direction of the channel to 0 (output)
                 self.IO3toIO0DirectionsAndStates[chIndex] = 0
                 # Set the state of the channel
-                # State info in the upper 4 indexes, dir in lower 4
+                # Raw data looks like [IO3D,IO2D,IO1D,IO0D,IO3S,IO2S,IO1S,IO0S]
                 self.IO3toIO0DirectionsAndStates[chIndex+4] = state
 
             results = self.rawDIO(
