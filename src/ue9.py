@@ -76,7 +76,7 @@ class UE9(Device):
     def __init__(self, debug = False, autoOpen = True, **kargs):
         """
         Name: UE9.__init__(self)
-        Args: debug, True for debug information
+        Args: debug is False, True (for stdout) or a logging.Logger
         Desc: Your basic constructor.
         
         >>> myUe9 = ue9.UE9()
@@ -1121,8 +1121,7 @@ class UE9(Device):
                 e = streamByteToInt(result[11+offset])
                 if e != 0:
                     errors += 1
-                    if self.debug:
-                        print(e)
+                    self._debugprint(e)
                 i+=1
 
             if len(result) == 0  and self.ethernet == False:

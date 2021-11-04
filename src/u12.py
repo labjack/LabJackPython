@@ -445,8 +445,7 @@ class U12(object):
         if _os_name == "nt":
             pass
         else:
-            if self.debug:
-                print("open called")
+            self._debugprint("open called")
             devType = ctypes.c_ulong(1)
             openDev = staticLib.LJUSB_OpenDevice
             openDev.restype = ctypes.c_void_p
@@ -537,8 +536,7 @@ class U12(object):
             if self.handle is None:
                 raise U12Exception("The U12's handle is None. Please open a U12 with open()")
 
-            if self.debug:
-                print("Writing: " + hexWithoutQuotes(writeBuffer))
+            self._debugprint("Writing: " + hexWithoutQuotes(writeBuffer))
             newA = (ctypes.c_byte*len(writeBuffer))(0)
             for i in range(len(writeBuffer)):
                 newA[i] = ctypes.c_byte(writeBuffer[i])
@@ -560,8 +558,7 @@ class U12(object):
             readBytes = staticLib.LJUSB_ReadTO(self.handle, ctypes.byref(newA), numBytes, timeout)
             # Return a list of integers in command-response mode
             result = [(newA[i] & 0xff) for i in range(readBytes)]
-            if self.debug:
-                print("Received: " + hexWithoutQuotes(result))
+            self._debugprint("Received: " + hexWithoutQuotes(result))
             return result
 
     # Low-level helpers
