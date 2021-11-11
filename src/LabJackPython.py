@@ -19,6 +19,7 @@ import ctypes  # import after socket or cygwin crashes "Aborted (core dump)"
 import errno
 import sys
 import threading  # For a thread-safe device lock
+import logging
 
 from struct import pack, unpack
 
@@ -271,6 +272,20 @@ class Device(object):
 
         return writeBuffer
 
+    def _debugprint(self, msg):
+        """Conditionally output msg.
+        
+        If self.debug is a logging.Logger object, send the msg to it with
+        DEBUG priority.  Otherwise, if self.debug is any truthy, just print
+        it to stdout.
+        """
+        
+        if self.debug:
+            if isinstance(self.debug, logging.Logger):
+                self.debug.debug(msg)
+            else:
+                print(msg)
+
     def write(self, writeBuffer, modbus = False, checksum = True):
         """write([writeBuffer], modbus = False)
 
@@ -293,8 +308,7 @@ class Device(object):
             elif _os_name == 'nt':
                 wb = self._writeToUDDriver(writeBuffer, modbus)
         
-        if self.debug:
-            print("Sent: " + hexWithoutQuotes(wb))
+        self._debugprint("Sent: " + hexWithoutQuotes(wb))
 
     def read(self, numBytes, stream = False, modbus = False):
         """read(numBytes, stream = False, modbus = False)
@@ -516,14 +530,12 @@ class Device(object):
             self.write(request, modbus = True, checksum = False)
             try:
                 result = self.read(numBytes, modbus = True)
-                if self.debug:
-                    print("Response: " + hexWithoutQuotes(result))
+                self._debugprint("Response: " + hexWithoutQuotes(result))
                 return result
             except LabJackException:
                 self.write(request, modbus = True, checksum = False)
                 result = self.read(numBytes, modbus = True)
-                if self.debug:
-                    print("Response: " + hexWithoutQuotes(result))
+                self._debugprint("Response: " + hexWithoutQuotes(result))
                 return result
 
     def _checkCommandBytes(self, results, commandBytes):
@@ -549,8 +561,7 @@ class Device(object):
             self.write(command, checksum = checksum)
             
             result = self.read(readLen, stream=False)
-            if self.debug:
-                print("Response: " + hexWithoutQuotes(result))
+            self._debugprint("Response: " + hexWithoutQuotes(result))
             if checkBytes:
                 self._checkCommandBytes(result, commandBytes)
                         
@@ -798,8 +809,8 @@ class Device(object):
                 e = streamByteToInt(result[11+(i*numBytes)])
                 if e != 0:
                     errors += 1
-                    if self.debug and e != 60 and e != 59:
-                        print(e)
+                    if e != 60 and e != 59:
+                        self._debugprint(e)
                     if e == 60:
                         missed += unpack('<I', result[6+(i*numBytes):10+(i*numBytes)])[0]
 
@@ -845,8 +856,7 @@ class Device(object):
         if name[1] == 3:
             # Old style string
             name = "My %s" % self.deviceName
-            if self.debug:
-                print("Old UTF-16 name detected, replacing with %s" % name)
+            self._debugprint("Old UTF-16 name detected, replacing with %s" % name)
             self.setName(name)
             name = name.decode("UTF-8")
         else:
@@ -855,8 +865,7 @@ class Device(object):
                 name = pack("B"*end, *name[:end]).decode("UTF-8")
             except ValueError:
                 name = "My %s" % self.deviceName
-                if self.debug:
-                    print("Invalid name detected, replacing with %s" % name)
+                self._debugprint("Invalid name detected, replacing with %s" % name)
                 self.setName(name)
                 name = name.decode("UTF-8")
         

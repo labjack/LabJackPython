@@ -73,7 +73,7 @@ class U3(Device):
         """
         Name: U3.__init__(debug = False, autoOpen = True, **openArgs)
 
-        Args: debug, enables debug output
+        Args: debug is False, True (for stdout) or a logging.Logger
               autoOpen, if true, the class will try to open a U3 using openArgs
               **openArgs, the arguments to pass to the open call. See U3.open()
         

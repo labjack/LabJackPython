@@ -188,7 +188,7 @@ class U6(Device):
     def __init__(self, debug = False, autoOpen = True, **kargs):
         """
         Name: U6.__init__(self, debug = False, autoOpen = True, **kargs)
-        Args: debug, Do you want debug information?
+        Args: debug is False, True (for stdout) or a logging.Logger
               autoOpen, If true, then the constructor will call open for you
               **kargs, The arguments to be passed to open.
         Desc: Your basic constructor.
@@ -1186,8 +1186,7 @@ class U6(Device):
         >>> myU6.calInfo
         <ainDiffOffset: -2.46886488446,...>
         """
-        if self.debug is True:
-            print("Calibration data retrieval")
+        self._debugprint("Calibration data retrieval")
 
         self.calInfo.nominal = False
 
