@@ -429,7 +429,7 @@ class U12(object):
             # Save some variables to save state.
             self.pwmAVoltage = 0
             self.pwmBVoltage = 0
-            self.IO3toIO0DirectionsAndStates = BitField(rawByte = 255)
+            self.IO3toIO0DirAndStates = BitField(rawByte = 240)
 
             self.open(id, serialNumber)
 
@@ -704,13 +704,15 @@ class U12(object):
         if bf.bit7 != 1 or bf.bit6 != 0:
             raise U12Exception("Expected a AIStream response, got %s instead." % results[0])
 
-        if bool(UpdateIO):
-            self.IO3toIO0DirectionsAndStates = BitField(rawByte = (int(self.IO3toIO0DirectionsAndStates) & 0xF0) | (int(IO3toIO0States) & 0x0F))
-
         returnDict = {}
         returnDict['EchoValue'] = results[1]
         returnDict['PGAOvervoltage'] = bool(bf.bit4)
         returnDict['IO3toIO0States'] = BitField(results[0], "IO", list(range(3, -1, -1)), "Low", "High")
+        if bool(UpdateIO):
+            self.IO3toIO0DirAndStates = BitField(rawByte = int(IO3toIO0States))
+        else:
+            self.IO3toIO0DirAndStates = BitField(rawByte = \
+                int(self.IO3toIO0DirAndStates) | int(returnDict['IO3toIO0States']))
 
         channel0 = (results[2] >> 4) & 0xf
         channel1 = (results[2] & 0xf)
@@ -837,9 +839,6 @@ class U12(object):
         if results[0] != 87:
             raise U12Exception("Expected a DIO response, got %s instead." % results[0])
 
-        if bool(UpdateDigital):
-            self.IO3toIO0DirectionsAndStates = BitField(rawByte = int(IO3toIO0DirectionsAndStates))
-
         returnDict['D15toD8States'] = BitField(results[1], "D", list(range(15, 7, -1)), "Low", "High")
         returnDict['D7toD0States'] = BitField(results[2], "D", list(range(7, -1, -1)), "Low", "High")
 
@@ -850,6 +849,11 @@ class U12(object):
         returnDict['D7toD0OutputLatchStates'] = BitField(results[7], "D", list(range(7, -1, -1)))
 
         returnDict['IO3toIO0States'] = BitField((results[3] >> 4), "IO", list(range(3, -1, -1)), "Low", "High")
+        if bool(UpdateDigital):
+            self.IO3toIO0DirAndStates = BitField(rawByte = int(IO3toIO0DirectionsAndStates))
+        else:
+            self.IO3toIO0DirAndStates = BitField(rawByte = \
+                int(self.IO3toIO0DirAndStates) | int(returnDict['IO3toIO0States']))
 
         return returnDict
 
@@ -1020,14 +1024,16 @@ class U12(object):
         self.write(command)
         results = self.read()
 
-        if bool(UpdateDigital):
-            self.IO3toIO0DirectionsAndStates = BitField(rawByte = int(IO3toIO0DirectionsAndStates))
-
         returnDict = {}
 
         returnDict['D15toD8States'] = BitField(results[1], "D", list(range(15, 7, -1)), "Low", "High")
         returnDict['D7toD0States'] = BitField(results[2], "D", list(range(7, -1, -1)), "Low", "High")
         returnDict['IO3toIO0States'] = BitField((results[3] >> 4), "IO", list(range(3, -1, -1)), "Low", "High")
+        if bool(UpdateDigital):
+            self.IO3toIO0DirAndStates = BitField(rawByte = int(IO3toIO0DirectionsAndStates))
+        else:
+            self.IO3toIO0DirAndStates = BitField(rawByte = \
+                int(self.IO3toIO0DirAndStates) | int(returnDict['IO3toIO0States']))
 
         counter = results[7]
         counter += results[6] << 8
@@ -1180,9 +1186,6 @@ class U12(object):
 
         self.write(command)
 
-        if bool(UpdateIO):
-            self.IO3toIO0DirectionsAndStates = BitField(rawByte = (int(self.IO3toIO0DirectionsAndStates) & 0xF0) | (int(IO3toIO0States) & 0x0F))
-
         resultsList = []
         for i in range(NumScans):
             resultsList.append(self.read())
@@ -1214,6 +1217,12 @@ class U12(object):
             returnDict['BufferOverflowOrChecksumErrors'].append(bool(bf.bit5))
             returnDict['PGAOvervoltages'].append(bool(bf.bit4))
             returnDict['IO3toIO0States'].append(BitField(results[0], "IO", list(range(3, -1, -1)), "Low", "High"))
+            if bool(UpdateIO):
+                self.IO3toIO0DirAndStates = BitField(rawByte = (int(IO3toIO0States)))
+            else:
+                self.IO3toIO0DirAndStates = BitField(rawByte = \
+                    int(self.IO3toIO0DirAndStates) | int(returnDict['IO3toIO0States']))
+
 
             returnDict['IterationCounters'].append((results[1] >> 5))
             returnDict['Backlogs'].append(results[1] & 0xf)
@@ -1279,7 +1288,7 @@ class U12(object):
         self.write(command)
 
         if bool(UpdateIO):
-            self.IO3toIO0DirectionsAndStates = BitField(rawByte = (int(self.IO3toIO0DirectionsAndStates) & 0xF0) | (int(IO3toIO0States) & 0x0F))
+            self.IO3toIO0DirAndStates = BitField(rawByte = (int(IO3toIO0States)))
 
         while True:
             results = self.read()
@@ -1913,12 +1922,12 @@ class U12(object):
         if results[5] != command[5]:
             raise U12Exception("Expected SHT1x response, got %s instead." % results[5])
 
-        self.IO3toIO0DirectionsAndStates.bit7 = int(bool(IO3Direction))
-        self.IO3toIO0DirectionsAndStates.bit6 = int(bool(IO2Direction))
-        self.IO3toIO0DirectionsAndStates.bit5 = 0
-        self.IO3toIO0DirectionsAndStates.bit4 = 1
-        self.IO3toIO0DirectionsAndStates.bit3 = int(bool(IO3State))
-        self.IO3toIO0DirectionsAndStates.bit2 = int(bool(IO2State))
+        self.IO3toIO0DirAndStates.bit7 = int(bool(IO3Direction))
+        self.IO3toIO0DirAndStates.bit6 = int(bool(IO2Direction))
+        self.IO3toIO0DirAndStates.bit5 = 0
+        self.IO3toIO0DirAndStates.bit4 = 1
+        self.IO3toIO0DirAndStates.bit3 = int(bool(IO3State))
+        self.IO3toIO0DirAndStates.bit2 = int(bool(IO2State))
 
         returnDict = dict()
         returnDict['DataByte3'] = results[0]
@@ -2062,29 +2071,37 @@ class U12(object):
 
             return {"idnum":ljid.value, "state":state.value}
         else:
-            oldstate = self.rawDIO()
+            DIOData = self.rawDIO()
+            IOBlockName = ''
+            chIndex = 9999
 
             if readD:
                 if channel > 7:
-                    channel = channel-8
-                    direction = BitField(rawByte = int(oldstate['D15toD8Directions']))
-                    direction[7-channel] = 1
-
-                    results = self.rawDIO(D15toD8Directions = direction, UpdateDigital = True)
-
-                    state = results['D15toD8States'][7-channel]
+                    IOBlockName = 'D15toD8' # Reading one of D15-D8
+                    chIndex = 15-channel # Data indexed [D15,D14,...,D8]
 
                 else:
-                    direction = BitField(rawByte = int(oldstate['D7toD0Directions']))
-                    direction[7-channel] = 1
-                    results = self.rawDIO(D7toD0Directions = direction, UpdateDigital = True)
+                    IOBlockName = 'D7toD0' # Reading one of D7-D0
+                    chIndex = 7-channel # Data indexed [D7,D6,...,D0]
 
-                    state = results['D7toD0States'][7-channel]
+                # Set the direction of the channel to 1 (input)
+                DIOData[IOBlockName+'Directions'][chIndex] = 1
+
             else:
-                self.IO3toIO0DirectionsAndStates[7-(channel+4)] = 1
-                results = self.rawDIO(IO3toIO0DirectionsAndStates = self.IO3toIO0DirectionsAndStates, UpdateDigital = True)
-                state = results['IO3toIO0States'][3-channel]
+                IOBlockName = 'IO3toIO0' # Reading one of IO3-IO0
+                chIndex = 3-channel # Data indexed [IO3,IO2,IO1,IO0]
+                # Set the direction of the channel to 1 (input)
+                self.IO3toIO0DirAndStates[chIndex] = 1
 
+            results = self.rawDIO(
+                D15toD8Directions = DIOData['D15toD8Directions'],
+                D7toD0Directions = DIOData['D7toD0Directions'],
+                D15toD8States = DIOData['D15toD8States'],
+                D7toD0States = DIOData['D7toD0States'],
+                IO3toIO0DirectionsAndStates = self.IO3toIO0DirAndStates,
+                UpdateDigital = True)
+            # Get the desired IO state
+            state = results[IOBlockName+'States'][chIndex]
             return {"idnum" : self.id, "state" : state}
 
     def eDigitalOut(self, channel, state, idNum = None, demo = 0, writeD=0):
@@ -2114,33 +2131,40 @@ class U12(object):
 
             return {"idnum":ljid.value}
         else:
-            oldstate = self.rawDIO()
+            DIOData = self.rawDIO()
+            IOBlockName = ''
+            chIndex = 9999
 
             if writeD:
                 if channel > 7:
-                    channel = channel-8
-                    direction = BitField(rawByte = int(oldstate['D15toD8Directions']))
-                    direction[7-channel] = 0
-
-                    states = BitField(rawByte = int(oldstate['D15toD8States']))
-                    states[7-channel] = state
-
-                    self.rawDIO(D15toD8Directions = direction, D15toD8States = states, UpdateDigital = True)
+                    IOBlockName = 'D15toD8' # Writing one of D15-D8
+                    chIndex = 15-channel # Data indexed [D15,D14,...,D8]
 
                 else:
-                    direction = BitField(rawByte = int(oldstate['D7toD0Directions']))
-                    direction[7-channel] = 0
+                    IOBlockName = 'D7toD0' # Writing one of D7-D0
+                    chIndex = 7-channel # Data indexed [D7,D6,...,D0]
 
-                    states = BitField(rawByte = int(oldstate['D7toD0States']))
-                    states[7-channel] = state
-
-                    self.rawDIO(D7toD0Directions = direction, D7toD0States = states, UpdateDigital = True)
+                # Set the direction of the channel to 0 (output)
+                DIOData[IOBlockName+'Directions'][chIndex] = 0
+                # Set the state of the channel
+                DIOData[IOBlockName+'States'][chIndex] = state
 
             else:
-                self.IO3toIO0DirectionsAndStates[7-(channel+4)] = 0
-                self.IO3toIO0DirectionsAndStates[7-channel] = state
-                self.rawDIO(IO3toIO0DirectionsAndStates = self.IO3toIO0DirectionsAndStates, UpdateDigital = True)
+                IOBlockName = 'IO3toIO0' # Reading one of IO3-IO0
+                chIndex = 3-channel # Data indexed [IO3,IO2,IO1,IO0]
+                # Set the direction of the channel to 0 (output)
+                self.IO3toIO0DirAndStates[chIndex] = 0
+                # Set the state of the channel
+                # Raw data looks like [IO3D,IO2D,IO1D,IO0D,IO3S,IO2S,IO1S,IO0S]
+                self.IO3toIO0DirAndStates[chIndex+4] = state
 
+            results = self.rawDIO(
+                D15toD8Directions = DIOData['D15toD8Directions'],
+                D7toD0Directions = DIOData['D7toD0Directions'],
+                D15toD8States = DIOData['D15toD8States'],
+                D7toD0States = DIOData['D7toD0States'],
+                IO3toIO0DirectionsAndStates = self.IO3toIO0DirAndStates,
+                UpdateDigital = True)
             return {"idnum" : self.id}
 
     def aiSample(self, numChannels, channels, idNum=None, demo=0, stateIOin=0, updateIO=0, ledOn=0, gains=[0, 0, 0, 0], disableCal=0):
