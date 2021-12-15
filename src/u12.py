@@ -837,8 +837,6 @@ class U12(object):
         self.write(command)
         results = self.read()
 
-        ioStates = results[3] >> 4
-
         returnDict = {}
 
         if results[0] != 87:
@@ -853,7 +851,7 @@ class U12(object):
         returnDict['D15toD8OutputLatchStates'] = BitField(results[6], "D", list(range(15, 7, -1)))
         returnDict['D7toD0OutputLatchStates'] = BitField(results[7], "D", list(range(7, -1, -1)))
 
-        returnDict['IO3toIO0States'] = BitField(ioStates, "IO", list(range(3, -1, -1)), "Low", "High")
+        returnDict['IO3toIO0States'] = BitField((results[3] >> 4), "IO", list(range(3, -1, -1)), "Low", "High")
         if bool(UpdateDigital):
             self.IO3toIO0DirAndStates = BitField(rawByte = int(IO3toIO0DirectionsAndStates))
         else:
