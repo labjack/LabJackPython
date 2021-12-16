@@ -2653,7 +2653,6 @@ def eTCValues(Handle, aReadTimers, aUpdateResetTimers, aReadCounters, aResetCoun
     else:
        raise LabJackException(0, "Function only supported for Windows")
 
-
 # To hold all the error codes and what they mean:
 ERROR_TO_STRING_DICT = dict()
 ERROR_TO_STRING_DICT['1'] = ("SCRATCH_WRT_FAIL", "")
