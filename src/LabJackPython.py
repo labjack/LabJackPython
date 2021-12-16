@@ -2344,6 +2344,314 @@ def StringToConstant(pString):
     else:
        raise LabJackException(0, "Function only supported for Windows")
 
+#Windows
+def eAIN(Handle, ChannelP, ChannelN=199, Range=0, Resolution=0, Settling=0, Binary=False):
+    """An easy function that returns a reading from one analog input.
+        
+    Windows Only
+
+    Sample Usage:
+    
+    >>> import LabJackPython as LJUD
+    >>> d = LJUD.openLabJack(LJUD.LJ_dtU3, LJUD.LJ_ctUSB, "0", 1)
+    >>> AIN1Val = LJUD.eAIN(d.handle, 1)
+
+    @type  Handle: number
+    @param Handle: Handle to the LabJack device.
+    @type  ChannelP: number
+    @param ChannelP: The positive AIN channel to acquire.
+    @type  ChannelN: number
+    @param ChannelN: The negative AIN channel to acquire.
+    @type  Range: number
+    @param Range: Input range setting. Ignored on the U3.
+    @type  Resolution: number
+    @param Resolution: See Datasheet Section 2.6 and the eAIN function reference.
+    @type  Settling: number
+    @param Settling: See Datasheet Section 2.6 and the eAIN function reference.
+    @type  Binary: boolean
+    @param Binary: Setting to True or a non-zero value will return 
+                   'Voltage' as a binary value.
+
+    @rtype: number
+    @return: Returns the analog input reading, which is generally a voltage.
+    
+    @raise LabJackException:
+    """
+    if _os_name == 'nt':
+        chp = ctypes.c_long(ChannelP)
+        chn = ctypes.c_long(ChannelN)
+        volts = ctypes.c_double()
+        rng = ctypes.c_long(Range)
+        res = ctypes.c_long(Resolution)
+        settling = ctypes.c_long(Settling)
+        binary = ctypes.c_long(Binary)
+        ec = staticLib.eAIN(Handle, chp, chn, ctypes.byref(volts), rng, res, settling, binary, 0, 0)
+        if ec != 0: raise LabJackException(ec)
+        return volts.value
+    else:
+       raise LabJackException(0, "Function only supported for Windows")
+
+#Windows
+def eDAC(Handle, Channel, Voltage, Binary=False):
+    """An easy function that writes a value to one analog output.
+        
+    Windows Only
+
+    Sample Usage:
+    
+    >>> import LabJackPython as LJUD
+    >>> d = LJUD.openLabJack(LJUD.LJ_dtU3, LJUD.LJ_ctUSB, "0", 1)
+    >>> channel = 1 # target DAC1
+    >>> voltage = 3.5   # Set the output to 3.5V
+    >>> LJUD.eDAC(d.handle, channel, voltage)
+
+    @type  Handle: number
+    @param Handle: Handle to the LabJack device.
+    @type  Channel: number
+    @param Channel: DAC channel number.
+    @type  Voltage: number
+    @param Voltage: Desired voltage to output.
+    @type  Binary: boolean
+    @param Binary: Setting to True or a non-zero value will pass 
+                   'Voltage' as a binary value.
+
+    @rtype: None
+    @return: Function returns nothing.
+    
+    @raise LabJackException:
+    """
+    if _os_name == 'nt':
+        ch = ctypes.c_long(Channel)
+        val = ctypes.c_double(Voltage)
+        binary = ctypes.c_long(Binary)
+        ec = staticLib.eDAC(Handle, ch, val, binary, 0, 0)
+        if ec != 0: raise LabJackException(ec)
+    else:
+       raise LabJackException(0, "Function only supported for Windows")
+
+#Windows
+def eDI(Handle, Channel):
+    """An easy function that reads the state of one digital input.
+        
+    Windows Only
+
+    Sample Usage:
+    
+    >>> import LabJackPython as LJUD
+    >>> d = LJUD.openLabJack(LJUD.LJ_dtU3, LJUD.LJ_ctUSB, "0", 1)
+    >>> FIO4State = LJUD.eDI(d.handle, 4)
+
+    @type  Handle: number
+    @param Handle: Handle to the LabJack device.
+    @type  Channel: number
+    @param Channel: DIO channel number.
+
+    @rtype: number
+    @return: Returns the state of the digital input. 0=False=Low, 1=True=High.
+    
+    @raise LabJackException:
+    """
+    if _os_name == 'nt':
+        ch = ctypes.c_long(Channel)
+        state = ctypes.c_long()
+        ec = staticLib.eDI(Handle, ch, ctypes.byref(state))
+        if ec != 0: raise LabJackException(ec)
+        return state.value
+    else:
+       raise LabJackException(0, "Function only supported for Windows")
+
+#Windows
+def eDO(Handle, Channel, State):
+    """An easy function that writes the state of one digital output.
+        
+    Windows Only
+
+    Sample Usage:
+    
+    >>> import LabJackPython as LJUD
+    >>> d = LJUD.openLabJack(LJUD.LJ_dtU3, LJUD.LJ_ctUSB, "0", 1)
+    >>> channel = 4 # target FIO4
+    >>> state = 1   # Set the state to 1
+    >>> LJUD.eDO(d.handle, channel, state)
+
+    @type  Handle: number
+    @param Handle: Handle to the LabJack device.
+    @type  Channel: number
+    @param Channel: DIO channel number.
+    @type  State: number
+    @param State: Desired state for the DIO.
+
+    @rtype: None
+    @return: Function returns nothing.
+    
+    @raise LabJackException:
+    """
+    if _os_name == 'nt':
+        ch = ctypes.c_long(Channel)
+        state = ctypes.c_long(State)
+        ec = staticLib.eDO(Handle, ch, state)
+        if ec != 0: raise LabJackException(ec)
+    else:
+       raise LabJackException(0, "Function only supported for Windows")
+
+def _convertListToCtypeArray(li, cType):
+    """Returns a ctypes list converted from a normal list."""
+    return (cType*len(li))(*li)
+
+#Windows
+def eTCConfig(Handle, aEnableTimers, aEnableCounters, TCPinOffset, TimerClockBaseIndex, TimerClockDivisor, aTimerModes, aTimerValues):
+    """An easy function that configures and initializes all the timers and counters.
+        
+    Windows Only
+
+    Sample Usage:
+    
+    >>> import LabJackPython as LJUD
+    >>> d = LJUD.openLabJack(LJUD.LJ_dtU3, LJUD.LJ_ctUSB, "0", 1)
+    >>> aEnableTimers = [1,0] # Enable Timer0
+    >>> aEnableCounters = [0,1] # Enable Counter1 (Counter0 unavailable when using clock with divisor)
+    >>> pinOffset = 4 # Put Timer0 on FIO4 (Counter1 will be on FIO5)
+    >>> clockBase = LJUD.LJ_tc48MHZ_DIV # 48MHz clock (allows divisor)
+    >>> clockDivisor = 2 # clock will be 24MHz. This will allow a 24MHz/65535 = 366.217Hz PWM16
+    >>> aTimerModes = [LJUD.LJ_tmPWM16, 0] # Set up PWM16
+    >>> aTimerValues = [32768, 0] # Set 50% duty on the PWM16
+    >>> LJUD.eTCConfig(d.handle, aEnableTimers, aEnableCounters, pinOffset, clockBase, clockDivisor, aTimerModes, aTimerValues)
+    >>> aReadTimers = [0,0]
+    >>> aUpdateResetTimers = [1,0] # Update Timer0
+    >>> aReadCounters = [0,1] # Read Counter1
+    >>> aResetCounters = [0,1] # Reset Counter1 after reading
+    >>> aTimerValues = [16384,0] # Set PWM16 duty cycle to 75%
+    >>> LJUD.eTCValues(d.handle, aReadTimers, aUpdateResetTimers, aReadCounters, aResetCounters, aTimerValues)
+
+    @type  Handle: number
+    @param Handle: Handle to the LabJack device.
+    @type  aEnableTimers: list
+    @param aEnableTimers: A list where each element specifies whether that timer is enabled.
+                          A nonzero value for a list element specifies to enable that timer. 
+                          List size must be equal to the number of timers available on the device.
+    @type  aEnableCounters: list
+    @param aEnableCounters: A list where each element specifies whether that counter is enabled.
+                            A nonzero value for a list element specifies to enable that counter. 
+                            List size must be equal to the number of counters available on the device.
+    @type  TCPinOffset: number
+    @param TCPinOffset: Value specifies where to start assigning timers and counters.
+    @type  TimerClockBaseIndex: number
+    @param TimerClockBaseIndex: Pass a constant to set the timer base clock. The default is device specific.
+    @type  TimerClockDivisor: number
+    @param TimerClockDivisor: Pass a divisor from 0-255 where 0 is a divisor of 256.
+    @type  aTimerModes: list
+    @param aTimerModes: A list where each element is a constant specifying the mode for that timer.
+                        List size must be equal to the number of timers available on the device.
+    @type  aTimerValues: list
+    @param aTimerValues: A list where each element is specifies the initial value for that timer.
+                         List size must be equal to the number of timers available on the device.
+
+    @rtype: None
+    @return: Function returns nothing.
+    
+    @raise LabJackException:
+    """
+    if _os_name == 'nt':
+        numTimers = len(aEnableTimers)
+        if numTimers != len(aTimerModes) or numTimers != len(aTimerValues):
+            raise Exception("eTCConfig: Inconsistent timer list sizes. Timer list sizes must equal the number of timers on the device")
+        for i in range(numTimers):
+            if not isinstance(aEnableTimers[i], int):
+                raise TypeError("aEnableTimers Expected an integer list but found an item " + str(type(aEnableTimers[i])) + ".")
+            if not isinstance(aTimerModes[i], int):
+                raise TypeError("aEnableTimers Expected an integer list but found an item " + str(type(aTimerModes[i])) + ".")
+            if not isinstance(aTimerValues[i], int):
+                raise TypeError("aEnableTimers Expected an integer list but found an item " + str(type(aTimerValues[i])) + ".")
+
+        for x in aEnableCounters:
+            if not isinstance(x, int):
+                raise TypeError("aEnableCounters Expected an integer list but found an item " + str(type(x)) + ".")
+
+        enTimers = _convertListToCtypeArray(aEnableTimers, ctypes.c_long)
+        enCounters = _convertListToCtypeArray(aEnableCounters, ctypes.c_long)
+        pinOffset = ctypes.c_long(TCPinOffset)
+        clockBase = ctypes.c_long(TimerClockBaseIndex)
+        clockDivisor = ctypes.c_long(TimerClockDivisor)
+        tModes = _convertListToCtypeArray(aTimerModes, ctypes.c_long)
+        tVals = _convertListToCtypeArray(aTimerValues, ctypes.c_double)
+        ec = staticLib.eTCConfig(Handle, ctypes.byref(enTimers), ctypes.byref(enCounters), pinOffset, clockBase, clockDivisor, ctypes.byref(tModes), ctypes.byref(tVals), 0, 0)
+        if ec != 0: raise LabJackException(ec)
+    else:
+       raise LabJackException(0, "Function only supported for Windows")
+
+def _convertCtypeArrayToList(listCtype):
+    """Returns a normal list from a ctypes list."""
+    return listCtype[:]
+
+#Windows
+def eTCValues(Handle, aReadTimers, aUpdateResetTimers, aReadCounters, aResetCounters, aTimerValues):
+    """An easy function that updates and reads all the timers and counters. 
+        
+    Windows Only
+
+    For sample usage, see the eTCConfig definition.
+
+    @type  Handle: number
+    @param Handle: Handle to the LabJack device.
+    @type  aReadTimers: list
+    @param aReadTimers: A list where each element specifies whether to read that timer.
+                        A nonzero value for a list element specifies to read that timer. 
+    @type  aUpdateResetTimers: list
+    @param aUpdateResetTimers: A list where each element specifies whether to update/reset that timer.
+                               A nonzero value for a list element specifies to update/reset that timer.
+    @type  aReadCounters: list
+    @param aReadCounters: A list where each element specifies whether to read that counter.
+                          A nonzero value for a list element specifies to read that counter. 
+    @type  aResetCounters: list
+    @param aResetCounters: A list where each element specifies whether to reset that counter.
+                           A nonzero value for a list element specifies to reset that counter.
+    @type  aTimerValues: list
+    @param aTimerValues: A list where each element is specifies the initial value for that timer.
+                         List size must be equal to the number of timers available on the device.
+
+    @rtype: Tuple
+    @return: The tuple (aTimerValues, aCounterValues)
+        - aTimerValues: List where each element is the value read from that timer if the appropriate element is set in the aReadTimers array.
+        - aCounterValues: List where each element is the value read from that counter if the appropriate element is set in the aReadCounters array.
+    
+    @raise LabJackException:
+    """
+    if _os_name == 'nt':
+        numTimers = len(aReadTimers)
+        numCounters = len(aReadCounters)
+
+        if numTimers != len(aUpdateResetTimers) or numTimers != len(aTimerValues):
+            raise Exception("eTCConfig: Inconsistent timer list sizes. Timer list sizes must equal the number of timers on the device")
+        for i in range(numTimers):
+            if not isinstance(aReadTimers[i], int):
+                raise TypeError("aEnableTimers Expected an integer list but found an item " + str(type(aReadTimers[i])) + ".")
+            if not isinstance(aUpdateResetTimers[i], int):
+                raise TypeError("aEnableTimers Expected an integer list but found an item " + str(type(aUpdateResetTimers[i])) + ".")
+            if not isinstance(aTimerValues[i], int):
+                raise TypeError("aEnableTimers Expected an integer list but found an item " + str(type(aTimerValues[i])) + ".")
+
+        if numCounters != len(aResetCounters):
+            raise Exception("eTCConfig: Inconsistent counter list sizes. Counter list sizes must equal the number of Counters on the device")
+        for i in range(numCounters):
+            if not isinstance(aReadCounters[i], int):
+                raise TypeError("aEnableCounters Expected an integer list but found an item " + str(type(aReadCounters[i])) + ".")
+            if not isinstance(aResetCounters[i], int):
+                raise TypeError("aEnableCounters Expected an integer list but found an item " + str(type(aResetCounters[i])) + ".")
+
+        readTimers = _convertListToCtypeArray(aReadTimers, ctypes.c_long)
+        updateTimers = _convertListToCtypeArray(aUpdateResetTimers, ctypes.c_long)
+        readCounters = _convertListToCtypeArray(aReadCounters, ctypes.c_long)
+        resetCounters = _convertListToCtypeArray(aResetCounters, ctypes.c_long)
+        timerValues = _convertListToCtypeArray(aTimerValues, ctypes.c_double)
+        aCounterValues = (ctypes.c_double*numCounters)()
+        counterValues = _convertListToCtypeArray(aCounterValues, ctypes.c_double)
+        ec = staticLib.eTCValues(Handle, ctypes.byref(readTimers), ctypes.byref(updateTimers), ctypes.byref(readCounters), ctypes.byref(resetCounters), ctypes.byref(timerValues), ctypes.byref(counterValues), 0, 0)
+        if ec != 0: raise LabJackException(ec)
+        tVals = _convertCtypeArrayToList(timerValues)
+        cVals = _convertCtypeArrayToList(counterValues)
+        return tVals, cVals
+    else:
+       raise LabJackException(0, "Function only supported for Windows")
 
 # To hold all the error codes and what they mean:
 ERROR_TO_STRING_DICT = dict()
