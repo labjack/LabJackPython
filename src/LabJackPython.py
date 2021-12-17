@@ -2401,7 +2401,7 @@ def eDAC(Handle, Channel, Voltage, Binary=False):
     
     >>> import LabJackPython as LJUD
     >>> d = LJUD.openLabJack(LJUD.LJ_dtU3, LJUD.LJ_ctUSB, "0", 1)
-    >>> channel = 1 # target DAC1
+    >>> channel = 1 # Target DAC1
     >>> voltage = 3.5   # Set the output to 3.5V
     >>> LJUD.eDAC(d.handle, channel, voltage)
 
@@ -2470,7 +2470,7 @@ def eDO(Handle, Channel, State):
     
     >>> import LabJackPython as LJUD
     >>> d = LJUD.openLabJack(LJUD.LJ_dtU3, LJUD.LJ_ctUSB, "0", 1)
-    >>> channel = 4 # target FIO4
+    >>> channel = 4 # Target FIO4
     >>> state = 1   # Set the state to 1
     >>> LJUD.eDO(d.handle, channel, state)
 
@@ -2512,7 +2512,7 @@ def eTCConfig(Handle, aEnableTimers, aEnableCounters, TCPinOffset, TimerClockBas
     >>> aEnableCounters = [0,1] # Enable Counter1 (Counter0 unavailable when using clock with divisor)
     >>> pinOffset = 4 # Put Timer0 on FIO4 (Counter1 will be on FIO5)
     >>> clockBase = LJUD.LJ_tc48MHZ_DIV # 48MHz clock (allows divisor)
-    >>> clockDivisor = 2 # clock will be 24MHz. This will allow a 24MHz/65535 = 366.217Hz PWM16
+    >>> clockDivisor = 2 # Clock will be 24MHz. This will allow a 24MHz/65535 = 366.217Hz PWM16
     >>> aTimerModes = [LJUD.LJ_tmPWM16, 0] # Set up PWM16
     >>> aTimerValues = [32768, 0] # Set 50% duty on the PWM16
     >>> LJUD.eTCConfig(d.handle, aEnableTimers, aEnableCounters, pinOffset, clockBase, clockDivisor, aTimerModes, aTimerValues)
@@ -2555,17 +2555,6 @@ def eTCConfig(Handle, aEnableTimers, aEnableCounters, TCPinOffset, TimerClockBas
         numTimers = len(aEnableTimers)
         if numTimers != len(aTimerModes) or numTimers != len(aTimerValues):
             raise Exception("eTCConfig: Inconsistent timer list sizes. Timer list sizes must equal the number of timers on the device")
-        for i in range(numTimers):
-            if not isinstance(aEnableTimers[i], int):
-                raise TypeError("aEnableTimers Expected an integer list but found an item " + str(type(aEnableTimers[i])) + ".")
-            if not isinstance(aTimerModes[i], int):
-                raise TypeError("aEnableTimers Expected an integer list but found an item " + str(type(aTimerModes[i])) + ".")
-            if not isinstance(aTimerValues[i], int):
-                raise TypeError("aEnableTimers Expected an integer list but found an item " + str(type(aTimerValues[i])) + ".")
-
-        for x in aEnableCounters:
-            if not isinstance(x, int):
-                raise TypeError("aEnableCounters Expected an integer list but found an item " + str(type(x)) + ".")
 
         enTimers = _convertListToCtypeArray(aEnableTimers, ctypes.c_long)
         enCounters = _convertListToCtypeArray(aEnableCounters, ctypes.c_long)
@@ -2621,22 +2610,9 @@ def eTCValues(Handle, aReadTimers, aUpdateResetTimers, aReadCounters, aResetCoun
         numCounters = len(aReadCounters)
 
         if numTimers != len(aUpdateResetTimers) or numTimers != len(aTimerValues):
-            raise Exception("eTCConfig: Inconsistent timer list sizes. Timer list sizes must equal the number of timers on the device")
-        for i in range(numTimers):
-            if not isinstance(aReadTimers[i], int):
-                raise TypeError("aEnableTimers Expected an integer list but found an item " + str(type(aReadTimers[i])) + ".")
-            if not isinstance(aUpdateResetTimers[i], int):
-                raise TypeError("aEnableTimers Expected an integer list but found an item " + str(type(aUpdateResetTimers[i])) + ".")
-            if not isinstance(aTimerValues[i], int):
-                raise TypeError("aEnableTimers Expected an integer list but found an item " + str(type(aTimerValues[i])) + ".")
-
+            raise Exception("eTCValues: Inconsistent timer list sizes. Timer list sizes must equal the number of timers on the device")
         if numCounters != len(aResetCounters):
-            raise Exception("eTCConfig: Inconsistent counter list sizes. Counter list sizes must equal the number of Counters on the device")
-        for i in range(numCounters):
-            if not isinstance(aReadCounters[i], int):
-                raise TypeError("aEnableCounters Expected an integer list but found an item " + str(type(aReadCounters[i])) + ".")
-            if not isinstance(aResetCounters[i], int):
-                raise TypeError("aEnableCounters Expected an integer list but found an item " + str(type(aResetCounters[i])) + ".")
+            raise Exception("eTCValues: Inconsistent counter list sizes. Counter list sizes must equal the number of Counters on the device")
 
         readTimers = _convertListToCtypeArray(aReadTimers, ctypes.c_long)
         updateTimers = _convertListToCtypeArray(aUpdateResetTimers, ctypes.c_long)
