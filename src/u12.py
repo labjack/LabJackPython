@@ -433,6 +433,20 @@ class U12(object):
 
             self.open(id, serialNumber)
 
+    def _debugprint(self, msg):
+        """Conditionally output msg.
+        
+        If self.debug is a logging.Logger object, send the msg to it with
+        DEBUG priority.  Otherwise, if self.debug is any truthy, just print
+        it to stdout.
+        """
+        
+        if self.debug:
+            if isinstance(self.debug, logging.Logger):
+                self.debug.debug(msg)
+            else:
+                print(msg)
+
     def open(self, id = -1, serialNumber = None):
         """
         Opens the U12.
