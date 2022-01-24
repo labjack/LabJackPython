@@ -655,7 +655,7 @@ class Device(object):
         On Windows, this method only sets the device handle to None but does
         not close the device. Instead use the Close function from the
         LabJackPython module which closes all devices in the program, and is
-        the only close functionality in the Windows UD driver.
+        the only device close function in the Windows UD driver.
 
         On Linux and Mac, this function MUST be performed when finished with a
         device. The reason for this close is so there cannot be more than one
