@@ -650,13 +650,18 @@ class Device(object):
         """
         close()
 
-        This function is not specifically supported in the LabJackUD driver
-        for Windows and so simply calls the UD function Close.  For Mac and unix
-        drivers, this function MUST be performed when finished with a device.
-        The reason for this close is because there can not be more than one program
-        with a given device open at a time.  If a device is not closed before
-        the program is finished it may still be held open and unable to be used
-        by other programs until properly closed.
+        Closes the device.
+
+        On Windows, this method only sets the device handle to None but does
+        not close the device. Instead use the Close function from the
+        LabJackPython module which closes all devices in the program, and is
+        the only close functionality in the Windows UD driver.
+
+        On Linux and Mac, this function MUST be performed when finished with a
+        device. The reason for this close is so there cannot be more than one
+        program with a given device open at a time. If a device is not closed
+        before the program is finished it may still be held open and unable to
+        be used by other programs until properly closed.
 
         For Windows, Linux, and Mac
         """
