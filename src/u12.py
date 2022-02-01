@@ -752,7 +752,7 @@ class U12(object):
         """
         Name: U12.rawDIO(D15toD8Directions = 0, D7toD0Directions = 0,
                          D15toD8States = 0, D7toD0States = 0,
-                         IO3toIO0DirectionsAndStates = 0, UpdateDigital = 1)
+                         IO3toIO0DirectionsAndStates = 0, UpdateDigital = False)
 
         Args: D15toD8Directions, A byte where 0 = Output, 1 = Input for D15-8
               D7toD0Directions, A byte where 0 = Output, 1 = Input for D7-0
@@ -864,11 +864,14 @@ class U12(object):
         returnDict['D7toD0OutputLatchStates'] = BitField(results[7], "D", list(range(7, -1, -1)))
 
         returnDict['IO3toIO0States'] = BitField((results[3] >> 4), "IO", list(range(3, -1, -1)), "Low", "High")
+        
+        # Update the current IO directions (when applicable) and states.
         if bool(UpdateDigital):
-            self.IO3toIO0DirAndStates = BitField(rawByte = int(IO3toIO0DirectionsAndStates))
+            self.IO3toIO0DirAndStates = BitField(rawByte = \
+                (int(IO3toIO0DirectionsAndStates) & 0xF0) | int(returnDict['IO3toIO0States']))
         else:
             self.IO3toIO0DirAndStates = BitField(rawByte = \
-                int(self.IO3toIO0DirAndStates) | int(returnDict['IO3toIO0States']))
+                (int(self.IO3toIO0DirAndStates) & 0xF0) | int(returnDict['IO3toIO0States']))
 
         return returnDict
 
@@ -1844,7 +1847,7 @@ class U12(object):
               IO3State, sets the state of IO3
               IO2State, sets the state of IO2
               IO3Direction, sets the direction of IO3 ( 1 = Output )
-              IO2Direction, sets the direction of IO3 ( 1 = Output )
+              IO2Direction, sets the direction of IO2 ( 1 = Output )
               NumberOfBytesToWrite, how many bytes to write
               NumberOfBytesToRead, how may bytes to read back
 
