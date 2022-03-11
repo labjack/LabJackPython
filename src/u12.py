@@ -704,7 +704,7 @@ class U12(object):
         bf.bit7 = 1
         bf.bit6 = 1
 
-        bf.fromByte( int(bf) | int(IO3toIO0States) )
+        bf.fromByte( int(bf) | (int(IO3toIO0States) & 0xF) )
         command[5] = int(bf)
 
         command[7] = EchoValue
@@ -723,11 +723,11 @@ class U12(object):
         returnDict['EchoValue'] = results[1]
         returnDict['PGAOvervoltage'] = bool(bf.bit4)
         returnDict['IO3toIO0States'] = BitField(results[0], "IO", list(range(3, -1, -1)), "Low", "High")
+
+        # Update the current IO states.
         if bool(UpdateIO):
-            self.IO3toIO0DirAndStates = BitField(rawByte = int(IO3toIO0States))
-        else:
             self.IO3toIO0DirAndStates = BitField(rawByte = \
-                int(self.IO3toIO0DirAndStates) | int(returnDict['IO3toIO0States']))
+                (int(self.IO3toIO0DirAndStates) & 0xF0) | int(IO3toIO0States & 0x0F))
 
         channel0 = (results[2] >> 4) & 0xf
         channel1 = (results[2] & 0xf)
@@ -865,13 +865,9 @@ class U12(object):
 
         returnDict['IO3toIO0States'] = BitField((results[3] >> 4), "IO", list(range(3, -1, -1)), "Low", "High")
         
-        # Update the current IO directions (when applicable) and states.
+        # Update the current IO directions and states.
         if bool(UpdateDigital):
-            self.IO3toIO0DirAndStates = BitField(rawByte = \
-                (int(IO3toIO0DirectionsAndStates) & 0xF0) | int(returnDict['IO3toIO0States']))
-        else:
-            self.IO3toIO0DirAndStates = BitField(rawByte = \
-                (int(self.IO3toIO0DirAndStates) & 0xF0) | int(returnDict['IO3toIO0States']))
+            self.IO3toIO0DirAndStates = BitField(rawByte = (int(IO3toIO0DirectionsAndStates) & 0xFF))
 
         return returnDict
 
@@ -1047,11 +1043,10 @@ class U12(object):
         returnDict['D15toD8States'] = BitField(results[1], "D", list(range(15, 7, -1)), "Low", "High")
         returnDict['D7toD0States'] = BitField(results[2], "D", list(range(7, -1, -1)), "Low", "High")
         returnDict['IO3toIO0States'] = BitField((results[3] >> 4), "IO", list(range(3, -1, -1)), "Low", "High")
+
+        # Update the current IO directions and states.
         if bool(UpdateDigital):
-            self.IO3toIO0DirAndStates = BitField(rawByte = int(IO3toIO0DirectionsAndStates))
-        else:
-            self.IO3toIO0DirAndStates = BitField(rawByte = \
-                int(self.IO3toIO0DirAndStates) | int(returnDict['IO3toIO0States']))
+            self.IO3toIO0DirAndStates = BitField(rawByte = (int(IO3toIO0DirectionsAndStates) & 0xFF))
 
         counter = results[7]
         counter += results[6] << 8
@@ -1103,7 +1098,7 @@ class U12(object):
               responses. Separating the write and read is not currently
               supported (like in the UW driver).
 
-              By default, it does single-ended readings on AI0-4 at 100Hz for 8
+              By default, it does single-ended readings on AI0-3 at 100Hz for 8
               scans.
 
         Returns: A dictionary with the following keys:
@@ -1195,7 +1190,7 @@ class U12(object):
         if SampleInterval < 733:
             raise U12Exception("SampleInterval must be greater than 733.")
 
-        bf3 = BitField( rawByte = ((SampleInterval >> 8) & 0xf) )
+        bf3 = BitField( rawByte = ((SampleInterval >> 8) & 0x3f) )
         bf3.bit7 = int(bool(FeatureReports))
         bf3.bit6 = int(bool(TriggerOn))
         command[6] = int(bf3)
@@ -1204,10 +1199,13 @@ class U12(object):
 
         self.write(command)
 
+        # Don't read until after data is acquired.
+        scanRate = 6000000.0 / (SampleInterval * 4)
+        time.sleep((0.002 + (NumScans/scanRate)))
+
         resultsList = []
         for i in range(NumScans):
             resultsList.append(self.read())
-
 
         returnDict = {}
 
@@ -1235,12 +1233,6 @@ class U12(object):
             returnDict['BufferOverflowOrChecksumErrors'].append(bool(bf.bit5))
             returnDict['PGAOvervoltages'].append(bool(bf.bit4))
             returnDict['IO3toIO0States'].append(BitField(results[0], "IO", list(range(3, -1, -1)), "Low", "High"))
-            if bool(UpdateIO):
-                self.IO3toIO0DirAndStates = BitField(rawByte = (int(IO3toIO0States)))
-            else:
-                self.IO3toIO0DirAndStates = BitField(rawByte = \
-                    int(self.IO3toIO0DirAndStates) | int(returnDict['IO3toIO0States']))
-
 
             returnDict['IterationCounters'].append((results[1] >> 5))
             returnDict['Backlogs'].append(results[1] & 0xf)
@@ -1262,9 +1254,12 @@ class U12(object):
             channel3 = (channel3 << 8) + results[7]
             returnDict['Channel3'].append(self.bitsToVolts(channel3Number, channel3Gain, channel3))
 
+        # Update the current IO states.
+        if bool(UpdateIO):
+            self.IO3toIO0DirAndStates = BitField(rawByte = \
+                (int(self.IO3toIO0DirAndStates) & 0xF0) | (int(IO3ToIO0States) & 0x0F))
+
         return returnDict
-
-
 
     def rawAIContinuous(self, channel0PGAMUX = 8, channel1PGAMUX = 9, channel2PGAMUX = 10, channel3PGAMUX = 11, FeatureReports = False, CounterRead = False, UpdateIO = False, LEDState = True, IO3ToIO0States = 0, SampleInterval = 15000):
         """
@@ -1305,8 +1300,10 @@ class U12(object):
 
         self.write(command)
 
+        # Update the current IO states.
         if bool(UpdateIO):
-            self.IO3toIO0DirAndStates = BitField(rawByte = (int(IO3toIO0States)))
+            self.IO3toIO0DirAndStates = BitField(rawByte = \
+                (int(self.IO3toIO0DirAndStates) & 0xF0) | (int(IO3ToIO0States) & 0x0F))
 
         while True:
             results = self.read()
@@ -1316,7 +1313,6 @@ class U12(object):
             returnDict['Byte0'] = byte0bf
             returnDict['IterationCounter'] = (results[1] >> 5)
             returnDict['Backlog'] = results[1] & 0xf
-
 
             yield returnDict
 
@@ -1906,8 +1902,8 @@ class U12(object):
             if not isinstance(Data, list) or len(Data) > 4:
                 raise U12Exception("Data wasn't a list, or was too long.")
 
-            Data.reverse()
-            command[:len(Data)] = Data
+            padData = [0]*(4-len(Data))
+            command[:4] = padData + Data[::-1]
 
         if max(NumberOfBytesToWrite, NumberOfBytesToRead) > 4:
             raise U12Exception("Can only read/write up to 4 bytes at a time.")
@@ -1946,6 +1942,7 @@ class U12(object):
         self.IO3toIO0DirAndStates.bit4 = 1
         self.IO3toIO0DirAndStates.bit3 = int(bool(IO3State))
         self.IO3toIO0DirAndStates.bit2 = int(bool(IO2State))
+        self.IO3toIO0DirAndStates.bit1 = 0
 
         returnDict = dict()
         returnDict['DataByte3'] = results[0]
@@ -2061,9 +2058,9 @@ class U12(object):
             return {"idnum":self.id, "count":results['Counter'], "ms": (time.time() * 1000)}
 
 
-    def eDigitalIn(self, channel, idNum = None, demo = 0, readD=0):
+    def eDigitalIn(self, channel, idNum = None, demo = 0, readD = 0):
         """
-        Name: U12.eDigitalIn(channel, idNum = None, demo = 0, readD=0)
+        Name: U12.eDigitalIn(channel, idNum = None, demo = 0, readD = 0)
         Args: See section 4.4 of the User's Guide
         Desc: This is a simplified version of DigitalIO that reads the state of
               one digital input. Also configures the requested pin to input and
@@ -2097,7 +2094,6 @@ class U12(object):
                 if channel > 7:
                     IOBlockName = 'D15toD8' # Reading one of D15-D8
                     chIndex = 15-channel # Data indexed [D15,D14,...,D8]
-
                 else:
                     IOBlockName = 'D7toD0' # Reading one of D7-D0
                     chIndex = 7-channel # Data indexed [D7,D6,...,D0]
@@ -2122,9 +2118,9 @@ class U12(object):
             state = results[IOBlockName+'States'][chIndex]
             return {"idnum" : self.id, "state" : state}
 
-    def eDigitalOut(self, channel, state, idNum = None, demo = 0, writeD=0):
+    def eDigitalOut(self, channel, state, idNum = None, demo = 0, writeD = 0):
         """
-        Name: U12.eDigitalOut(channel, state, idNum = None, demo = 0, writeD=0)
+        Name: U12.eDigitalOut(channel, state, idNum = None, demo = 0, writeD = 0)
         Args: See section 4.5 of the User's Guide
         Desc: This is a simplified version of DigitalIO that sets/clears the
               state of one digital output. Also configures the requested pin to
