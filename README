@@ -3,7 +3,7 @@ examples for the LabJack U3, U6, UE9 and U12.
 09/09/2020
 support@labjack.com
 
-LabJackPython requires Python 2.6, 2.7 or 3.x. Please report bugs to
+LabJackPython requires Python 2.7 or 3.x. Please report bugs to
 support@labjack.com or on GitHub:
 
     https://github.com/labjack/LabJackPython

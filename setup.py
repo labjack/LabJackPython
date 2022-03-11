@@ -4,8 +4,8 @@ try:
 except ImportError:
     from distutils.core import setup
 
-if sys.version_info[:2] < (2, 6):
-    msg = ("LabJackPython requires Python 2.6 or later. "
+if sys.version_info[:2] < (2, 7):
+    msg = ("LabJackPython requires Python 2.7 or later. "
            "You are using version %s.  Please "
            "install using a supported version." % sys.version)
     sys.stderr.write(msg)
@@ -21,7 +21,6 @@ CLASSIFIERS = [
     'Operating System :: POSIX :: Linux',
     'Programming Language :: Python',
     'Programming Language :: Python :: 2',
-    'Programming Language :: Python :: 2.6',
     'Programming Language :: Python :: 2.7',
     'Programming Language :: Python :: 3',
     'Programming Language :: Python :: 3.3',
