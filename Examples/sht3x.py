@@ -32,13 +32,13 @@ def checkAck(numBytesSent, ackArray):
 
 # Comment and uncomment the code below based on the LabJack you are using.
 # By default the U3 is opened.
-# dev = u3.U3()  # Opens first found U3 over USB
+dev = u3.U3()  # Opens first found U3 over USB
 # dev = u6.U6()  # Opens first found U6 over USB
-dev = ue9.UE9()  # Opens first found UE9 over USB
+# dev = ue9.UE9()  # Opens first found UE9 over USB
 
 # SHT3x address. This could be 0x45 depending on the address pin voltage
-SHT3X_ADDRESS = 0x44 # 0x44 indicates the ADDR pin is connected to a logic low
-SPEED_THROTTLE = 20 # Use a roughly 70kHz clock speed
+SHT3X_ADDRESS = 0x44  # 0x44 indicates the ADDR pin is connected to a logic low
+SPEED_THROTTLE = 20  # Use a roughly 70kHz clock speed
 
 # SCL, SDA, and power pin numbers that the SHT3x are connected to.
 if dev.devType == 3:
