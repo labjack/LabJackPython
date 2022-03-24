@@ -2601,7 +2601,7 @@ class U12(object):
 
     def getFirmwareVersion(self, idNum=None):
         """
-        Name: U12.getErrorString(idnum=None)
+        Name: U12.getFirmwareVersion(idnum=None)
         Args: See section 4.20 of the User's Guide
         Desc: Retrieves the firmware version from the LabJack's processor
 
@@ -2623,7 +2623,7 @@ class U12(object):
 
     def getWinVersion(self):
         """
-        Name: U12.getErrorString()
+        Name: U12.getWinVersion()
         Args: See section 4.21 of the User's Guide
         Desc: Uses a Windows API function to get the OS version
 
