@@ -338,4 +338,4 @@ Version History
     - Updated the Device close method documentation for Windows clarification.
     - U12 bug fixes for the rawAISample, rawAIBurst and rawSHT1X methods.
     - Removed Python 2.6 support.
-    - Fixed the getName method for Python 3 compatibility.
+    - Fixed the setName method for Python 3 compatibility.
