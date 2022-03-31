@@ -908,7 +908,7 @@ class Device(object):
             bl = bl + [0x00]
             strLen += 1
         
-        bl = unpack(">"+"H"*(strLen/2), pack("B" * strLen, *bl))
+        bl = unpack(">"+"H"*(strLen//2), pack("B" * strLen, *bl))
         
         self.writeRegister(58000, list(bl))
 
