@@ -878,7 +878,7 @@ class UE9(Device):
         Args: None
         Desc: Clears the streaming data on the stream USB endpoint or TCP socket
               that was left over from a previous stream.
-        Note: Use before and/or after streaming.  Timeout delay can occur occur.
+        Note: Use before and/or after streaming.  Timeout delay can occur.
         """
         try:
             for i in range(10):
