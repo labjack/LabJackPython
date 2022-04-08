@@ -339,3 +339,4 @@ Version History
     - U12 bug fixes for the rawAISample, rawAIBurst and rawSHT1X methods.
     - Removed Python 2.6 support.
     - Fixed the setName method for Python 3 compatibility.
+    - Fixed some Python 3 related bugs in the getName method.

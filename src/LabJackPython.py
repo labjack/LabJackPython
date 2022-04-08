@@ -850,20 +850,21 @@ class Device(object):
               U6 - 1.00
               U3 - 1.22
               UE9 - 2.00
-        
+
         >>> d = u3.U3()
         >>> d.open()
         >>> d.getName()
         u'My LabJack U3'
         """
         name = list(self.readRegister(58000, format='B'*48, numReg = 24))
-        
+
         if name[1] == 3:
             # Old style string
             name = "My %s" % self.deviceName
             self._debugprint("Old UTF-16 name detected, replacing with %s" % name)
             self.setName(name)
-            name = name.decode("UTF-8")
+            if _use_py2:
+                name = name.decode("UTF-8")
         else:
             try:
                 end = name.index(0x00)
@@ -872,8 +873,9 @@ class Device(object):
                 name = "My %s" % self.deviceName
                 self._debugprint("Invalid name detected, replacing with %s" % name)
                 self.setName(name)
-                name = name.decode("UTF-8")
-        
+                if _use_py2:
+                    name = name.decode("UTF-8")
+
         return name
         
     def setName(self, name = "My LabJack U3"):
