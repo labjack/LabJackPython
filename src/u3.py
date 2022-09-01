@@ -1124,39 +1124,40 @@ class U3(Device):
 
         numChannels = len(self.streamChannelNumbers)
 
-        for packet in self.breakupPackets(result, numBytes):
-            for sample in self.samplesFromPacket(packet):
-                if self.streamPacketOffset >= numChannels:
-                    self.streamPacketOffset = 0
+        if self.streamPacketOffset >= numChannels:
+            self.streamPacketOffset = 0
 
-                if self.streamChannelNumbers[self.streamPacketOffset] in (193, 194):
-                    value = unpack('<BB', sample)
-                elif self.streamChannelNumbers[self.streamPacketOffset] >= 200:
-                    value = unpack('<H', sample)[0]
+        all_samples = [x for packet in self.breakupPackets(result, numBytes) for x in self.samplesFromPacket(packet)]
+        for i in range(numChannels):
+            packed_values = all_samples[i::numChannels]
+            channelIndex = (self.streamPacketOffset + i) % numChannels
+
+            if self.streamChannelNumbers[channelIndex] in (193, 194):
+                values = [unpack('<BB', sample) for sample in packed_values]
+            elif self.streamChannelNumbers[channelIndex] >= 200:
+                values = [unpack('<H', sample)[0] for sample in packed_values]
+            else:
+                values = [unpack('<H', sample)[0] for sample in packed_values]
+                if self.streamNegChannels[channelIndex] == 31:
+                    # do unsigned
+                    singleEnded = True
                 else:
-                    if self.streamNegChannels[self.streamPacketOffset] == 31:
-                        # do unsigned
-                        value = unpack('<H', sample)[0]
-                        singleEnded = True
-                    else:
-                        # do signed
-                        value = unpack('<H', sample)[0]
-                        singleEnded = False
+                    # do signed
+                    singleEnded = False
 
-                    lvChannel = True
-                    if self.isHV and self.streamChannelNumbers[self.streamPacketOffset] < 4:
-                        lvChannel = False
+                lvChannel = True
+                if self.isHV and self.streamChannelNumbers[channelIndex] < 4:
+                    lvChannel = False
 
-                    isSpecial = False
-                    if self.streamNegChannels[self.streamPacketOffset] == 32:
-                        isSpecial = True
+                isSpecial = False
+                if self.streamNegChannels[channelIndex] == 32:
+                    isSpecial = True
 
-                    value = self.binaryToCalibratedAnalogVoltage(value, isLowVoltage = lvChannel, isSingleEnded = singleEnded, channelNumber = self.streamChannelNumbers[self.streamPacketOffset], isSpecialSetting = isSpecial)
+                values = self.binaryListToCalibratedAnalogVoltages(values, isLowVoltage = lvChannel, isSingleEnded = singleEnded, channelNumber = self.streamChannelNumbers[channelIndex], isSpecialSetting = isSpecial)
 
-                returnDict["AIN%s" % self.streamChannelNumbers[self.streamPacketOffset]].append(value)
+            returnDict["AIN%s" % self.streamChannelNumbers[channelIndex]] = values
 
-                self.streamPacketOffset += 1
-
+        self.streamPacketOffset = (self.streamPacketOffset + len(all_samples)) % numChannels
         return returnDict
     processStreamData.section = 3
 
@@ -1605,22 +1606,67 @@ class U3(Device):
         return {'StatusReg': result[8], 'StatusRegCRC': result[9], 'Temperature': temp, 'TemperatureCRC': result[12] , 'Humidity': humid, 'HumidityCRC': result[15]}
     sht1x.section = 2
 
+    def getCalibratedGainOffset(self, isLowVoltage=True, isSingleEnded=True, isSpecialSetting=False, channelNumber=0):
+        """
+        Name: U3.getCalibratedGainOffset(isLowVoltage = True,
+                                         isSingleEnded = True,
+                                         isSpecialSetting = False,
+                                         channelNumber = 0)
+        
+        Desc: get the gain and offset for converting a raw ADC voltage into a calibrated voltage.
+        """
+        hasCal = self.calData is not None
+        if isLowVoltage:
+            if isSingleEnded and not isSpecialSetting:
+                if hasCal:
+                    return self.calData['lvSESlope'], self.calData['lvSEOffset']
+                else:
+                    return 0.000037231, 0
+            elif isSpecialSetting:
+                if hasCal:
+                    return self.calData['lvDiffSlope'], self.calData['lvDiffOffset'] + self.calData['vRefAtCAl']
+                else:
+                    return 0.000074463, 0
+            else:
+                if hasCal:
+                    return self.calData['lvDiffSlope'], self.calData['lvDiffOffset']
+                else:
+                    return 0.000074463, -2.44
+        else:
+            if isSingleEnded and not isSpecialSetting:
+                if hasCal:
+                    return self.calData['hvAIN%sSlope' % channelNumber], self.calData['hvAIN%sOffset' % channelNumber]
+                else:
+                    return 0.000314, -10.3
+            elif isSpecialSetting:
+                if hasCal:
+                    hvSlope = self.calData['hvAIN%sSlope' % channelNumber]
+                    hvOffset = self.calData['hvAIN%sOffset' % channelNumber]
+
+                    gain = self.calData['lvDiffSlope'] * hvSlope / self.calData['lvSESlope']
+                    offset = (self.calData['lvDiffOffset'] + self.calData['vRefAtCAl']) * hvSlope / self.calData['lvSESlope'] + hvOffset
+                    return gain, offset
+                else:
+                    return 0.000074463 * (0.000314 / 0.000037231), -10.3
+            else:
+                raise Exception("Can't do differential on high voltage channels")
+
     def binaryToCalibratedAnalogVoltage(self, bits, isLowVoltage = True, isSingleEnded = True, isSpecialSetting = False, channelNumber = 0):
         """
         Name: U3.binaryToCalibratedAnalogVoltage(bits, isLowVoltage = True,
                                                  isSingleEnded = True,
                                                  isSpecialSetting = False,
                                                  channelNumber = 0)
-        
+
         Args: bits, the binary value of the reading.
               isLowVoltage, True if the reading came from a low-voltage channel
               isSingleEnded, True if the reading is not differential
               isSpecialSetting, True if the reading came from special range
               channelNumber, used to apply the correct calibration for HV
-        
+
         Desc: Converts the bits returned from AIN functions into a calibrated
               voltage.
-              
+
         Example:
         >>> import u3
         >>> d = u3.U3()
@@ -1630,43 +1676,29 @@ class U3(Device):
         >>> print(d.binaryToCalibratedAnalogVoltage(bits))
         0.046464288000000006
         """
-        hasCal = self.calData is not None
-        if isLowVoltage:
-            if isSingleEnded and not isSpecialSetting:
-                if hasCal:
-                    return ( bits * self.calData['lvSESlope'] ) + self.calData['lvSEOffset']
-                else:
-                    return ( bits * 0.000037231 ) + 0
-            elif isSpecialSetting:
-                if hasCal:
-                    return ( bits * self.calData['lvDiffSlope'] ) + self.calData['lvDiffOffset'] + self.calData['vRefAtCAl']
-                else:
-                    return (bits * 0.000074463)
-            else:
-                if hasCal:
-                    return ( bits * self.calData['lvDiffSlope'] ) + self.calData['lvDiffOffset']
-                else:
-                    return (bits * 0.000074463) - 2.44
-        else:
-            if isSingleEnded and not isSpecialSetting:
-                if hasCal:
-                    return ( bits * self.calData['hvAIN%sSlope' % channelNumber] ) + self.calData['hvAIN%sOffset' % channelNumber]
-                else:
-                    return ( bits * 0.000314 ) + -10.3
-            elif isSpecialSetting:
-                if hasCal:
-                    hvSlope = self.calData['hvAIN%sSlope' % channelNumber]
-                    hvOffset = self.calData['hvAIN%sOffset' % channelNumber]
-                    
-                    diffR = ( bits * self.calData['lvDiffSlope'] ) + self.calData['lvDiffOffset'] + self.calData['vRefAtCAl']
-                    reading = diffR * hvSlope / self.calData['lvSESlope'] + hvOffset
-                    return reading
-                else:
-                    return (bits * 0.000074463) * (0.000314 / 0.000037231) + -10.3
-            else:
-                raise Exception("Can't do differential on high voltage channels")
+        gain, offset = self.getCalibratedGainOffset(isLowVoltage, isSingleEnded, isSpecialSetting, channelNumber)
+        return bits * gain + offset
     binaryToCalibratedAnalogVoltage.section = 3
     
+    def binaryListToCalibratedAnalogVoltages(self, raw_values, isLowVoltage = True, isSingleEnded = True, isSpecialSetting = False, channelNumber = 0):
+        """
+        Name: U3.binaryListToCalibratedAnalogVoltages(raw_values, isLowVoltage = True,
+                                                      isSingleEnded = True,
+                                                      isSpecialSetting = False,
+                                                      channelNumber = 0)
+
+        Args: raw_values, a list of binary values of the reading.
+              isLowVoltage, True if the reading came from a low-voltage channel
+              isSingleEnded, True if the reading is not differential
+              isSpecialSetting, True if the reading came from special range
+              channelNumber, used to apply the correct calibration for HV
+
+        Desc: Converts the raw ADC values into calibrated voltages.
+        """
+        gain, offset = self.getCalibratedGainOffset(isLowVoltage, isSingleEnded, isSpecialSetting, channelNumber)
+        return [value * gain + offset for value in raw_values]
+    binaryListToCalibratedAnalogVoltages.section = 3
+
     def binaryToCalibratedAnalogTemperature(self, bytesTemperature):
         hasCal = self.calData is not None
         
