@@ -1622,14 +1622,15 @@ class U3(Device):
         return {'StatusReg': result[8], 'StatusRegCRC': result[9], 'Temperature': temp, 'TemperatureCRC': result[12] , 'Humidity': humid, 'HumidityCRC': result[15]}
     sht1x.section = 2
 
-    def getCalibratedGainOffset(self, isLowVoltage=True, isSingleEnded=True, isSpecialSetting=False, channelNumber=0):
+    def getCalibratedSlopeOffset(self, isLowVoltage=True, isSingleEnded=True, isSpecialSetting=False, channelNumber=0):
         """
-        Name: U3.getCalibratedGainOffset(isLowVoltage = True,
+        Name: U3.getCalibratedSlopeOffset(isLowVoltage = True,
                                          isSingleEnded = True,
                                          isSpecialSetting = False,
                                          channelNumber = 0)
         
-        Desc: get the gain and offset for converting a raw ADC voltage into a calibrated voltage.
+        Desc: Get the slope and offset for converting a raw ADC voltage
+              into a calibrated voltage.
         """
         hasCal = self.calData is not None
         if isLowVoltage:
@@ -1659,9 +1660,9 @@ class U3(Device):
                     hvSlope = self.calData['hvAIN%sSlope' % channelNumber]
                     hvOffset = self.calData['hvAIN%sOffset' % channelNumber]
 
-                    gain = self.calData['lvDiffSlope'] * hvSlope / self.calData['lvSESlope']
+                    slope = self.calData['lvDiffSlope'] * hvSlope / self.calData['lvSESlope']
                     offset = (self.calData['lvDiffOffset'] + self.calData['vRefAtCAl']) * hvSlope / self.calData['lvSESlope'] + hvOffset
-                    return gain, offset
+                    return slope, offset
                 else:
                     return 0.000074463 * (0.000314 / 0.000037231), -10.3
             else:
@@ -1692,8 +1693,8 @@ class U3(Device):
         >>> print(d.binaryToCalibratedAnalogVoltage(bits))
         0.046464288000000006
         """
-        gain, offset = self.getCalibratedGainOffset(isLowVoltage, isSingleEnded, isSpecialSetting, channelNumber)
-        return bits * gain + offset
+        slope, offset = self.getCalibratedSlopeOffset(isLowVoltage, isSingleEnded, isSpecialSetting, channelNumber)
+        return bits * slope + offset
     binaryToCalibratedAnalogVoltage.section = 3
     
     def binaryListToCalibratedAnalogVoltages(self, raw_values, isLowVoltage = True, isSingleEnded = True, isSpecialSetting = False, channelNumber = 0):
@@ -1711,8 +1712,8 @@ class U3(Device):
 
         Desc: Converts the raw ADC values into calibrated voltages.
         """
-        gain, offset = self.getCalibratedGainOffset(isLowVoltage, isSingleEnded, isSpecialSetting, channelNumber)
-        return [value * gain + offset for value in raw_values]
+        slope, offset = self.getCalibratedSlopeOffset(isLowVoltage, isSingleEnded, isSpecialSetting, channelNumber)
+        return [value * slope + offset for value in raw_values]
     binaryListToCalibratedAnalogVoltages.section = 3
 
     def binaryToCalibratedAnalogTemperature(self, bytesTemperature):
