@@ -686,6 +686,10 @@ class U6(Device):
         self.streamSamplesPerPacket = SamplesPerPacket
         self.streamChannelNumbers = ChannelNumbers
         self.streamChannelOptions = ChannelOptions
+
+        # Counting channel numbers for duplicate channel handling
+        self.streamChannelCounts = collections.Counter(self.streamChannelNumbers)
+
         self.streamConfiged = True
 
         if InternalStreamClockFrequency == 1:
@@ -723,27 +727,40 @@ class U6(Device):
         returnDict = collections.defaultdict(list)
 
         numChannels = len(self.streamChannelNumbers)
-        j = self.streamPacketOffset
-        for packet in self.breakupPackets(result, numBytes):
-            for sample in self.samplesFromPacket(packet):
-                if j >= numChannels:
-                    j = 0
 
-                if self.streamChannelNumbers[j] in (193, 194):
-                    value = unpack('<BB', sample)
-                elif self.streamChannelNumbers[j] >= 200:
-                    value = unpack('<H', sample)[0]
-                else:
-                    value = unpack('<H', sample)[0]
-                    gainIndex = (self.streamChannelOptions[j] >> 4) & 0x3
-                    value = self.binaryToCalibratedAnalogVoltage(gainIndex, value, is16Bits = True, resolutionIndex = 1)
+        if self.streamPacketOffset >= numChannels:
+            self.streamPacketOffset = 0
 
-                returnDict["AIN%s" % self.streamChannelNumbers[j]].append(value)
+        all_samples = [x for packet in self.breakupPackets(result, numBytes) for x in self.samplesFromPacket(packet)]
+        for i in range(numChannels):
+            packed_values = all_samples[i::numChannels]
+            channelIndex = (self.streamPacketOffset + i) % numChannels
 
-                j += 1
+            if self.streamChannelNumbers[channelIndex] in (193, 194):
+                values = [unpack('<BB', sample) for sample in packed_values]
+            elif self.streamChannelNumbers[channelIndex] >= 200:
+                values = [unpack('<H', sample)[0] for sample in packed_values]
+            else:
+                values = [unpack('<H', sample)[0] for sample in packed_values]
+                gainIndex = (self.streamChannelOptions[channelIndex] >> 4) & 0x3
+                values = self.binaryListToCalibratedAnalogVoltages(gainIndex, values, is16Bits=True, resolutionIndex=1)
 
-            self.streamPacketOffset = j
+            if self.streamChannelCounts[self.streamChannelNumbers[channelIndex]] < 2 or len(all_samples) == 1:
+                returnDict["AIN%s" % self.streamChannelNumbers[channelIndex]] = values
+            else:
+                # Store duplicate channel's data temporarily in a list of list.
+                returnDict["AIN%s" % self.streamChannelNumbers[channelIndex]].append(values)
 
+        # Handle duplicate channels and interleave their data into one list.
+        if len(all_samples) != 1:
+            for key, cnt in self.streamChannelCounts.items():
+                if cnt > 1:
+                    newList = [None]*sum([len(li) for li in returnDict["AIN%s" % key]])
+                    for i in range(len(returnDict["AIN%s" % key])):
+                        newList[i::cnt] = returnDict["AIN%s" % key][i]
+                    returnDict["AIN%s" % key] = newList
+
+        self.streamPacketOffset = (self.streamPacketOffset + len(all_samples)) % numChannels
         return returnDict
 
     def watchdog(self, Write = False, ResetOnTimeout = False, SetDIOStateOnTimeout = False, TimeoutPeriod = 60, DIOState = 0, DIONumber = 0):
@@ -1294,37 +1311,65 @@ class U6(Device):
             self.calInfo.proAinNegSlope = [self.calInfo.proAin10vNegSlope, self.calInfo.proAin1vNegSlope, self.calInfo.proAin100mvNegSlope, self.calInfo.proAin10mvNegSlope]
             self.calInfo.proAinCenter = [self.calInfo.proAin10vCenter, self.calInfo.proAin1vCenter, self.calInfo.proAin100mvCenter, self.calInfo.proAin10mvCenter]
 
+    def getCalibratedSlopesCenter(self, gainIndex, resolutionIndex):
+        """
+        Name: U6.getCalibratedSlopesCenter(gainIndex,
+                                           resolutionIndex)
+
+        Desc: Get the slopes and center for converting a raw ADC voltage
+              into a calibrated voltage.
+        """
+        if self.isPro and (resolutionIndex > 8 or resolutionIndex == 0):
+            # Use hi-res calibration constants
+            center = self.calInfo.proAinCenter[gainIndex]
+            negSlope = self.calInfo.proAinNegSlope[gainIndex]
+            posSlope = self.calInfo.proAinSlope[gainIndex]
+        else:
+            # Use normal calibration constants
+            center = self.calInfo.ainCenter[gainIndex]
+            negSlope = self.calInfo.ainNegSlope[gainIndex]
+            posSlope = self.calInfo.ainSlope[gainIndex]
+
+        return negSlope, posSlope, center
+
     def binaryToCalibratedAnalogVoltage(self, gainIndex, bytesVoltage, is16Bits=False, resolutionIndex=0):
         """
         Name: U6.binaryToCalibratedAnalogVoltage(gainIndex, bytesVoltage, 
                                                  is16Bits = False, resolutionIndex = 0)
         Args: gainIndex, which gain index did you use?
-              bytesVoltage, bytes returned from the U6
-              is16Bits, set to True if bytesVoltage is 16 bits (not 24)
+              bytesVoltage, voltage bytes returned from the U6.
+              is16Bits, set to True if bytesVoltage is 16-bits (not 24).
               resolutionIndex, which resolution index did you use?  Set this for
                                U6-Pro devices to ensure proper hi-res conversion.
-        Desc: Converts binary voltage to an analog value.
+        Desc: Converts the binary voltage to a calibrated analog voltage value.
         """
+        negSlope, posSlope, center = self.getCalibratedSlopesCenter(gainIndex, resolutionIndex)
+
         if not is16Bits:
-            bits = float(bytesVoltage)/256
-        else:
-            bits = float(bytesVoltage)
+            bytesVoltage = bytesVoltage / 256.0
 
-        if self.isPro and (resolutionIndex > 8 or resolutionIndex == 0):
-            #Use hi-res calibration constants
-            center = self.calInfo.proAinCenter[gainIndex]
-            negSlope = self.calInfo.proAinNegSlope[gainIndex]
-            posSlope = self.calInfo.proAinSlope[gainIndex]
+        if bytesVoltage < center:
+            return (center - bytesVoltage) * negSlope
         else:
-            #Use normal calibration constants
-            center = self.calInfo.ainCenter[gainIndex]
-            negSlope = self.calInfo.ainNegSlope[gainIndex]
-            posSlope = self.calInfo.ainSlope[gainIndex]
+            return (bytesVoltage - center) * posSlope
 
-        if bits < center:
-            return (center - bits) * negSlope
+    def binaryListToCalibratedAnalogVoltages(self, gainIndex, bytesVoltageList, is16Bits=False, resolutionIndex=0):
+        """
+        Name: U6.binaryToCalibratedAnalogVoltage(gainIndex, bytesVoltage, 
+                                                 is16Bits = False, resolutionIndex = 0)
+        Args: gainIndex, which gain index did you use?
+              bytesVoltageList, list of voltage bytes returned from the U6.
+              is16Bits, set to True if bytesVoltage is 16-bits (not 24).
+              resolutionIndex, which resolution index did you use?  Set this for
+                               U6-Pro devices to ensure proper hi-res conversion.
+        Desc: Converts a list of binary voltages to a list of calibrated analog
+              voltage values.
+        """
+        negSlope, posSlope, center = self.getCalibratedSlopesCenter(gainIndex, resolutionIndex)
+        if not is16Bits:
+            return [(center - value/256.0) * negSlope if value < center else (value/256.0 - center) * posSlope for value in bytesVoltageList]
         else:
-            return (bits - center) * posSlope
+            return [(center - value) * negSlope if value < center else (value - center) * posSlope for value in bytesVoltageList]
 
     def binaryToCalibratedAnalogTemperature(self, bytesTemperature, is16Bits=False):
         """
