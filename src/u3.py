@@ -1625,9 +1625,9 @@ class U3(Device):
     def getCalibratedSlopeOffset(self, isLowVoltage=True, isSingleEnded=True, isSpecialSetting=False, channelNumber=0):
         """
         Name: U3.getCalibratedSlopeOffset(isLowVoltage = True,
-                                         isSingleEnded = True,
-                                         isSpecialSetting = False,
-                                         channelNumber = 0)
+                                          isSingleEnded = True,
+                                          isSpecialSetting = False,
+                                          channelNumber = 0)
         
         Desc: Get the slope and offset for converting a raw ADC voltage
               into a calibrated voltage.
@@ -1670,19 +1670,19 @@ class U3(Device):
 
     def binaryToCalibratedAnalogVoltage(self, bits, isLowVoltage = True, isSingleEnded = True, isSpecialSetting = False, channelNumber = 0):
         """
-        Name: U3.binaryToCalibratedAnalogVoltage(bits, isLowVoltage = True,
+        Name: U3.binaryToCalibratedAnalogVoltage(bits,
+                                                 isLowVoltage = True,
                                                  isSingleEnded = True,
                                                  isSpecialSetting = False,
                                                  channelNumber = 0)
 
-        Args: bits, the binary value of the reading.
-              isLowVoltage, True if the reading came from a low-voltage channel
-              isSingleEnded, True if the reading is not differential
-              isSpecialSetting, True if the reading came from special range
-              channelNumber, used to apply the correct calibration for HV
+        Args: bits, the binary voltage value returned from the U3.
+              isLowVoltage, True if the reading came from a low-voltage channel.
+              isSingleEnded, True if the reading is not differential.
+              isSpecialSetting, True if the reading came from special range.
+              channelNumber, used to apply the correct calibration for HV.
 
-        Desc: Converts the bits returned from AIN functions into a calibrated
-              voltage.
+        Desc: Converts the binary voltage to a calibrated analog voltage value.
 
         Example:
         >>> import u3
@@ -1697,23 +1697,25 @@ class U3(Device):
         return bits * slope + offset
     binaryToCalibratedAnalogVoltage.section = 3
     
-    def binaryListToCalibratedAnalogVoltages(self, raw_values, isLowVoltage = True, isSingleEnded = True, isSpecialSetting = False, channelNumber = 0):
+    def binaryListToCalibratedAnalogVoltages(self, bitsList, isLowVoltage = True, isSingleEnded = True, isSpecialSetting = False, channelNumber = 0):
         """
-        Name: U3.binaryListToCalibratedAnalogVoltages(raw_values, isLowVoltage = True,
+        Name: U3.binaryListToCalibratedAnalogVoltages(bitsList,
+                                                      isLowVoltage = True,
                                                       isSingleEnded = True,
                                                       isSpecialSetting = False,
                                                       channelNumber = 0)
 
-        Args: raw_values, a list of binary values of the reading.
-              isLowVoltage, True if the reading came from a low-voltage channel
-              isSingleEnded, True if the reading is not differential
-              isSpecialSetting, True if the reading came from special range
-              channelNumber, used to apply the correct calibration for HV
+        Args: bitsList, a list of binary voltage values returned from the U3.
+              isLowVoltage, True if the reading came from a low-voltage channel.
+              isSingleEnded, True if the reading is not differential.
+              isSpecialSetting, True if the reading came from special range.
+              channelNumber, used to apply the correct calibration for HV.
 
-        Desc: Converts the raw ADC values into calibrated voltages.
+        Desc: Converts a list of binary voltages into a list of calibrated
+              analog voltage values.
         """
         slope, offset = self.getCalibratedSlopeOffset(isLowVoltage, isSingleEnded, isSpecialSetting, channelNumber)
-        return [value * slope + offset for value in raw_values]
+        return [value * slope + offset for value in bitsList]
     binaryListToCalibratedAnalogVoltages.section = 3
 
     def binaryToCalibratedAnalogTemperature(self, bytesTemperature):
