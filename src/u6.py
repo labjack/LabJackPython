@@ -687,8 +687,8 @@ class U6(Device):
         self.streamChannelNumbers = ChannelNumbers
         self.streamChannelOptions = ChannelOptions
 
-        # Counting channel numbers for duplicate channel handling
-        self.streamChannelCounts = collections.Counter(self.streamChannelNumbers)
+        # Get a count of duplicate channels.
+        self.streamChannelDuplicates = collections.Counter({key:cnt for key, cnt in collections.Counter(self.streamChannelNumbers).items() if cnt > 1})
 
         self.streamConfiged = True
 
@@ -732,7 +732,7 @@ class U6(Device):
             self.streamPacketOffset = 0
 
         all_samples = [x for packet in self.breakupPackets(result, numBytes) for x in self.samplesFromPacket(packet)]
-        for i in range(numChannels):
+        for i in range(min(len(all_samples), numChannels)):
             packed_values = all_samples[i::numChannels]
             channelIndex = (self.streamPacketOffset + i) % numChannels
 
@@ -745,20 +745,19 @@ class U6(Device):
                 gainIndex = (self.streamChannelOptions[channelIndex] >> 4) & 0x3
                 values = self.binaryListToCalibratedAnalogVoltages(gainIndex, values, is16Bits=True, resolutionIndex=1)
 
-            if self.streamChannelCounts[self.streamChannelNumbers[channelIndex]] < 2 or len(all_samples) == 1:
-                returnDict["AIN%s" % self.streamChannelNumbers[channelIndex]] = values
-            else:
+            if self.streamChannelNumbers[channelIndex] in self.streamChannelDuplicates:
                 # Store duplicate channel's data temporarily in a list of list.
                 returnDict["AIN%s" % self.streamChannelNumbers[channelIndex]].append(values)
+            else:
+                returnDict["AIN%s" % self.streamChannelNumbers[channelIndex]] = values
 
         # Handle duplicate channels and interleave their data into one list.
-        if len(all_samples) != 1:
-            for key, cnt in self.streamChannelCounts.items():
-                if cnt > 1:
-                    newList = [None]*sum([len(li) for li in returnDict["AIN%s" % key]])
-                    for i in range(len(returnDict["AIN%s" % key])):
-                        newList[i::cnt] = returnDict["AIN%s" % key][i]
-                    returnDict["AIN%s" % key] = newList
+        for key, cnt in self.streamChannelDuplicates.items():
+            if "AIN%s" % key in returnDict:
+                newList = [None]*sum([len(li) for li in returnDict["AIN%s" % key]])
+                for i in range(len(returnDict["AIN%s" % key])):
+                    newList[i::cnt] = returnDict["AIN%s" % key][i]
+                returnDict["AIN%s" % key] = newList
 
         self.streamPacketOffset = (self.streamPacketOffset + len(all_samples)) % numChannels
         return returnDict
