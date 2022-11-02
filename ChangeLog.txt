@@ -340,3 +340,5 @@ Version History
     - Removed Python 2.6 support.
     - Fixed the setName method for Python 3 compatibility.
     - Fixed some Python 3 related bugs in the getName method.
+    - U3 and U6 optimizions for processStreamData and binary to analog
+      conversion functions.
