@@ -135,7 +135,7 @@ class StreamDataReader(object):
             scanTotal = sampleTotal / 1  # sampleTotal / NumChannels
 
             print("%s requests with %s packets per request with %s samples per packet = %s samples total." %
-                  (self.dataCount, d.packetsPerRequest, d.streamSamplesPerPacket, sampleTotal))
+                  (self.dataCount, self.device.packetsPerRequest, self.device.streamSamplesPerPacket, sampleTotal))
 
             print("%s samples were lost due to errors." % self.missed)
             sampleTotal -= self.missed
