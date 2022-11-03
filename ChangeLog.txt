@@ -328,7 +328,7 @@ Version History
       stream clock and scan interval configuration.
 - 2.0.5
     - Fixed the spi, i2c and asynch methods to not change the arguments.
-- Next release
+- 2.1.0
     - Added sht3x.py example.
     - Some documentation corrections.
     - Updated U12 class to maintain the IO states and directions on Linux/Mac.
