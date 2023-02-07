@@ -2,6 +2,15 @@
 Demonstrates I2C communication using a LabJack UE9, U6 or U3. The demonstration
 uses a LJTick-DAC connected to FIO0/FIO1 for the UE9 and U6, or FIO4/FIO5 for
 the U3. A read, write and again a read are performed on the LJTick-DAC's EEPROM.
+
+Note: Our Python interfaces throw exceptions when there are any issues with
+device communications that need addressed. Many of our examples will
+terminate immediately when an exception is thrown. The onus is on the API
+user to address the cause of any exceptions thrown, and add exception
+handling when appropriate. We create our own exception classes that are
+derived from the built-in Python Exception class and can be caught as such.
+For more information, see the implementation in our source code and the
+Python standard documentation.
 """
 from random import randrange
 from time import sleep

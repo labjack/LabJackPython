@@ -4,11 +4,12 @@ in software, there are limitations on how fast we can update the DAC. Update
 intervals faster than 5 ms may give weird results because of the large
 percentage of missed updates.
 
-Note: This example uses signal.setitimer() and signal.alarm(), and requires
-Python 2.6 on Unix (Linux and Mac) to run. See:
+Note: The UD-Modbus interface is deprecated.
 
-    http://docs.python.org/library/signal.html#signal.setitimer
-    http://docs.python.org/library/signal.html#signal.alarm
+This example uses signal.setitimer() and signal.alarm(), and requires
+Python 2.6 on Unix (Linux and Mac) to run. See:
+http://docs.python.org/library/signal.html#signal.setitimer
+http://docs.python.org/library/signal.html#signal.alarm
 
 For a full cross-platform (Linux, Mac and Windows) example, look at the
 outputSinDac.py example.
@@ -18,6 +19,14 @@ the waveform. A slow update interval coupled with a fast frequency can result in
 strange behavior. Try to keep the period (1/frequency) much greater than update
 interval.
 
+Our Python interfaces throw exceptions when there are any issues with
+device communications that need addressed. Many of our examples will
+terminate immediately when an exception is thrown. The onus is on the API
+user to address the cause of any exceptions thrown, and add exception
+handling when appropriate. We create our own exception classes that are
+derived from the built-in Python Exception class and can be caught as such.
+For more information, see the implementation in our source code and the
+Python standard documentation.
 """
 
 import math # For sin function

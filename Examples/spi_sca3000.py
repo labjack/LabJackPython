@@ -1,30 +1,34 @@
 """
 Demonstrates SPI protocol usage with a SCA3000 3-axis accelerometer. For full
 details on the example refer to the "SCA3000 3-axis accelerometer-SPI"
-AppNote online:
-
-  http://labjack.com/support/app-notes/sca3000-3-axis-accelerometer-spi
+App Note on our website.
 
 The default SPI settings for a UE9 are:
-
-  AutoCS = True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0,
-  CSPinNum = 1 (FIO1), CLKPinNum = 0 (FIO0), MISOPinNum = 3 (FIO3),
-  MOSIPinNum = 2 (FIO2)
+AutoCS = True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0,
+CSPinNum = 1 (FIO1), CLKPinNum = 0 (FIO0), MISOPinNum = 3 (FIO3),
+MOSIPinNum = 2 (FIO2)
 
 The default SPI settings for a U6 are:
-
-  AutoCS = True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0,
-  CSPinNum = 0 (FIO0), CLKPinNum = 1 (FIO1), MISOPinNum = 2 (FIO2),
-  MOSIPinNum = 3 (FIO3)
+AutoCS = True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0,
+CSPinNum = 0 (FIO0), CLKPinNum = 1 (FIO1), MISOPinNum = 2 (FIO2),
+MOSIPinNum = 3 (FIO3)
 
 The default SPI settings for a U3 are:
-
-  AutoCS = True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0,
-  CSPinNum = 4 (FIO4), CLKPinNum = 5 (FIO5), MISOPinNum = 6 (FIO6),
-  MOSIPinNum = 7 (FIO7)
+AutoCS = True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0,
+CSPinNum = 4 (FIO4), CLKPinNum = 5 (FIO5), MISOPinNum = 6 (FIO6),
+MOSIPinNum = 7 (FIO7)
 
 Note the CSPinNum, CLKPinNum, MISOPinNum, and MOSIPinNum pin numbers and make
 your connections accordingly.
+
+Note: Our Python interfaces throw exceptions when there are any issues with
+device communications that need addressed. Many of our examples will
+terminate immediately when an exception is thrown. The onus is on the API
+user to address the cause of any exceptions thrown, and add exception
+handling when appropriate. We create our own exception classes that are
+derived from the built-in Python Exception class and can be caught as such.
+For more information, see the implementation in our source code and the
+Python standard documentation.
 """
 import os
 import time

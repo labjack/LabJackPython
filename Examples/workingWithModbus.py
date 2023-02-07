@@ -2,9 +2,16 @@
 An example program to show you how easy it is to work with Modbus on a LabJack
 U3, U6 or UE9.
 
-Be sure to check out the Modbus map for a full list of registers:
+Note: The UD-Modbus interface is deprecated.
 
-https://labjack.com/support/software/api/modbus/ud-modbus
+Our Python interfaces throw exceptions when there are any issues with
+device communications that need addressed. Many of our examples will
+terminate immediately when an exception is thrown. The onus is on the API
+user to address the cause of any exceptions thrown, and add exception
+handling when appropriate. We create our own exception classes that are
+derived from the built-in Python Exception class and can be caught as such.
+For more information, see the implementation in our source code and the
+Python standard documentation.
 """
 import random
 

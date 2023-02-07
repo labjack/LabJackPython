@@ -2,6 +2,15 @@
 Demonstrates how to use the IP Address Filter UE9 function
 (UE9.ipAddressFilter) to filter the IP addresses that can connect to a UE9
 over TCP. Requires UE9 Comm. firmware 1.56 or newer.
+
+Note: Our Python interfaces throw exceptions when there are any issues with
+device communications that need addressed. Many of our examples will
+terminate immediately when an exception is thrown. The onus is on the API
+user to address the cause of any exceptions thrown, and add exception
+handling when appropriate. We create our own exception classes that are
+derived from the built-in Python Exception class and can be caught as such.
+For more information, see the implementation in our source code and the
+Python standard documentation.
 """
 import ue9
 
