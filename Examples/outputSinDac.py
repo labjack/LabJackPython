@@ -9,7 +9,9 @@ the waveform. A slow update interval coupled with a fast frequency can result in
 strange behavior. Try to keep the period (1/frequency) much greater than update
 interval.
 
-Note: Our Python interfaces throw exceptions when there are any issues with
+Note: The UD-Modbus interface is deprecated.
+
+Our Python interfaces throw exceptions when there are any issues with
 device communications that need addressed. Many of our examples will
 terminate immediately when an exception is thrown. The onus is on the API
 user to address the cause of any exceptions thrown, and add exception

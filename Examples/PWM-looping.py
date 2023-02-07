@@ -1,10 +1,10 @@
 """
 Runs through the whole range of PWM Duty Cycles.
 
-For the complete Modbus map, visit the Modbus support page:
-https://labjack.com/support/software/api/modbus/ud-modbus
+Note: The UD-Modbus interface is deprecated. We recommend using the low level
+commands in the comments.
 
-Note: Equivalent U3 and U6 low-level commands are in the comments.
+Equivalent U3 and U6 low-level commands are in the comments.
 UE9 low-level commands are not demonstrated.
 
 Our Python interfaces throw exceptions when there are any issues with

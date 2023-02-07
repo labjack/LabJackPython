@@ -4,7 +4,9 @@ in software, there are limitations on how fast we can update the DAC. Update
 intervals faster than 5 ms may give weird results because of the large
 percentage of missed updates.
 
-Note: This example uses signal.setitimer() and signal.alarm(), and requires
+Note: The UD-Modbus interface is deprecated.
+
+This example uses signal.setitimer() and signal.alarm(), and requires
 Python 2.6 on Unix (Linux and Mac) to run. See:
 http://docs.python.org/library/signal.html#signal.setitimer
 http://docs.python.org/library/signal.html#signal.alarm

@@ -1,8 +1,7 @@
 """
 Demonstrates SPI protocol usage with a SCA3000 3-axis accelerometer. For full
 details on the example refer to the "SCA3000 3-axis accelerometer-SPI"
-AppNote online:
-http://labjack.com/support/app-notes/sca3000-3-axis-accelerometer-spi
+App Note on our website.
 
 The default SPI settings for a UE9 are:
 AutoCS = True, DisableDirConfig = False, SPIMode = 'A', SPIClockFactor = 0,
