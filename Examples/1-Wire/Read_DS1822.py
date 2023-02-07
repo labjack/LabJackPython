@@ -1,6 +1,15 @@
-#This is an example taylored to the DS1822 1-Wire sensor and is the
-# python equivalent to the "Read_DS1822.vi"/.exe published on
-# LabJack's website: https://labjack.com/support/app-notes/1-wire
+"""
+Note: This is an example tailored to the DS1822 1-Wire sensor.
+Our Python interfaces throw exceptions when there are any issues with
+device communications that need addressed. Many of our examples will
+terminate immediately when an exception is thrown. The onus is on the API
+user to address the cause of any exceptions thrown, and add exception
+handling when appropriate. We create our own exception classes that are
+derived from the built-in Python Exception class and can be caught as such.
+For more information, see the implementation in our source code and the
+Python standard documentation.
+"""
+
 import u3
 
 DEBUG_ONE_WIRE = False

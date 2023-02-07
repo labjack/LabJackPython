@@ -3,6 +3,15 @@ Name: ei1050SampleApp
 Desc: A simple GUI application to demonstrate the usage of the ei1050 and
 LabJack Python modules. For an example of using the Labjack Python module
 directly look at the source code of ei1050.py
+
+Note: Our Python interfaces throw exceptions when there are any issues with
+device communications that need addressed. Many of our examples will
+terminate immediately when an exception is thrown. The onus is on the API
+user to address the cause of any exceptions thrown, and add exception
+handling when appropriate. We create our own exception classes that are
+derived from the built-in Python Exception class and can be caught as such.
+For more information, see the implementation in our source code and the
+Python standard documentation.
 """
 import sys
 
