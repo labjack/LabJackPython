@@ -3,6 +3,9 @@ examples for the LabJack U3, U6, UE9 and U12.
 11/03/2022
 support@labjack.com
 
+Using a T-series device? See labjack-ljm instead:
+https://github.com/labjack/labjack-ljm-python
+
 LabJackPython requires Python 2.7 or 3.x. Please report bugs to
 support@labjack.com or on GitHub:
 
