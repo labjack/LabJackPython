@@ -164,7 +164,7 @@ def readInputRegistersResponse(packet, payloadFormat=None):
 
 def writeRegisterRequest(addr, value, unitId = None):
     if not isinstance(value, int):
-        raise TypeError("Value written must be an integer.")
+        raise TypeError("The value written must be an integer.")
 
     packet = _buildHeaderBytes(unitId = unitId) + pack('>BHH', 0x06, addr, value)
 
@@ -175,7 +175,7 @@ def writeRegistersRequest(startAddr, values, unitId = None):
     
     for v in values:
         if not isinstance(v, int):
-            raise TypeError("Value written must be an integer.")
+            raise TypeError("The values written must be an integer.")
     
     if unitId is None:
         unitId = 0xff
