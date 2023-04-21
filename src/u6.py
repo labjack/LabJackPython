@@ -30,6 +30,7 @@ from LabJackPython import (
     MAX_USB_PACKET_LENGTH,
     setChecksum8,
     toDouble,
+    _troubleshoot_comm_msg,
     )
 
 
@@ -442,10 +443,10 @@ class U6(Device):
             readLen += 1
             
         if len(sendBuffer) > MAX_USB_PACKET_LENGTH:
-            raise LabJackException("ERROR: The feedback command you are attempting to send is bigger than 64 bytes ( %s bytes ). Break your commands up into separate calls to getFeedback()." % len(sendBuffer))
+            raise LabJackException("ERROR: The Feedback command you are attempting to send is bigger than 64 bytes ( %s bytes ). Break your commands up into separate calls to getFeedback()." % len(sendBuffer))
         
         if readLen > MAX_USB_PACKET_LENGTH:
-            raise LabJackException("ERROR: The feedback command you are attempting to send would yield a response that is greater than 64 bytes ( %s bytes ). Break your commands up into separate calls to getFeedback()." % readLen)
+            raise LabJackException("ERROR: The Feedback command you are attempting to send would yield a response that is greater than 64 bytes ( %s bytes ). Break your commands up into separate calls to getFeedback()." % readLen)
         
         rcvBuffer = self._writeRead(sendBuffer, readLen, [], checkBytes = False, stream = False, checksum = True)
         
@@ -454,14 +455,14 @@ class U6(Device):
             self._checkCommandBytes(rcvBuffer, [0xF8])
         
             if rcvBuffer[3] != 0x00:
-                raise LabJackException("Got incorrect command bytes")
+                raise LabJackException("Communication Failure: The Feedback response has incorrect command bytes. %s" % _troubleshoot_comm_msg)
         except LowlevelErrorException:
             if isinstance(commandlist[0], list):
                 culprit = commandlist[0][ (rcvBuffer[7] - 1) ]
             else:
                 culprit = commandlist[ (rcvBuffer[7] -1) ]
             
-            raise LowlevelErrorException("\nThis Command\n    %s\nreturned an error:\n    %s" %  ( culprit, lowlevelErrorToString(rcvBuffer[6]) ) )
+            raise LowlevelErrorException("\nThis Feedback Command\n    %s\nreturned an error:\n    %s" %  ( culprit, lowlevelErrorToString(rcvBuffer[6]) ) )
         
         results = []
         i = 9
@@ -518,7 +519,7 @@ class U6(Device):
         NOTE: Do not call this function while streaming.
         """
         if not isinstance(Data, list):
-            raise LabJackException("Data must be a list of bytes")
+            raise LabJackException("Data must be a list of bytes.")
         
         command = [ 0 ] * 40
         
@@ -623,7 +624,7 @@ class U6(Device):
         Desc: Configures streaming on the U6.
         """
         if NumChannels != len(ChannelNumbers) or NumChannels != len(ChannelOptions):
-            raise LabJackException("NumChannels must match length of ChannelNumbers and ChannelOptions")
+            raise LabJackException("NumChannels must match the length of ChannelNumbers and ChannelOptions")
         if len(ChannelNumbers) != len(ChannelOptions):
             raise LabJackException("len(ChannelNumbers) doesn't match len(ChannelOptions)")
 
@@ -854,7 +855,7 @@ class U6(Device):
               old versions.
         """
         if not isinstance(SPIBytes, list):
-            raise LabJackException("SPIBytes MUST be a list of bytes")
+            raise LabJackException("SPIBytes must be a list of bytes")
 
         if CSPINNum is not None:
             warnings.warn("CSPINNum is deprecated, use CSPinNum instead", DeprecationWarning)
@@ -1431,7 +1432,7 @@ class U6(Device):
         results = self.read(4)
         
         if results[3] != 0:
-            raise LowlevelErrorException(results[3], "The softHard command returned an error:\n    %s" % lowlevelErrorToString(results[3]))
+            raise LowlevelErrorException(results[3], "The hardReset command returned an error:\n    %s" % lowlevelErrorToString(results[3]))
             
         self.close()
 
@@ -2281,7 +2282,7 @@ class Timer(FeedbackCommand):
         if timer not in range(4):
             raise LabJackException("Timer should be 0-3.")
         if UpdateReset and (Value is None):
-            raise LabJackException("UpdateReset set but no value.")
+            raise LabJackException("UpdateReset is set but Value is None which is invalid.")
         
         self.timer = timer
         self.updateReset = UpdateReset
