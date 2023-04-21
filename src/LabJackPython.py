@@ -149,7 +149,7 @@ def _loadLibrary():
             return wlib
     except Exception:
         e = sys.exc_info()[1]
-        raise LabJackException("Could not load labjackud driver. Ethernet connectivity availability only.\n\n    The error was: %s" % e)
+        raise LabJackException("Could not load the LabJackUD driver. Only Ethernet connectivity is available.\n\n    The error was: %s" % e)
 
     _os_name = "posix"
     addStr = "Exodriver"
@@ -167,10 +167,10 @@ def _loadLibrary():
         return _loadLinuxSo()
     except OSError:
         e = sys.exc_info()[1]
-        raise LabJackException("Could not load the Exodriver driver. Ethernet connectivity only.\n\nCheck that the Exodriver is installed, and the permissions are set correctly.\nThe error message was: %s" % e)
+        raise LabJackException("Could not load the Exodriver driver. Only Ethernet connectivity is available.\n\nCheck that the Exodriver is installed, and the permissions are set correctly.\nThe error message was: %s" % e)
     except Exception:
         e = sys.exc_info()[1]
-        raise LabJackException("Could not load the %s for some reason other than it not being installed. Ethernet connectivity only.\n\n    The error was: %s" % (addStr, e))
+        raise LabJackException("Could not load the %s for some reason other than it not being installed. Only Ethernet connectivity is available.\n\n    The error was: %s" % (addStr, e))
 
 try:
     staticLib = _loadLibrary()
@@ -442,7 +442,7 @@ class Device(object):
         Returns the value.
         """
         if len(response) != numBytes:
-            raise LabJackException(9001, "Got incorrect number of bytes from device. Expected %s bytes, got %s bytes. The packet recieved was: %s" % (numBytes, len(response), response))
+            raise LabJackException(9001, "Modbus response has an incorrect number of bytes. Expected %s bytes, got %s bytes. The packet received was: %s" % (numBytes, len(response), response))
 
         if isinstance(response, list):
             packFormat = ">" + "B" * numBytes
@@ -492,7 +492,7 @@ class Device(object):
 
     def _buildWriteFloatToRegister(self, addr, value, unitId, fmt = '>f'):
         if not isinstance(value, int) and not isinstance(value, float):
-            raise TypeError("Value must be a float or int.")
+            raise TypeError("The value must be a float or int.")
 
         # Function, Address, Num Regs, Byte count, Data
         payload = pack('>BHHB', 0x10, addr, 0x02, 0x04) + pack(fmt, value)
@@ -513,10 +513,10 @@ class Device(object):
 
         if request[2] != 0 and request[3] != 0:
             protoID = (request[2] << 8) + request[3]
-            raise Modbus.ModbusException("Got an unexpected protocol ID: %s (expected 0). Please make sure that you have the latest firmware. UE9s need Comm Firmware of 1.50 or greater.\n\nThe packet you received: %s" % (protoID, hexWithoutQuotes(response)))
+            raise Modbus.ModbusException("Modbus response has an unexpected protocol ID: %s (expected 0). Please make sure that you have the latest firmware. UE9s need Comm Firmware of 1.50 or greater.\n\nThe packet you received: %s" % (protoID, hexWithoutQuotes(response)))
 
         if request[7] != response[7]:
-            raise LabJackException(9002, "Modbus error number %s raised while writing to register. Make sure you're writing to an address that allows writes.\n\nThe packet you received: %s" % (response[8], hexWithoutQuotes(response)))
+            raise LabJackException(9002, "Modbus response has Modbus error number %s. Make sure you are writing to an address that allows writes.\n\nThe packet you received: %s" % (response[8], hexWithoutQuotes(response)))
 
         return value
 
@@ -540,20 +540,21 @@ class Device(object):
 
     def _checkCommandBytes(self, results, commandBytes):
         """
-        Checks all the stuff from a command
+        Checks the low-level response's (results) checksums, command and error bytes.
         """
+        troubleshootMsg = "Power cycle your device and try again. For more troubleshooting help, go to the LabJack website and look at the \"USB Communication Failure\" app note."
         size = len(commandBytes)
         if len(results) == 0:
-            raise LabJackException("Got a zero length packet.")
+            raise LabJackException("Communication Failure: Low-level response has no bytes. %s" % troubleshootMsg)
         elif results[0] == 0xB8 and results[1] == 0xB8:
-            raise LabJackException("Device detected a bad checksum.")
+            raise LabJackException("Low-level command with bad checksum detected. Verify the low-level command's checksums are valid.")
         elif results[1:(size+1)] != commandBytes:
-            raise LabJackException("Got incorrect command bytes.\nExpected: %s\nGot: %s\nFull packet: %s" % (hexWithoutQuotes(commandBytes), hexWithoutQuotes(results[1:(size+1)]), hexWithoutQuotes(results)))
+            raise LabJackException("Communication Failure: Low-level response has incorrect command bytes.\nExpected: %s\nReceived: %s\nFull packet: %s\n%s" % (hexWithoutQuotes(commandBytes), hexWithoutQuotes(results[1:(size+1)]), hexWithoutQuotes(results), troubleshootMsg))
         elif not verifyChecksum(results):
-            raise LabJackException("Checksum was incorrect.")
+            raise LabJackException("Communication Failure: Low-level response has incorrect checksum. %s" % troubleshootMsg)
         elif results[6] != 0:
-            raise LowlevelErrorException(results[6], "\nThe %s returned an error:\n    %s" % (self.deviceName , lowlevelErrorToString(results[6])) )
-    
+            raise LowlevelErrorException(results[6], "Low-level response from the %s returned error:\n    %s" % (self.deviceName , lowlevelErrorToString(results[6])) )
+
     def _writeRead(self, command, readLen, commandBytes, checkBytes = True, stream=False, checksum = True):
     
         # Acquire the device lock.
@@ -603,7 +604,7 @@ class Device(object):
         
         if self.handle is not None:
             raise LabJackException(9000,"Open called on a device with a handle. Please close the device, and try again. Your device is probably already open.\nLook for lines of code that look like this:\nd = u3.U3()\nd.open() # Wrong! Device is already open.")
-        
+
         ct = LJ_ctUSB
         
         if Ethernet:
@@ -626,7 +627,7 @@ class Device(object):
         elif firstFound:
             d = openLabJack(devType, ct, firstFound = True, handleOnly = handleOnly, LJSocket = LJSocket)
         else:
-            raise LabJackException("You must use first found, or give a localId, devNumber, or IP Address")
+            raise LabJackException("You must use firstFound, or set a localId, devNumber, or ipAddress.")
         
         self.handle = d.handle
         
@@ -707,7 +708,7 @@ class Device(object):
                 self._writeRead(sndDataBuff, 4, [], False, False, False)
             except Exception:
                 e = sys.exc_info()[1]
-                raise LabJackException(0, "Unable to reset labjack: %s" % str(e))
+                raise LabJackException(0, "Unable to reset the device: %s" % str(e))
 
     def breakupPackets(self, packets, numBytesPerPacket):
         """
@@ -795,7 +796,7 @@ class Device(object):
               this function.
         """
         if not self.streamStarted:
-            raise LabJackException("Please start streaming before reading.")
+            raise LabJackException("Stream has not been started. Configure and start streaming before reading stream data.")
 
         numBytes = 14 + (self.streamSamplesPerPacket * 2)
         while True:
@@ -900,7 +901,7 @@ class Device(object):
         strLen = len(name)
         
         if strLen > 47:
-            raise LabJackException("The name is too long, must be less than 48 characters.")
+            raise LabJackException("The name is too long. It must be less than 48 characters.")
         
         newname = name.encode('UTF-8')
         bl = list(unpack("B"*strLen, newname)) + [0x00]
@@ -960,7 +961,7 @@ class Device(object):
         [ 0, 0, ... , 0]        
         """
         if BlockNum not in self.validDefaultBlocks:
-            raise LabJackException("Defaults must be in range 0-7")
+            raise LabJackException("Defaults BlockNum must be in the range of 0-7.")
         
         byte7 = (int(bool(ReadCurrent)) << 7) + BlockNum
         
@@ -1011,7 +1012,7 @@ def setChecksum(command):
     """  
     
     if len(command) < 6:
-        raise LabJackException("Command does not contain enough bytes.")
+        raise LabJackException("Low-level command does not contain enough bytes.")
     
     try:        
         a = command[1]
@@ -1075,7 +1076,7 @@ def listAll(deviceType, connectionType = 1):
         try:
             status, numLines = l.split(' ')
         except ValueError:
-            raise Exception("Got invalid line from server: %s" % l)
+            raise Exception("Received invalid line from LJSocket server: %s" % l)
 
         if status.lower().startswith('ok'):
             lines = []
@@ -3041,7 +3042,7 @@ class LJSocketHandle(object):
             try:
                 status, numLines = l.split(' ')
             except ValueError:
-                raise Exception("Got invalid line from server: %s" % l)
+                raise Exception("Received invalid line from LJSocket server: %s" % l)
                 
             if status.lower().startswith('ok'):
                 lines = []
@@ -3091,7 +3092,7 @@ class LJSocketHandle(object):
                     self.spontSocket = None
                 
             else:
-                raise Exception("Got an error from LJSocket. It said '%s'" % l)
+                raise Exception("Received an error from LJSocket. It said '%s'" % l)
             
         except Exception:
             e = sys.exc_info()[1]
