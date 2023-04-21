@@ -36,6 +36,7 @@ from LabJackPython import (
     MAX_USB_PACKET_LENGTH,
     setChecksum8,
     toDouble,
+     _troubleshoot_comm_msg,
     )
 
 
@@ -443,7 +444,7 @@ class U3(Device):
             if TimerClockDivisor is not None:
                 command[9] =  TimerClockDivisor
         elif TimerClockDivisor is not None:
-            raise LabJackException("You can't set just the divisor, must set both.")
+            raise LabJackException("Both the TimerClockBase and TimerClockDivisor need to be set.")
         
         result = self._writeRead(command, 10, [0xf8, 0x02, 0x0A])
         
@@ -771,13 +772,12 @@ class U3(Device):
         
         if readLen % 2:
             readLen += 1
-            
         
         if len(sendBuffer) > MAX_USB_PACKET_LENGTH:
-            raise LabJackException("ERROR: The feedback command you are attempting to send is bigger than 64 bytes ( %s bytes ). Break your commands up into separate calls to getFeedback()." % len(sendBuffer))
+            raise LabJackException("ERROR: The Feedback command you are attempting to send is bigger than 64 bytes ( %s bytes ). Break your commands up into separate calls to getFeedback()." % len(sendBuffer))
         
         if readLen > MAX_USB_PACKET_LENGTH:
-            raise LabJackException("ERROR: The feedback command you are attempting to send would yield a response that is greater than 64 bytes ( %s bytes ). Break your commands up into separate calls to getFeedback()." % readLen)
+            raise LabJackException("ERROR: The Feedback command you are attempting to send would yield a response that is greater than 64 bytes ( %s bytes ). Break your commands up into separate calls to getFeedback()." % readLen)
         
         rcvBuffer = self._writeRead(sendBuffer, readLen, [], checkBytes = False, stream = False, checksum = True)
         
@@ -786,15 +786,14 @@ class U3(Device):
             self._checkCommandBytes(rcvBuffer, [0xF8])
         
             if rcvBuffer[3] != 0x00:
-                raise LabJackException("Got incorrect command bytes")
+                raise LabJackException("Communication Failure: The Feedback response has incorrect command bytes. %s" % _troubleshoot_comm_msg)
         except LowlevelErrorException:
             if isinstance(commandlist[0], list):
                 culprit = commandlist[0][ (rcvBuffer[7] -1) ]
             else:
                 culprit = commandlist[ (rcvBuffer[7] -1) ]
             
-            raise LowlevelErrorException("\nThis Command\n    %s\nreturned an error:\n    %s" %  (culprit , lowlevelErrorToString(rcvBuffer[6])))
-            
+            raise LowlevelErrorException("\nThis Feedback Command\n    %s\nreturned an error:\n    %s" %  (culprit , lowlevelErrorToString(rcvBuffer[6])))
         
         results = []
         i = 9
@@ -862,7 +861,7 @@ class U3(Device):
         Note: Do not call this function while streaming.
         """
         if not isinstance(data, list):
-            raise LabJackException("Data must be a list of bytes")
+            raise LabJackException("data must be a list of bytes.")
         
         command = [ 0 ] * 40
         
@@ -1273,7 +1272,7 @@ class U3(Device):
                versions.
         """
         if not isinstance(SPIBytes, list):
-            raise LabJackException("SPIBytes MUST be a list of bytes")
+            raise LabJackException("SPIBytes must be a list of bytes")
 
         if CSPINNum is not None:
             warnings.warn("CSPINNum is deprecated, use CSPinNum instead", DeprecationWarning)
@@ -2563,7 +2562,7 @@ class Timer(FeedbackCommand):
         if timer != 0 and timer != 1:
             raise LabJackException("Timer should be either 0 or 1.")
         if UpdateReset and (Value is None):
-            raise LabJackException("UpdateReset set but no value.")
+            raise LabJackException("UpdateReset is set but Value is None which is invalid.")
             
         
         self.cmdBytes = [ (42 + (2*timer)), UpdateReset, Value % 256, Value >> 8 ]

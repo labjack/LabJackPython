@@ -45,6 +45,12 @@ _use_py2 = sys.version_info < (3, 0)  # Indicates to use Python 2.x or
                                       # Python 3+ when needed.
 
 
+# Troubleshooting part of text for communication failures.
+_troubleshoot_comm_msg = "Power cycle your device and try again. For more " \
+                        "troubleshooting help, go to the LabJack website and " \
+                        "look at the \"USB Communication Failure\" app note."
+
+
 class LabJackException(Exception):
     """Custom Exception meant for dealing specifically with LabJack Exceptions.
 
@@ -542,16 +548,15 @@ class Device(object):
         """
         Checks the low-level response's (results) checksums, command and error bytes.
         """
-        troubleshootMsg = "Power cycle your device and try again. For more troubleshooting help, go to the LabJack website and look at the \"USB Communication Failure\" app note."
         size = len(commandBytes)
         if len(results) == 0:
-            raise LabJackException("Communication Failure: Low-level response has no bytes. %s" % troubleshootMsg)
+            raise LabJackException("Communication Failure: Low-level response has no bytes. %s" % _troubleshoot_comm_msg)
         elif results[0] == 0xB8 and results[1] == 0xB8:
             raise LabJackException("Low-level command with bad checksum detected. Verify the low-level command's checksums are valid.")
         elif results[1:(size+1)] != commandBytes:
-            raise LabJackException("Communication Failure: Low-level response has incorrect command bytes.\nExpected: %s\nReceived: %s\nFull packet: %s\n%s" % (hexWithoutQuotes(commandBytes), hexWithoutQuotes(results[1:(size+1)]), hexWithoutQuotes(results), troubleshootMsg))
+            raise LabJackException("Communication Failure: Low-level response has incorrect command bytes.\nExpected: %s\nReceived: %s\nFull packet: %s\n%s" % (hexWithoutQuotes(commandBytes), hexWithoutQuotes(results[1:(size+1)]), hexWithoutQuotes(results), _troubleshoot_comm_msg))
         elif not verifyChecksum(results):
-            raise LabJackException("Communication Failure: Low-level response has incorrect checksum. %s" % troubleshootMsg)
+            raise LabJackException("Communication Failure: Low-level response has incorrect checksum. %s" % _troubleshoot_comm_msg)
         elif results[6] != 0:
             raise LowlevelErrorException(results[6], "Low-level response from the %s returned error:\n    %s" % (self.deviceName , lowlevelErrorToString(results[6])) )
 
