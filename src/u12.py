@@ -549,7 +549,7 @@ class U12(object):
             pass
         else:
             if self.handle is None:
-                raise U12Exception("The U12's handle is None. Please open a U12 with open()")
+                raise U12Exception("The U12's handle is None. Please open a U12 with open().")
 
             self._debugprint("Writing: " + hexWithoutQuotes(writeBuffer))
             newA = (ctypes.c_byte*len(writeBuffer))(0)
@@ -559,7 +559,7 @@ class U12(object):
             writeBytes = staticLib.LJUSB_Write(self.handle, ctypes.byref(newA), len(writeBuffer))
 
             if writeBytes != len(writeBuffer):
-                raise U12Exception( "Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
+                raise U12Exception("Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
 
             return writeBuffer
 
@@ -568,7 +568,7 @@ class U12(object):
             pass
         else:
             if self.handle is None:
-                raise U12Exception("The U12's handle is None. Please open a U12 with open()")
+                raise U12Exception("The U12's handle is None. Please open a U12 with open().")
             newA = (ctypes.c_byte*numBytes)()
             readBytes = staticLib.LJUSB_ReadTO(self.handle, ctypes.byref(newA), numBytes, timeout)
             # Return a list of integers in command-response mode
@@ -717,7 +717,7 @@ class U12(object):
         bf.fromByte(results[0])
 
         if bf.bit7 != 1 or bf.bit6 != 0:
-            raise U12Exception("Expected a AIStream response, got %s instead." % results[0])
+            raise U12Exception("Expected an AISample response, got %s instead." % results[0])
 
         returnDict = {}
         returnDict['EchoValue'] = results[1]
@@ -1598,7 +1598,7 @@ class U12(object):
         command = [ 0 ] * 8
 
         if not isinstance(Data, list) or len(Data) > 4:
-            raise U12Exception("Data wasn't a list, or was too long.")
+            raise U12Exception("Data wasn't a list, or Data list length was too long (> 4).")
 
         Data.reverse()
 
@@ -1618,7 +1618,7 @@ class U12(object):
         results = self.read()
 
         if results[0] != int(bf):
-            raise U12Exception("Expected ReadRAM response, got %s" % results[0])
+            raise U12Exception("Expected WriteRAM response, got %s" % results[0])
 
         if (results[6] != command[6]) or (results[7] != command[7]):
             receivedAddress = (results[6] << 8) + results[7]
@@ -1675,7 +1675,7 @@ class U12(object):
         command = [ 0 ] * 8
 
         if not isinstance(Data, list) or len(Data) > 4:
-            raise U12Exception("Data wasn't a list, or was too long.")
+            raise U12Exception("Data wasn't a list, or Data list length was too long (> 4).")
 
         NumberOfBytesToWrite = NumberOfBytesToRead & 0xff
         NumberOfBytesToRead = NumberOfBytesToRead & 0xff
@@ -1766,7 +1766,7 @@ class U12(object):
         command = [ 0 ] * 8
 
         if not isinstance(Data, list) or len(Data) > 4:
-            raise U12Exception("Data wasn't a list, or was too long.")
+            raise U12Exception("Data wasn't a list, or Data list length was too long (> 4).")
 
         NumberOfBytesToWriteRead = NumberOfBytesToWriteRead & 0xff
 
@@ -1900,7 +1900,7 @@ class U12(object):
 
         if NumberOfBytesToWrite != 0:
             if not isinstance(Data, list) or len(Data) > 4:
-                raise U12Exception("Data wasn't a list, or was too long.")
+                raise U12Exception("Data wasn't a list, or Data list length was too long (> 4).")
 
             padData = [0]*(4-len(Data))
             command[:4] = padData + Data[::-1]
@@ -2200,8 +2200,8 @@ class U12(object):
         # Check to make sure that everything is checked
         if not isIterable(channels): raise TypeError("channels must be iterable")
         if not isIterable(gains): raise TypeError("gains must be iterable")
-        if len(channels) < numChannels: raise ValueError("channels must have atleast numChannels elements")
-        if len(gains) < numChannels: raise ValueError("gains must have atleast numChannels elements")
+        if len(channels) < numChannels: raise ValueError("channels must have at least numChannels elements")
+        if len(gains) < numChannels: raise ValueError("gains must have at least numChannels elements")
 
         # Convert lists to arrays and create other ctypes
         channelsArray = listToCArray(channels, ctypes.c_long)
@@ -2236,9 +2236,9 @@ class U12(object):
 
         # Check list sizes
         if len(channels) < numChannels:
-            raise ValueError("channels must have atleast numChannels elements")
+            raise ValueError("channels must have at least numChannels elements")
         if len(gains) < numChannels:
-            raise ValueError("gains must have atleast numChannels elements")
+            raise ValueError("gains must have at least numChannels elements")
 
         # Convert lists to arrays and create other ctypes
         channelsArray = listToCArray(channels, ctypes.c_long)
@@ -2289,8 +2289,8 @@ class U12(object):
         staticLib.AIStreamStart.restype = ctypes.c_long
 
         # check list sizes
-        if len(channels) < numChannels: raise ValueError("channels must have atleast numChannels elements")
-        if len(gains) < numChannels: raise ValueError("gains must have atleast numChannels elements")
+        if len(channels) < numChannels: raise ValueError("channels must have at least numChannels elements")
+        if len(gains) < numChannels: raise ValueError("gains must have at least numChannels elements")
         #if len(stateIOin) < 4: raise ValueError("stateIOin must have atleast 4 elements")
 
         # Check id number
@@ -2328,7 +2328,7 @@ class U12(object):
 
         # Check to make sure that we are streaming
         if not self.streaming:
-            raise U12Exception(-1, "Streaming has not started")
+            raise U12Exception(-1, "Streaming has not been started. Start streaming before reading stream data.")
 
         # Check id number
         if localID is None:
@@ -2607,7 +2607,7 @@ class U12(object):
 
         >>> dev = U12()
         >>> dev.getFirmwareVersion()
-        >>> Unkown error
+        >>> {'idnum': 0, 'firmware': 1.100000023841858}
         """
 
         # Check ID number
@@ -2975,7 +2975,7 @@ class U12(object):
         """
 
         if address is None:
-            raise Exception("Must give an Address.")
+            raise Exception("address must be specified.")
 
         if idnum is None:
             idnum = self.id
@@ -3008,9 +3008,9 @@ class U12(object):
         >>> 1
         """
         if address is None or data is None:
-            raise Exception("Must give both an Address and data.")
+            raise Exception("Must have a valid address and data.")
         if type(data) is not list or len(data) != 4:
-            raise Exception("Data must be a list and have a length of 4")
+            raise Exception("data must be a list and have 4 elements.")
 
         if idnum is None:
             idnum = self.id
