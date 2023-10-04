@@ -342,3 +342,6 @@ Version History
     - Fixed some Python 3 related bugs in the getName method.
     - U3 and U6 optimizions for processStreamData and binary to analog
       conversion functions.
+- 2.2.0
+    - Added an optional loadCalibration parameter to the device open functions.
+      The open functions will now call getCalibrationData() by default.

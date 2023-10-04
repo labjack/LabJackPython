@@ -216,7 +216,7 @@ class U6(Device):
         if autoOpen:
             self.open(**kargs)
 
-    def open(self, localId = None, firstFound = True, serial = None, devNumber = None, handleOnly = False, LJSocket = None):
+    def open(self, localId = None, firstFound = True, serial = None, devNumber = None, handleOnly = False, LJSocket = None, loadCalibration = True):
         """
         Name: U6.open(localId = None, firstFound = True, devNumber = None,
                       handleOnly = False, LJSocket = None)
@@ -232,6 +232,8 @@ class U6(Device):
         >>> myU6.open()
         """
         Device.open(self, 6, firstFound = firstFound, serial = serial, localId = localId, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket )
+        if loadCalibration:
+            self.getCalibrationData()
 
     def configU6(self, LocalID = None):
         """

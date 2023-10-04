@@ -26,7 +26,7 @@ from struct import pack, unpack
 import Modbus
 
 
-LABJACKPYTHON_VERSION = "2.1.0"
+LABJACKPYTHON_VERSION = "2.2.0"
 __version__ = LABJACKPYTHON_VERSION
 
 SOCKET_TIMEOUT = 3

@@ -91,7 +91,7 @@ class UE9(Device):
         if autoOpen:
             self.open(**kargs)
     
-    def open(self, firstFound = True, serial = None, ipAddress = None, localId = None, devNumber = None, ethernet=False, handleOnly = False, LJSocket = None):
+    def open(self, firstFound = True, serial = None, ipAddress = None, localId = None, devNumber = None, ethernet=False, handleOnly = False, LJSocket = None, loadCalibration = True):
         """
         Name: UE9.open(firstFound = True, ipAddress = None, localId = None, devNumber = None, ethernet=False)
         Args: firstFound, Open the first found UE9
@@ -109,6 +109,8 @@ class UE9(Device):
         """
         self.ethernet = ethernet
         Device.open(self, 9, Ethernet = ethernet, firstFound = firstFound, serial = serial, localId = localId, devNumber = devNumber, ipAddress = ipAddress, handleOnly = handleOnly, LJSocket = LJSocket)
+        if loadCalibration:
+            self.getCalibrationData()
 
     def commConfig(self, LocalID = None, IPAddress = None, Gateway = None, Subnet = None, PortA = None, PortB = None, DHCPEnabled = None):
         """
