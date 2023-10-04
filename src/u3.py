@@ -103,7 +103,7 @@ class U3(Device):
             self.open(**kargs)
     __init__.section = 1
 
-    def open(self, firstFound = True, serial = None, localId = None, devNumber = None, handleOnly = False, LJSocket = None):
+    def open(self, firstFound = True, serial = None, localId = None, devNumber = None, handleOnly = False, LJSocket = None, loadCalibration = True):
         """
         Name: U3.open(firstFound = True, localId = None, devNumber = None,
                       handleOnly = False, LJSocket = None)
@@ -136,6 +136,8 @@ class U3(Device):
         >>> d.open(LJSocket = "localhost:6000")
         """
         Device.open(self, 3, firstFound = firstFound, serial = serial, localId = localId, devNumber = devNumber, handleOnly = handleOnly, LJSocket = LJSocket )
+        if loadCalibration:
+            self.getCalibrationData()
     open.section = 1
 
     def configU3(self, LocalID = None, TimerCounterConfig = None, FIOAnalog = None, FIODirection = None, FIOState = None, EIOAnalog = None, EIODirection = None, EIOState = None, CIODirection = None, CIOState = None, DAC1Enable = None, DAC0 = None, DAC1 = None, TimerClockConfig = None, TimerClockDivisor = None, CompatibilityOptions = None):
