@@ -1457,7 +1457,6 @@ class U6(Device):
                   0 - 7   = FIO0 - FIO7
                   8 - 15  = EIO0 - EIO7
                   16 - 19 = CIO0 - CIO3
-                  16 - 18 = MIO0 - MIO2
               state, 1 = High, 0 = Low
         Desc: A convenience function to set the state of a digital I/O. Will
               also set the direction to output.
@@ -1476,7 +1475,6 @@ class U6(Device):
                   0 - 7   = FIO0 - FIO7
                   8 - 15  = EIO0 - EIO7
                   16 - 19 = CIO0 - CIO3
-                  16 - 18 = MIO0 - MIO2
         Desc: A convenience function to read the state of a digital I/O.  Will
               also set the direction to input.
         
@@ -1495,7 +1493,6 @@ class U6(Device):
                   0 - 7   = FIO0 - FIO7
                   8 - 15  = EIO0 - EIO7
                   16 - 19 = CIO0 - CIO3
-                  16 - 18 = MIO0 - MIO2
         Desc: A convenience function to read the state of a digital I/O.  Will
               not change the direction.
         
