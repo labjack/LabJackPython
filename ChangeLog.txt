@@ -345,3 +345,5 @@ Version History
 - 2.2.0
     - Added an optional loadCalibration parameter to the device open functions.
       The open functions will now call getCalibrationData() by default.
+- 2.2.1
+    - Fixed issue where ctypes.c_byte was used instead of ctypes.c_ubyte.

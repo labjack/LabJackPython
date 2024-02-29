@@ -552,9 +552,9 @@ class U12(object):
                 raise U12Exception("The U12's handle is None. Please open a U12 with open().")
 
             self._debugprint("Writing: " + hexWithoutQuotes(writeBuffer))
-            newA = (ctypes.c_byte*len(writeBuffer))(0)
+            newA = (ctypes.c_ubyte*len(writeBuffer))(0)
             for i in range(len(writeBuffer)):
-                newA[i] = ctypes.c_byte(writeBuffer[i])
+                newA[i] = ctypes.c_ubyte(writeBuffer[i])
 
             writeBytes = staticLib.LJUSB_Write(self.handle, ctypes.byref(newA), len(writeBuffer))
 
@@ -569,7 +569,7 @@ class U12(object):
         else:
             if self.handle is None:
                 raise U12Exception("The U12's handle is None. Please open a U12 with open().")
-            newA = (ctypes.c_byte*numBytes)()
+            newA = (ctypes.c_ubyte*numBytes)()
             readBytes = staticLib.LJUSB_ReadTO(self.handle, ctypes.byref(newA), numBytes, timeout)
             # Return a list of integers in command-response mode
             result = [(newA[i] & 0xff) for i in range(readBytes)]

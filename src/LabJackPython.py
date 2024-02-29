@@ -26,7 +26,7 @@ from struct import pack, unpack
 import Modbus
 
 
-LABJACKPYTHON_VERSION = "2.2.0"
+LABJACKPYTHON_VERSION = "2.2.1"
 __version__ = LABJACKPYTHON_VERSION
 
 SOCKET_TIMEOUT = 3
@@ -249,9 +249,9 @@ class Device(object):
         if modbus is True and self.modbusPrependZeros:
             writeBuffer = [ 0, 0 ] + writeBuffer
         
-        newA = (ctypes.c_byte*len(writeBuffer))(0) 
+        newA = (ctypes.c_ubyte*len(writeBuffer))(0) 
         for i in range(len(writeBuffer)):
-            newA[i] = ctypes.c_byte(writeBuffer[i])
+            newA[i] = ctypes.c_ubyte(writeBuffer[i])
         
         writeBytes = staticLib.LJUSB_Write(self.handle, ctypes.byref(newA), len(writeBuffer))
         
@@ -371,7 +371,7 @@ class Device(object):
         return list(rcvDataBuff)
 
     def _readFromExodriver(self, numBytes, stream, modbus):
-        newA = (ctypes.c_byte*numBytes)()
+        newA = (ctypes.c_ubyte*numBytes)()
         
         if stream:
             readBytes = staticLib.LJUSB_StreamTO(self.handle, ctypes.byref(newA), numBytes, 1500)
@@ -1824,9 +1824,9 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
             #Initialize newA
             newA = None
             if type(x1[0]) == int:
-                newA = (ctypes.c_byte*len(x1))()
+                newA = (ctypes.c_ubyte*len(x1))()
                 for i in range(len(x1)):
-                    newA[i] = ctypes.c_byte(x1[i])
+                    newA[i] = ctypes.c_ubyte(x1[i])
             else:
                 x1Type = "float"
                 newA = (ctypes.c_double*len(x1))()
