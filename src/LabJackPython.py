@@ -1843,7 +1843,7 @@ def eGetRaw(Handle, IOType, Channel, pValue, x1):
             
             if IOType == LJ_ioRAW_IN and Channel == 1:
                 # We return the raw byte string if we are streaming
-                x1 = pack('b' * len(x1), *newA)
+                x1 = pack('B' * len(x1), *newA)
             elif IOType == LJ_ioRAW_IN and Channel == 0:
                 x1 = [0] * int(pv.value)
                 for i in range(len(x1)):
