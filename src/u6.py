@@ -15,9 +15,9 @@ import sys
 import warnings
 
 try:
-    import ConfigParser
+    from ConfigParser import SafeConfigParser as ConfigParser
 except ImportError:  # Python 3
-    import configparser as ConfigParser
+    from configparser import ConfigParser
 
 from struct import pack, unpack
 
@@ -1608,7 +1608,7 @@ class U6(Device):
         Desc: Takes a configuration and puts it into a ConfigParser object.
         """
         # Make a new configuration file
-        parser = ConfigParser.SafeConfigParser()
+        parser = ConfigParser()
         
         # Change optionxform so that options preserve their case.
         parser.optionxform = str

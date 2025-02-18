@@ -21,9 +21,9 @@ import sys
 import warnings
 
 try:
-    import ConfigParser
-except ImportError: # Python 3
-    import configparser as ConfigParser
+    from ConfigParser import SafeConfigParser as ConfigParser
+except ImportError:  # Python 3
+    from configparser import ConfigParser
 
 from struct import pack, unpack
 
@@ -1867,7 +1867,7 @@ class U3(Device):
               object. Useful for saving the setup of your U3.
         """
         # Make a new configuration file
-        parser = ConfigParser.SafeConfigParser()
+        parser = ConfigParser()
         
         # Change optionxform so that options preserve their case.
         parser.optionxform = str

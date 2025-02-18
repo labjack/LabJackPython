@@ -347,3 +347,4 @@ Version History
       The open functions will now call getCalibrationData() by default.
 - 2.2.1
     - Fixed issue where ctypes.c_byte was used instead of ctypes.c_ubyte.
+    - Changed SafeConfigParser to ConfigParser in Python 3.
