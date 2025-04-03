@@ -3,8 +3,10 @@ examples for the LabJack U3, U6, UE9 and U12.
 11/03/2022
 support@labjack.com
 
+
 Using a T-series device? See labjack-ljm instead:
-https://github.com/labjack/labjack-ljm-python
+
+    https://github.com/labjack/labjack-ljm-python
 
 LabJackPython requires Python 2.7 or 3.x. Please report bugs to
 support@labjack.com or on GitHub:
@@ -94,6 +96,13 @@ For the U12, refer to its u12.py source, or use the “help(u12)” call in Pyth
 For additional information, go to the LabJackPython page on LabJack's website:
 
     https://labjack.com/support/software/examples/ud/labjackpython
+
+
+UE9 Support Status
+
+The UE9 has reached end-of-life status. The UE9 module and examples are still
+accessible in the LabJackPython package, but are no longer actively updated or
+maintained.
 
 
 LICENSE
