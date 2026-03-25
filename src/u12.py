@@ -5,18 +5,17 @@ Desc: Defines the U12 class, which makes working with a U12 much easier. The
       low-level.
 
       Most of the UW functions are exposed as functions of the U12 class. With
-      the exception of the "e" functions, UW functions are Windows only. The "e"
-      functions will work with both the UW and the Exodriver. Therefore, people
-      wishing to write cross-platform code should restrict themselves to using
-      only the "e" functions. The UW functions are described in Section 4 of the
-      U12 User's Guide:
+      the exception of the "e" functions, UW functions are Windows only. The
+      "e" functions will work with both the UW and the Exodriver, as will the
+      "raw" functions. Therefore, people who want to write cross-platform code
+      should restrict themselves to using the "e" or "raw" functions. The UW
+      functions are described in Section 4 of the U12 User's Guide:
 
       http://labjack.com/support/u12/users-guide/4
 
       All low-level functions of the U12 class begin with the word
-      raw. For example, the low-level function Counter can be called with
-      U12.rawCounter(). Currently, low-level functions are limited to the
-      Exodriver (Linux and Mac OS X). You can find descriptions of the low-level
+      "raw". For example, the low-level function Counter can be called with
+      U12.rawCounter(). You can find descriptions of the low-level
       functions in Section 5 of the U12 User's Guide:
 
       http://labjack.com/support/u12/users-guide/5
@@ -425,6 +424,9 @@ class U12(object):
         self.handle = None
         self.debug = debug
         self._autoCloseSetup = False
+        # USB vendor and product ID
+        self.vendorID = 0x0CD5
+        self.productID = 1
 
         if _os_name != "nt":
             # Save some variables to save state.
@@ -436,12 +438,12 @@ class U12(object):
 
     def _debugprint(self, msg):
         """Conditionally output msg.
-        
+
         If self.debug is a logging.Logger object, send the msg to it with
         DEBUG priority.  Otherwise, if self.debug is any truthy, just print
         it to stdout.
         """
-        
+
         if self.debug:
             if isinstance(self.debug, logging.Logger):
                 self.debug.debug(msg)
@@ -453,15 +455,16 @@ class U12(object):
         Opens the U12.
 
         The Windows UW driver opens the device every time a function is called.
-        The Exodriver, however, works like the UD family of devices and returns
-        a handle. On Windows, this method does nothing. On Mac OS X and Linux,
-        this method acquires a device handle and saves it to the U12 object.
+        The Exodriver and "raw" functions work like the UD family of devices
+        and returns a handle. This method acquires a device handle and saves it
+        to the U12 object for use with the "raw" functions (and "e" functions
+        when using macOS or Linux).
         """
         self._debugprint("open called")
         if _os_name == "nt":
             ecode = ctypes.c_long(0)
-            vID = ctypes.c_uint(3285) #0x0CD5, LabJack vendor ID
-            pID = ctypes.c_uint(1) # U12 product ID
+            vID = ctypes.c_uint(self.vendorID) # LabJack USB vendor ID
+            pID = ctypes.c_uint(self.productID) # U12 product ID
             idnum = ctypes.c_long(id)
             if serialNumber is None:
                 serialNumber = 0
@@ -477,10 +480,10 @@ class U12(object):
                 ctypes.byref(calData)
             )
             if self.handle is None:
-                    raise U12Exception(
-                        "Couldn't find a U12 with matching open parameters."
-                    )
-            if ecode.value != 0: raise U12Exception(ecode)
+                raise U12Exception(
+                    "Couldn't find a U12 with matching open parameters."
+                )
+            if ecode.value != 0: raise U12Exception(ecode.value)
             self.id = idnum.value
             self.serialNumber = serialnum.value
         else:
@@ -569,50 +572,66 @@ class U12(object):
 
     def write(self, writeBuffer):
         if self.handle is None:
-                raise U12Exception("The U12's handle is None. Please open a U12 with open().")
-
+            raise U12Exception(
+                "The U12's handle is None. Please open a U12 with open()."
+            )
         self._debugprint("Writing: " + hexWithoutQuotes(writeBuffer))
 
         if _os_name == "nt":
-            writeBuffer.insert(0,0) # Windows requires an extra byte at the start
+            # Windows requires an extra byte at the start
+            writeBuffer.insert(0,0)
             newA = (ctypes.c_ubyte*len(writeBuffer))(0)
             for i in range(len(writeBuffer)):
                 newA[i] = ctypes.c_ubyte(writeBuffer[i])
-
             ecode = staticLib.WriteLabJack(self.handle, ctypes.byref(newA))
             if ecode != 0: raise U12Exception(ecode)
             writeBuffer.pop(0) # Remove our extra byte from the start
-
         else:
             newA = (ctypes.c_ubyte*len(writeBuffer))(0)
             for i in range(len(writeBuffer)):
                 newA[i] = ctypes.c_ubyte(writeBuffer[i])
-
-            writeBytes = staticLib.LJUSB_Write(self.handle, ctypes.byref(newA), len(writeBuffer))
-
+            writeBytes = staticLib.LJUSB_Write(
+                self.handle,
+                ctypes.byref(newA),
+                len(writeBuffer)
+            )
             if writeBytes != len(writeBuffer):
-                raise U12Exception("Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
+                raise U12Exception(
+                    "Could only write %s of %s bytes." % \
+                    (writeBytes, len(writeBuffer))
+                )
 
         return writeBuffer
 
     def read(self, numBytes=8, timeout=1000):
         if self.handle is None:
-            raise U12Exception("The U12's handle is None. Please open a U12 with open().")
+            raise U12Exception(
+                "The U12's handle is None. Please open a U12 with open()."
+            )
         if _os_name == "nt":
             numBytes+=1 # Windows requires reading an extra byte
             newA = (ctypes.c_ubyte*numBytes)()
-            ecode = staticLib.ReadLabJack(self.handle, timeout, 0, ctypes.byref(newA))
+            ecode = staticLib.ReadLabJack(
+                self.handle,
+                timeout,
+                0,
+                ctypes.byref(newA)
+            )
             if ecode != 0: raise U12Exception(ecode)
             # Return a list of integers in command-response mode
             # The first byte read must be tossed.
             result = [(newA[i] & 0xff) for i in range(1, numBytes)]
-            self._debugprint("Received: " + hexWithoutQuotes(result))
         else:
             newA = (ctypes.c_ubyte*numBytes)()
-            readBytes = staticLib.LJUSB_ReadTO(self.handle, ctypes.byref(newA), numBytes, timeout)
+            readBytes = staticLib.LJUSB_ReadTO(
+                self.handle,
+                ctypes.byref(newA),
+                numBytes,
+                timeout
+            )
             # Return a list of integers in command-response mode
             result = [(newA[i] & 0xff) for i in range(readBytes)]
-            self._debugprint("Received: " + hexWithoutQuotes(result))
+        self._debugprint("Received: " + hexWithoutQuotes(result))
         return result
 
     # Low-level helpers
