@@ -432,7 +432,7 @@ class U12(object):
             self.pwmBVoltage = 0
             self.IO3toIO0DirAndStates = BitField(rawByte = 240)
 
-            self.open(id, serialNumber)
+        self.open(id, serialNumber)
 
     def _debugprint(self, msg):
         """Conditionally output msg.
@@ -457,10 +457,33 @@ class U12(object):
         a handle. On Windows, this method does nothing. On Mac OS X and Linux,
         this method acquires a device handle and saves it to the U12 object.
         """
+        self._debugprint("open called")
         if _os_name == "nt":
-            pass
+            ecode = ctypes.c_long(0)
+            vID = ctypes.c_uint(3285) #0x0CD5, LabJack vendor ID
+            pID = ctypes.c_uint(1) # U12 product ID
+            idnum = ctypes.c_long(id)
+            if serialNumber is None:
+                serialNumber = 0
+            serialnum = ctypes.c_long(serialNumber)
+            numCals = 20
+            calData =(ctypes.c_long*numCals)(0)
+            self.handle = staticLib.OpenLabJack(
+                ctypes.byref(ecode),
+                vID,
+                pID,
+                ctypes.byref(idnum),
+                ctypes.byref(serialnum),
+                ctypes.byref(calData)
+            )
+            if self.handle is None:
+                    raise U12Exception(
+                        "Couldn't find a U12 with matching open parameters."
+                    )
+            if ecode.value != 0: raise U12Exception(ecode)
+            self.id = idnum.value
+            self.serialNumber = serialnum.value
         else:
-            self._debugprint("open called")
             devType = ctypes.c_ulong(1)
             openDev = staticLib.LJUSB_OpenDevice
             openDev.restype = ctypes.c_void_p
@@ -532,26 +555,35 @@ class U12(object):
                 raise Exception("Invalid combination of parameters.")
 
 
-            if not self._autoCloseSetup:
-                # Only need to register auto-close once per device.
-                atexit.register(self.close)
-                self._autoCloseSetup = True
+        if not self._autoCloseSetup:
+            # Only need to register auto-close once per device.
+            atexit.register(self.close)
+            self._autoCloseSetup = True
 
     def close(self):
         if _os_name == "nt":
-            pass
+            staticLib.CloseAll(self.handle)
         else:
             staticLib.LJUSB_CloseDevice(self.handle)
-            self.handle = None
+        self.handle = None
 
     def write(self, writeBuffer):
-        if _os_name == "nt":
-            pass
-        else:
-            if self.handle is None:
+        if self.handle is None:
                 raise U12Exception("The U12's handle is None. Please open a U12 with open().")
 
-            self._debugprint("Writing: " + hexWithoutQuotes(writeBuffer))
+        self._debugprint("Writing: " + hexWithoutQuotes(writeBuffer))
+
+        if _os_name == "nt":
+            writeBuffer.insert(0,0) # Windows requires an extra byte at the start
+            newA = (ctypes.c_ubyte*len(writeBuffer))(0)
+            for i in range(len(writeBuffer)):
+                newA[i] = ctypes.c_ubyte(writeBuffer[i])
+
+            ecode = staticLib.WriteLabJack(self.handle, ctypes.byref(newA))
+            if ecode != 0: raise U12Exception(ecode)
+            writeBuffer.pop(0) # Remove our extra byte from the start
+
+        else:
             newA = (ctypes.c_ubyte*len(writeBuffer))(0)
             for i in range(len(writeBuffer)):
                 newA[i] = ctypes.c_ubyte(writeBuffer[i])
@@ -561,20 +593,27 @@ class U12(object):
             if writeBytes != len(writeBuffer):
                 raise U12Exception("Could only write %s of %s bytes." % (writeBytes, len(writeBuffer) ) )
 
-            return writeBuffer
+        return writeBuffer
 
     def read(self, numBytes=8, timeout=1000):
+        if self.handle is None:
+            raise U12Exception("The U12's handle is None. Please open a U12 with open().")
         if _os_name == "nt":
-            pass
+            numBytes+=1 # Windows requires reading an extra byte
+            newA = (ctypes.c_ubyte*numBytes)()
+            ecode = staticLib.ReadLabJack(self.handle, timeout, 0, ctypes.byref(newA))
+            if ecode != 0: raise U12Exception(ecode)
+            # Return a list of integers in command-response mode
+            # The first byte read must be tossed.
+            result = [(newA[i] & 0xff) for i in range(1, numBytes)]
+            self._debugprint("Received: " + hexWithoutQuotes(result))
         else:
-            if self.handle is None:
-                raise U12Exception("The U12's handle is None. Please open a U12 with open().")
             newA = (ctypes.c_ubyte*numBytes)()
             readBytes = staticLib.LJUSB_ReadTO(self.handle, ctypes.byref(newA), numBytes, timeout)
             # Return a list of integers in command-response mode
             result = [(newA[i] & 0xff) for i in range(readBytes)]
             self._debugprint("Received: " + hexWithoutQuotes(result))
-            return result
+        return result
 
     # Low-level helpers
     def rawReadSerial(self):
