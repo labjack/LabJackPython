@@ -428,11 +428,10 @@ class U12(object):
         self.vendorID = 0x0CD5
         self.productID = 1
 
-        if _os_name != "nt":
-            # Save some variables to save state.
-            self.pwmAVoltage = 0
-            self.pwmBVoltage = 0
-            self.IO3toIO0DirAndStates = BitField(rawByte = 240)
+        # Save some variables to save state.
+        self.pwmAVoltage = 0
+        self.pwmBVoltage = 0
+        self.IO3toIO0DirAndStates = BitField(rawByte = 240)
 
         self.open(id, serialNumber)
 
